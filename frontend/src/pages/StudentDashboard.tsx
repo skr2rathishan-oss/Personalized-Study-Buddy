@@ -112,12 +112,7 @@ function StudentDashboard() {
     };
 
     return (
-        <div className="dashboard-container animate-fade-in">
-            {/* 1. Hero Section */}
-            <div className="dashboard-hero">
-                <h1>Find Your Perfect Study Material</h1>
-                <p>AI-powered recommendations tailored to your course and learning style.</p>
-            </div>
+        <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem' }}>
 
             {/* 2. Horizontal Search Bar */}
             <div className="search-bar-container">

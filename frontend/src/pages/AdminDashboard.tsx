@@ -16,15 +16,39 @@ function AdminDashboard() {
     const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
 
+    // Create Mode States
+    const [newCourseName, setNewCourseName] = useState('');
+    const [newCourseCode, setNewCourseCode] = useState('');
+
+    const fetchMyCourses = async () => {
+        try {
+            const res = await api.get('/admin/my-courses');
+            setCourses(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleCreateCourse = async () => {
+        if (!newCourseName || !newCourseCode) {
+            alert('Please fill in both fields');
+            return;
+        }
+        try {
+            await api.post('/admin/courses', {
+                name: newCourseName,
+                code: newCourseCode
+            });
+            alert('Course created!');
+            setNewCourseName('');
+            setNewCourseCode('');
+            fetchMyCourses(); // Refresh list
+        } catch (err: any) {
+            alert('Failed to create: ' + (err.response?.data?.error || err.message));
+        }
+    };
+
     useEffect(() => {
-        const fetchMyCourses = async () => {
-            try {
-                const res = await api.get('/admin/my-courses');
-                setCourses(res.data);
-            } catch (err) {
-                console.error(err);
-            }
-        };
         fetchMyCourses();
     }, []);
 
@@ -44,6 +68,31 @@ function AdminDashboard() {
 
             <div style={{ display: 'flex', gap: '3rem', flexDirection: 'row', flexWrap: 'wrap' }}>
                 <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
+
+                    {/* Create Course Form */}
+                    <div className="login-card-clean" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+                        <h4 className="form-label" style={{ marginBottom: '1rem' }}>Add New Course</h4>
+                        <div className="form-group-clean">
+                            <input
+                                type="text"
+                                placeholder="Course Name (e.g. AI Basics)"
+                                value={newCourseName}
+                                onChange={e => setNewCourseName(e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group-clean">
+                            <input
+                                type="text"
+                                placeholder="Course Code (e.g. AI101)"
+                                value={newCourseCode}
+                                onChange={e => setNewCourseCode(e.target.value)}
+                            />
+                        </div>
+                        <button onClick={handleCreateCourse} className="btn-modern-primary" style={{ padding: '0.75rem' }}>
+                            + Create Course
+                        </button>
+                    </div>
+
                     <h3 className="form-label" style={{ fontSize: '1.2rem', paddingBottom: '0.5rem', borderBottom: '2px solid var(--border-color)' }}>Assigned Courses</h3>
                     {courses.length === 0 && <p style={{ marginTop: '1rem' }}>No courses assigned.</p>}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '1.5rem' }}>

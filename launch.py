@@ -64,7 +64,24 @@ def init_database(python_exec):
             print(f"Error initializing database: {e}")
             # Don't exit, maybe it's already initialized or minor error
     else:
+    else:
         print(f"Warning: '{INIT_DB_SCRIPT}' not found. Skipping DB initialization.")
+
+def install_frontend_dependencies():
+    """Installs frontend dependencies (npm install) if node_modules is missing."""
+    node_modules_path = os.path.join(FRONTEND_DIR, "node_modules")
+    if not os.path.exists(node_modules_path):
+        print("Installing Frontend dependencies (this may take a minute)...")
+        try:
+            # Use shell=True for windows npm compatibility info
+            subprocess.check_call(["npm", "install"], cwd=FRONTEND_DIR, shell=True)
+            print("Frontend dependencies installed.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error installing frontend dependencies: {e}")
+            print("Please ensure Node.js is installed.")
+            # We don't exit, might try to run anyway or user handles it
+    else:
+        print("Frontend dependencies already installed.")
 
 def run_backend(python_exec):
     """Runs the Flask backend."""
@@ -100,6 +117,9 @@ def main():
 
     # 3. Initialize Database
     init_database(python_exec)
+
+    # 3b. Install Frontend Dependencies
+    install_frontend_dependencies()
 
     # 4. Launch Services
     backend_process = None
