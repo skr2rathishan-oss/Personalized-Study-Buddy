@@ -90,3 +90,10 @@ class InteractionLog(db.Model):
     interaction_type = db.Column(db.String(50), nullable=False) # view, click, complete, bounce
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     meta_data = db.Column(db.Text, nullable=True) # JSON extra data
+
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.String(20), nullable=False) # YYYY-MM-DD format for simplicity
+    type = db.Column(db.String(50), nullable=False) # exam, deadline, meeting
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

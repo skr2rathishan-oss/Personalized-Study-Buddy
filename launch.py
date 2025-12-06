@@ -56,7 +56,6 @@ def install_dependencies(python_exec):
 def init_database(python_exec):
     """Initializes the database."""
     if os.path.exists(INIT_DB_SCRIPT):
-        # Only run init db if db file doesn't exist to prevent overwrite
         if not os.path.exists(os.path.join("backend", "db.sqlite3")):
             print("Initializing database...")
             try:
@@ -68,7 +67,6 @@ def init_database(python_exec):
         else:
             print("Database already initialized.")
     else:
-
         print(f"Warning: '{INIT_DB_SCRIPT}' not found. Skipping DB initialization.")
 
 def install_frontend_dependencies():
