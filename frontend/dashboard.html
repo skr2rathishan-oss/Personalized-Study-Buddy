@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Study Buddy</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>My Dashboard</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="dashboard.html">Dashboard</a>
+        </nav>
+    </header>
+    <main>
+        <section id="recommendations">
+            <h2>Recommended for You</h2>
+            <div id="rec-list">Loading...</div>
+        </section>
+    </main>
+    <script src="js/api.js"></script>
+    <script>
+        // Simple inline script to load recommendations on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchRecommendations(1).then(recs => {
+                const list = document.getElementById('rec-list');
+                list.innerHTML = recs.map(r => `<div class="card"><h3>${r.title}</h3><a href="${r.url}">Link</a></div>`).join('');
+            });
+        });
+    </script>
+</body>
+</html>
