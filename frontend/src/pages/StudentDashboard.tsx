@@ -113,6 +113,88 @@ function StudentDashboard() {
 
     return (
         <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem' }}>
+            {/* 1. Welcome & Stats Hero */}
+            <div style={{ marginBottom: '2.5rem' }}>
+                <h1 className="section-title" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                    Welcome back, Student!
+                </h1>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                    Ready to learn something new today?
+                </p>
+
+                <div className="dashboard-stats-grid">
+                    <div className="stat-card">
+                        <div className="stat-icon" style={{ background: '#EEF2FF', color: '#4F46E5' }}>📚</div>
+                        <div>
+                            <h4>4 Courses</h4>
+                            <span className="stat-label">Enrolled</span>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-icon" style={{ background: '#ECFDF5', color: '#10B981' }}>⏱️</div>
+                        <div>
+                            <h4>12.5 Hrs</h4>
+                            <span className="stat-label">Study Time</span>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-icon" style={{ background: '#FEF2F2', color: '#EF4444' }}>🔥</div>
+                        <div>
+                            <h4>3 Day</h4>
+                            <span className="stat-label">Streak</span>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-icon" style={{ background: '#FFFBEB', color: '#F59E0B' }}>⭐</div>
+                        <div>
+                            <h4>150 pts</h4>
+                            <span className="stat-label">Learner Score</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style>{`
+                .dashboard-stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 1.5rem;
+                }
+                .stat-card {
+                    background: var(--surface-color);
+                    padding: 1.25rem;
+                    border-radius: 12px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    transition: transform 0.2s;
+                }
+                .stat-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+                }
+                .stat-icon {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.5rem;
+                }
+                .stat-card h4 {
+                    margin: 0;
+                    font-size: 1.1rem;
+                    font-weight: 700;
+                    color: var(--text-main);
+                }
+                .stat-label {
+                    font-size: 0.85rem;
+                    color: var(--text-secondary);
+                }
+            `}</style>
+
 
             {/* 2. Horizontal Search Bar */}
             <div className="search-bar-container">

@@ -50,12 +50,12 @@ function Login() {
 
                     <form onSubmit={handleLogin}>
                         <div className="form-group-clean">
-                            <label>Username / Email</label>
+                            <label>User Name</label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={e => setUsername(e.target.value)}
-                                placeholder="name@university.edu"
+                                placeholder="Enter your username"
                                 required
                             />
                         </div>
@@ -71,7 +71,7 @@ function Login() {
                         </div>
 
                         <div className="form-actions">
-                            <a href="#" className="forgot-password" onClick={(e) => { e.preventDefault(); alert('Password reset placeholder'); }}>Forgot password?</a>
+                            <a href="#" className="forgot-password" onClick={(e) => { e.preventDefault(); navigate('/forgot-password'); }}>Forgot password?</a>
                         </div>
 
                         <button type="submit" className="btn-modern-primary">
