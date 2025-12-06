@@ -24,6 +24,37 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
+body.dark-mode {
+  --bg-color: #111827;
+  --surface-color: #1F2937;
+  --text-main: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --border-light: #374151;
+}
+
+.navbar {
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* Global Form Elements for Dark Mode */
+body.dark-mode select,
+body.dark-mode input[type="text"],
+body.dark-mode input[type="password"],
+body.dark-mode input[type="date"] {
+  background-color: var(--surface-color);
+  color: var(--text-main);
+  border-color: var(--border-light);
+}
+
 body {
   font-family: 'Outfit', sans-serif;
   /* More modern geometric sans */
@@ -110,10 +141,71 @@ body {
 }
 
 @media (max-width: 900px) {
-  .login-hero-section {
-    display: none;
-    /* Mobile view: Only form */
-  }
+  /* Mobile view: Only form */
+}
+
+
+/* Shared Auth Aliases */
+.auth-hero-section {
+  flex: 1;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  padding: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-form-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-color);
+  padding: 2rem;
+  position: relative;
+}
+
+/* Registration Specifics */
+.register-card {
+  width: 100%;
+  max-width: 600px;
+  /* Wider for 2-col */
+  padding: 2.5rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: var(--shadow-xl);
+  /* Pop out more */
+}
+
+.auth-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--border-light);
+  transition: all 0.3s;
+}
+
+.step-dot.active {
+  background: var(--primary);
+  transform: scale(1.2);
+}
+
+.otp-input {
+  letter-spacing: 0.5em;
+  font-size: 1.5rem;
+  text-align: center;
+  font-weight: 700;
 }
 
 .login-card-clean {

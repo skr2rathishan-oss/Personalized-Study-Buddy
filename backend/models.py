@@ -63,3 +63,10 @@ class Rating(db.Model):
     resource_id = db.Column(db.Integer, db.ForeignKey('resource.id'), nullable=False)
     score = db.Column(db.Integer, nullable=False)
     time_spent = db.Column(db.Integer, nullable=True) # in seconds
+
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.String(20), nullable=False) # YYYY-MM-DD format for simplicity
+    type = db.Column(db.String(50), nullable=False) # exam, deadline, meeting
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
