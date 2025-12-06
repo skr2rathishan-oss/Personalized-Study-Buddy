@@ -19,6 +19,7 @@ interface Resource {
     format: string;
     average_rating: number;
     rating_count: number;
+    source: string;
 }
 
 function StudentDashboard() {
@@ -31,6 +32,8 @@ function StudentDashboard() {
 
     // Format Filter Logic
     const [selectedFormat, setSelectedFormat] = useState<string>('');
+    const [description, setDescription] = useState('');
+    const [selectedLanguage, setSelectedLanguage] = useState('English');
 
     useEffect(() => {
         fetchCourses();
@@ -88,7 +91,9 @@ function StudentDashboard() {
             const res = await api.post('/recommend', {
                 course_id: selectedCourse,
                 topic_id: selectedTopic,
-                format: selectedFormat || null
+                format: selectedFormat || null,
+                search_query: description,
+                language: selectedLanguage
             });
             setResources(res.data);
         } catch (err) {
@@ -112,98 +117,26 @@ function StudentDashboard() {
     };
 
     return (
-        <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem' }}>
-            {/* 1. Welcome & Stats Hero */}
-            <div style={{ marginBottom: '2.5rem' }}>
-                <h1 className="section-title" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
-                    Welcome back, Student!
-                </h1>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                    Ready to learn something new today?
-                </p>
+        <div className="dashboard-layout animate-fade-in" style={{ marginTop: '1rem' }}>
 
-                <div className="dashboard-stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-icon" style={{ background: '#EEF2FF', color: '#4F46E5' }}>📚</div>
-                        <div>
-                            <h4>4 Courses</h4>
-                            <span className="stat-label">Enrolled</span>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon" style={{ background: '#ECFDF5', color: '#10B981' }}>⏱️</div>
-                        <div>
-                            <h4>12.5 Hrs</h4>
-                            <span className="stat-label">Study Time</span>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon" style={{ background: '#FEF2F2', color: '#EF4444' }}>🔥</div>
-                        <div>
-                            <h4>3 Day</h4>
-                            <span className="stat-label">Streak</span>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon" style={{ background: '#FFFBEB', color: '#F59E0B' }}>⭐</div>
-                        <div>
-                            <h4>150 pts</h4>
-                            <span className="stat-label">Learner Score</span>
-                        </div>
-                    </div>
+            {/* Left Sidebar: Filters & Search */}
+            <aside className="sidebar" style={{ background: 'linear-gradient(to bottom, #ffffff, #f8fafc)', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '1rem', borderBottom: '1px solid #e2e8f0', width: '100%' }}>
+                    <span style={{ fontSize: '1.2rem' }}>⚡</span>
+                    <h3 className="sidebar-title" style={{ border: 'none', padding: 0, margin: 0, color: '#0f172a', textTransform: 'none', fontSize: '1.1rem' }}>
+                        Smart Filters
+                    </h3>
                 </div>
-            </div>
 
-            <style>{`
-                .dashboard-stats-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 1.5rem;
-                }
-                .stat-card {
-                    background: var(--surface-color);
-                    padding: 1.25rem;
-                    border-radius: 12px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                    display: flex;
-                    align-items: center;
-                    gap: 1rem;
-                    transition: transform 0.2s;
-                }
-                .stat-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-                }
-                .stat-icon {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1.5rem;
-                }
-                .stat-card h4 {
-                    margin: 0;
-                    font-size: 1.1rem;
-                    font-weight: 700;
-                    color: var(--text-main);
-                }
-                .stat-label {
-                    font-size: 0.85rem;
-                    color: var(--text-secondary);
-                }
-            `}</style>
-
-
-            {/* 2. Horizontal Search Bar */}
-            <div className="search-bar-container">
                 <div className="search-group">
-                    <label>Select Course</label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                        <span>📚</span> Course
+                    </label>
                     <select
                         className="form-select"
                         value={selectedCourse || ''}
                         onChange={handleCourseChange}
+                        style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', fontSize: '0.9rem' }}
                     >
                         <option value="">Select a course...</option>
                         {courses.map(c => (
@@ -215,81 +148,245 @@ function StudentDashboard() {
                 </div>
 
                 <div className="search-group">
-                    <label>Select Topic</label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                        <span>🏷️</span> Topic
+                    </label>
                     <select
                         className="form-select"
                         value={selectedTopic || ''}
                         onChange={handleTopicChange}
                         disabled={!selectedCourse}
+                        style={{ background: selectedCourse ? '#f1f5f9' : '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', fontSize: '0.9rem', opacity: selectedCourse ? 1 : 0.7 }}
                     >
-                        <option value="">{selectedCourse ? "Select a topic..." : "Select course first"}</option>
+                        <option value="">{selectedCourse ? (topics.length > 0 ? "Select a topic..." : "No topics available") : "Select course first"}</option>
                         {topics.map(t => (
                             <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
                     </select>
                 </div>
 
-                <div className="search-group">
-                    <label>Preferred Format</label>
-                    <select
-                        className="form-select"
-                        value={selectedFormat}
-                        onChange={e => setSelectedFormat(e.target.value)}
-                    >
-                        <option value="">Any Format</option>
-                        <option value="video">Video</option>
-                        <option value="article">Article</option>
-                        <option value="pdf">PDF</option>
-                    </select>
-                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div className="search-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                            <span>📄</span> Format
+                        </label>
+                        <select
+                            className="form-select"
+                            value={selectedFormat}
+                            onChange={e => setSelectedFormat(e.target.value)}
+                            style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', fontSize: '0.9rem' }}
+                        >
+                            <option value="">Any</option>
+                            <option value="video">Video</option>
+                            <option value="article">Article</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
 
-                <button className="btn-search" onClick={handleFetch}>
-                    Get Recommendations
-                </button>
-            </div>
-
-            {/* 3. Results Section */}
-            {resources.length > 0 && (
-                <div className="animate-fade-in">
-                    <h3 className="section-title">Recommended Resources</h3>
-
-                    <div className="resource-grid-modern">
-                        {resources.map((r, idx) => (
-                            <div key={r.id} className="resource-card-modern" style={{ animationDelay: `${idx * 0.05}s` }}>
-                                <span className={`modern-badge badge-${r.format}`}>{r.format}</span>
-                                <h4 className="card-title">{r.title}</h4>
-
-                                <div className="card-rating">
-                                    <span>★</span>
-                                    <span>{r.average_rating}</span>
-                                    <span className="rating-count">({r.rating_count} ratings)</span>
-                                </div>
-
-                                <div className="card-footer">
-                                    <a href={r.url} target="_blank" rel="noopener noreferrer" className="btn-open-resource">
-                                        Open Resource
-                                    </a>
-
-                                    <select
-                                        className="rate-dropdown"
-                                        onChange={(e) => handleRate(r.id, Number(e.target.value))}
-                                        defaultValue=""
-                                    >
-                                        <option value="" disabled>Rate...</option>
-                                        <option value="5">5 - Excellent</option>
-                                        <option value="4">4 - Very Good</option>
-                                        <option value="3">3 - Good</option>
-                                        <option value="2">2 - Fair</option>
-                                        <option value="1">1 - Poor</option>
-                                    </select>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="search-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                            <span>🌐</span> Lang
+                        </label>
+                        <select
+                            className="form-select"
+                            value={selectedLanguage}
+                            onChange={e => setSelectedLanguage(e.target.value)}
+                            style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', fontSize: '0.9rem' }}
+                        >
+                            <option value="English">EN</option>
+                            <option value="Tamil">TA</option>
+                            <option value="Sinhala">SI</option>
+                        </select>
                     </div>
                 </div>
-            )}
 
-            {loading && <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Finding the best resources for you...</p>}
+                <div className="search-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                        <span>🔍</span> Smart Search
+                    </label>
+                    <textarea
+                        className="form-input"
+                        placeholder="Tell me specifically what you want to learn..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '8px',
+                            minHeight: '100px',
+                            fontSize: '0.9rem',
+                            resize: 'none',
+                            background: '#f8fafc',
+                            fontFamily: 'inherit'
+                        }}
+                    />
+                </div>
+
+                <button
+                    className="btn-search"
+                    onClick={handleFetch}
+                    style={{
+                        width: '100%',
+                        background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
+                        color: 'white',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        fontWeight: '600',
+                        fontSize: '1rem',
+                        boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)',
+                        cursor: 'pointer',
+                        border: 'none',
+                        transition: 'transform 0.1s'
+                    }}
+                    onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+                    onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                    {loading ? (
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <div className="loading-spinner" style={{ width: '16px', height: '16px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                            Finding...
+                        </span>
+                    ) : 'Find Resources 🚀'}
+                </button>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            </aside>
+
+            {/* Main Content: Stats & Results */}
+            <main className="main-content">
+
+                {/* Hero / Stats Section */}
+                <div style={{ marginBottom: '2.5rem' }}>
+                    <h1 className="section-title" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                        Welcome back, Student!
+                    </h1>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                        Ready to learn something new today?
+                    </p>
+
+                    <div className="dashboard-stats-grid">
+                        <div className="stat-card">
+                            <div className="stat-icon" style={{ background: '#EEF2FF', color: '#4F46E5' }}>📚</div>
+                            <div>
+                                <h4>4 Courses</h4>
+                                <span className="stat-label">Enrolled</span>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-icon" style={{ background: '#ECFDF5', color: '#10B981' }}>⏱️</div>
+                            <div>
+                                <h4>12.5 Hrs</h4>
+                                <span className="stat-label">Study Time</span>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-icon" style={{ background: '#FEF2F2', color: '#EF4444' }}>🔥</div>
+                            <div>
+                                <h4>3 Day</h4>
+                                <span className="stat-label">Streak</span>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-icon" style={{ background: '#FFFBEB', color: '#F59E0B' }}>⭐</div>
+                            <div>
+                                <h4>150 pts</h4>
+                                <span className="stat-label">Learner Score</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <style>{`
+                    .dashboard-stats-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        gap: 1.5rem;
+                    }
+                    .stat-card {
+                        background: var(--surface-color);
+                        padding: 1.25rem;
+                        border-radius: 12px;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                        display: flex;
+                        align-items: center;
+                        gap: 1rem;
+                        transition: transform 0.2s;
+                    }
+                    .stat-card:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+                    }
+                    .stat-icon {
+                        width: 48px;
+                        height: 48px;
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 1.5rem;
+                    }
+                    .stat-card h4 {
+                        margin: 0;
+                        font-size: 1.1rem;
+                        font-weight: 700;
+                        color: var(--text-main);
+                    }
+                    .stat-label {
+                        font-size: 0.85rem;
+                        color: var(--text-secondary);
+                    }
+                `}</style>
+
+
+                {/* Results Section */}
+                {resources.length > 0 && (
+                    <div className="animate-fade-in">
+                        <h3 className="section-title" style={{ marginTop: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '2rem' }}>
+                            Recommended Resources
+                        </h3>
+
+                        <div className="resource-grid-modern">
+                            {resources.map((r, idx) => (
+                                <div key={r.id} className="resource-card-modern" style={{ animationDelay: `${idx * 0.05}s` }}>
+                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                                        <span className={`modern-badge badge-${r.format}`}>{r.format}</span>
+                                        <span className={`modern-badge badge-source ${r.source === 'manual' ? 'source-db' : 'source-web'}`}>
+                                            {r.source === 'manual' ? 'database' : 'internet'}
+                                        </span>
+                                    </div>
+                                    <h4 className="card-title">{r.title}</h4>
+
+                                    <div className="card-rating">
+                                        <span>★</span>
+                                        <span>{r.average_rating}</span>
+                                        <span className="rating-count">({r.rating_count} ratings)</span>
+                                    </div>
+
+                                    <div className="card-footer">
+                                        <a href={r.url} target="_blank" rel="noopener noreferrer" className="btn-open-resource">
+                                            Open Resource
+                                        </a>
+
+                                        <select
+                                            className="rate-dropdown"
+                                            onChange={(e) => handleRate(r.id, Number(e.target.value))}
+                                            defaultValue=""
+                                        >
+                                            <option value="" disabled>Rate...</option>
+                                            <option value="5">5 - Excellent</option>
+                                            <option value="4">4 - Very Good</option>
+                                            <option value="3">3 - Good</option>
+                                            <option value="2">2 - Fair</option>
+                                            <option value="1">1 - Poor</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                {loading && <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>Finding the best resources for you...</p>}
+            </main>
         </div>
     );
 }

@@ -107,7 +107,10 @@ def main():
             sys.exit(1)
 
         print(f"Restarting script inside virtual environment: {venv_python}")
-        subprocess.call([venv_python, __file__] + sys.argv[1:])
+        try:
+            subprocess.call([venv_python, __file__] + sys.argv[1:])
+        except KeyboardInterrupt:
+            pass
         return
 
     # --- We are now running inside the virtual environment ---
@@ -161,7 +164,8 @@ def main():
         # npm run dev spawns child processes, terminate might not kill everything but it is a start.
         if frontend_process:
             # On windows shell=True makes it harder to kill tree
-            subprocess.call(['taskkill', '/F', '/T', '/PID', str(frontend_process.pid)])
+            subprocess.call(['taskkill', '/F', '/T', '/PID', str(frontend_process.pid)], 
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         print("Goodbye!")
 
 

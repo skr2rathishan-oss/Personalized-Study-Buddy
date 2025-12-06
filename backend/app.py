@@ -12,10 +12,11 @@ from dotenv import load_dotenv
 import json
 
 # Recommender: Use HybridRecommender (aliased or direct)
-# from recommender import HybridRecommender # Already imported later
+# from services.recommender import HybridRecommender # Already imported later
 
 # Recommender will be initialized after app creation to avoid circular imports if needed
-from fetcher import ResourceFetcher
+from services.fetcher import ResourceFetcher
+from services.recommender import HybridRecommender
 
 # Load environment variables
 load_dotenv()
@@ -35,7 +36,7 @@ jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
 
 # Initialize Recommender and Fetcher
-from recommender import HybridRecommender
+
 recommender_system = None 
 
 with app.app_context():
@@ -300,69 +301,119 @@ def recommend():
     data = request.json
     course_id = data.get('course_id')
     topic_id = data.get('topic_id')
+    search_query = data.get('search_query')
+    language = data.get('language', 'English')
+    req_format = data.get('format')
     
-    if not topic_id:
-        if not course_id:
-            return jsonify({'error': 'Topid ID or Course ID required'}), 400
-        # Course-level recommendations
+    context_name = ""
+    topic = None
+    query = None
+    
+    # Validation: Minimum one input required (Expanded)
+    has_input = any([
+        topic_id, 
+        course_id, 
+        (search_query and search_query.strip()), 
+        (language and language != 'English'),
+        (req_format and req_format.strip())
+    ])
+
+    if not has_input:
+        return jsonify({'error': 'At least one input (Topic, Course, Search, Language, or Format) is required'}), 400
+
+    if topic_id:
+        topic = Topic.query.get(topic_id)
+        if not topic: return jsonify({'error': 'Topic not found'}), 404
+        query = Resource.query.filter_by(topic_id=topic_id)
+        context_name = topic.name
+    elif course_id:
         course = Course.query.get(course_id)
-        if not course:
-            return jsonify({'error': 'Course not found'}), 404
-        
-        # Get all resources for this course
-        # We need to join via Topic
+        if not course: return jsonify({'error': 'Course not found'}), 404
         query = Resource.query.join(Topic).filter(Topic.course_id == course_id)
         context_name = course.name
     else:
-        topic = Topic.query.get(topic_id)
-        if not topic:
-            return jsonify({'error': 'Topic not found'}), 404
-        query = Resource.query.filter_by(topic_id=topic_id)
-        context_name = topic.name
+        # Search/Agent Only Mode
+        context_name = search_query if search_query else "General"
+        candidates = [] 
 
-    # Filter by format if specified
-    req_format = data.get('format')
-    if req_format and req_format.strip():
-        query = query.filter(Resource.format == req_format)
+    # If we have a DB query, execute it
+    if query:
+        if search_query and search_query.strip():
+            context_name += f" {search_query}"
+        
+        if req_format and req_format.strip():
+            query = query.filter(Resource.format == req_format)
+        candidates = query.all()
+
+    # Auto-fetch Logic
+    # Trigger if fewer than 10 resources found OR we serve a specific user request
+    should_fetch = len(candidates) < 10 or has_input
     
-    candidates = query.all()
-
-    # Auto-fetch if no resources found (Cold Start)
-    if not candidates and topic:
-        print(f"No resources found for {topic.name}. Auto-fetching...")
-        course = Course.query.get(topic.course_id)
-        # Assuming resource_fetcher is available globally
-        fetched_items = resource_fetcher.auto_fetch_resources(topic.name, course.name)
+    if should_fetch:
+        print(f"[{datetime.now()}] Auto-fetching for context: {context_name}")
         
-        new_resources = []
-        for item in fetched_items:
-            # Check for duplicates
-            if not Resource.query.filter_by(url=item['url']).first():
-                new_res = Resource(
-                    title=item['title'],
-                    url=item['url'],
-                    format=item['format'],
-                    topic_id=topic.id,
-                    is_auto_fetched=True,
-                    source=item['source']
-                )
-                db.session.add(new_res)
-                new_resources.append(new_res)
+        # Determine names for the Agent
+        t_name = topic.name if topic else (search_query if search_query else "General")
+        c_name = topic.course.name if topic else "General" 
         
-        if new_resources:
-            db.session.commit()
-            # Update embeddings for new items
-            if recommender_system:
-                for r in new_resources:
-                    recommender_system.update_resource_embedding(r)
+        try:
+            fetched_items = resource_fetcher.auto_fetch_resources(
+                t_name, 
+                c_name, 
+                search_query, 
+                language=language, 
+                resource_format=req_format
+            )
+            print(f"[{datetime.now()}] Fetch complete. Found {len(fetched_items)} items.")
             
-            # Refresh candidates
-            candidates = query.all()
-    
-    # Safety Check: If ML system failed to load, fallback to simple rating sort
-    if recommender_system is None:
-        candidates.sort(key=lambda x: (sum(r.score for r in x.ratings)/len(x.ratings) if x.ratings else 0), reverse=True)
-        return jsonify([r.to_dict() for r in candidates[:10]])
+            new_resources = []
+            # Only save to DB if we have a valid Topic ID
+            if topic:
+                for item in fetched_items:
+                    if not Resource.query.filter_by(url=item['url'], topic_id=topic.id).first():
+                        new_res = Resource(
+                            title=item['title'],
+                            url=item['url'],
+                            format=item['format'],
+                            topic_id=topic.id,
+                            is_auto_fetched=True,
+                            source=item['source']
+                        )
+                        db.session.add(new_res)
+                        new_resources.append(new_res)
+                
+                print(f"[{datetime.now()}] Added {len(new_resources)} new resources to DB.")
+                if new_resources:
+                    db.session.commit()
+                    if recommender_system:
+                         for r in new_resources:
+                             recommender_system.update_resource_embedding(r)
+                    candidates = query.all()
+            else:
+                # Search Only Mode (No DB Save): Convert dict items to temporary objects for consistency
+                # We need mock Resource objects for the recommender/frontend
+                for item in fetched_items:
+                    mock_res = Resource(
+                        id=-1, # Dummy ID
+                        title=item['title'],
+                        url=item['url'],
+                        format=item['format'],
+                        source=item['source'],
+                        is_auto_fetched=True,
+                        quality_score=0.0
+                    )
+                    # We can't use DB embeddings easily here without saving, so we rely on raw sorting or just return them
+                    candidates.append(mock_res)
+
+            # Internet Only Logic for Explicit Search (REMOVED: User wants DB items prioritized, not hidden)
+            # if search_query and search_query.strip():
+            #     candidates = [c for c in candidates if c.is_auto_fetched]
+
+        except Exception as e:
+            print(f"[{datetime.now()}] Error: {str(e)}")
+
+    # Proceed to Recommend
+
     
     # Use the new hybrid recommender
     recommendations = recommender_system.recommend(user_id, context_name, candidates, top_k=10)
@@ -394,6 +445,11 @@ def get_recommendations_api():
         query = Resource.query.filter_by(topic_id=topic_id)
         context_name = topic.name
 
+    # Incorporate Custom Search Query
+    search_query = request.args.get('search_query')
+    if search_query and search_query.strip():
+        context_name += f" {search_query}"
+
     # Filter by format
     req_format = request.args.get('format')
     if req_format and req_format.strip():
@@ -401,15 +457,15 @@ def get_recommendations_api():
 
     candidates = query.all()
 
-    # Auto-fetch if no resources found (Cold Start)
-    if not candidates and topic:
+    # Auto-fetch if fewer than 10 resources found OR if user has a specific search query (Explicit Intent)
+    if (len(candidates) < 10 or (search_query and search_query.strip())) and topic:
         print(f"No resources found for {topic.name}. Auto-fetching...")
         course = Course.query.get(topic.course_id)
-        fetched_items = resource_fetcher.auto_fetch_resources(topic.name, course.name)
+        fetched_items = resource_fetcher.auto_fetch_resources(topic.name, course.name, search_query)
         
         new_resources = []
         for item in fetched_items:
-             if not Resource.query.filter_by(url=item['url']).first():
+             if not Resource.query.filter_by(url=item['url'], topic_id=topic.id).first():
                 new_res = Resource(
                     title=item['title'],
                     url=item['url'],
@@ -428,6 +484,16 @@ def get_recommendations_api():
                     recommender_system.update_resource_embedding(r)
             candidates = query.all()
     
+    # If explicit search, filter candidates to prioritize auto-fetched or relevant items
+    if search_query and search_query.strip():
+        # Re-query or filter existing candidates
+        # For simplicity, let's keep all candidates but the recommender will rank them.
+        # However, to satisfy "Only Internet", we can prioritize them.
+        # A simple way involves checking 'is_auto_fetched' if we really want to exclude manual.
+        # But recommender.py already handles ranking. 
+        # To strictly follow "Only Internet", let's filter:
+        candidates = [c for c in candidates if c.is_auto_fetched]
+        
     # Safety Check
     if recommender_system is None:
         candidates.sort(key=lambda x: (sum(r.score for r in x.ratings)/len(x.ratings) if x.ratings else 0), reverse=True)
@@ -579,6 +645,66 @@ def create_course():
     db.session.add(Enrollment(user_id=int(get_jwt_identity()), course_id=new_course.id))
     db.session.commit()
     return jsonify({'message': 'Course created'})
+
+@app.route('/admin/courses/<int:course_id>/topics', methods=['POST'])
+@jwt_required()
+def create_topic(course_id):
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    course = Course.query.get(course_id)
+    if not course: return jsonify({'error': 'Course not found'}), 404
+
+    data = request.json
+    name = data.get('name')
+    if not name: return jsonify({'error': 'Topic name required'}), 400
+
+    new_topic = Topic(name=name, course_id=course.id)
+    db.session.add(new_topic)
+    db.session.commit()
+    return jsonify({'message': 'Topic created'})
+
+@app.route('/admin/topics/<int:topic_id>', methods=['DELETE'])
+@jwt_required()
+def delete_topic(topic_id):
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    topic = Topic.query.get(topic_id)
+    if not topic: return jsonify({'error': 'Topic not found'}), 404
+
+    db.session.delete(topic)
+    db.session.commit()
+    return jsonify({'message': 'Topic deleted'})
+
+@app.route('/admin/courses/<int:course_id>', methods=['PUT'])
+@jwt_required()
+def update_course(course_id):
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    course = Course.query.get(course_id)
+    if not course: return jsonify({'error': 'Course not found'}), 404
+
+    data = request.json
+    course.name = data.get('name', course.name)
+    course.code = data.get('code', course.code)
+    
+    db.session.commit()
+    return jsonify({'message': 'Course updated'})
+
+@app.route('/admin/courses/<int:course_id>', methods=['DELETE'])
+@jwt_required()
+def delete_course(course_id):
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    course = Course.query.get(course_id)
+    if not course: return jsonify({'error': 'Course not found'}), 404
+
+    db.session.delete(course)
+    db.session.commit()
+    return jsonify({'message': 'Course deleted'})
 
 @app.route('/admin/export-data', methods=['GET'])
 @jwt_required()

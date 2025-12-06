@@ -703,3 +703,104 @@ body {
   color: #6B7280;
   font-size: 0.75rem;
 }
+
+/* Source Badges */
+.badge-source {
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.source-db {
+  background-color: #dbeafe;
+  /* Light Blue */
+  color: #1e40af;
+  /* Dark Blue */
+  border: 1px solid #bfdbfe;
+}
+
+.source-web {
+  background-color: #fae8ff;
+  /* Light Fuchsia */
+  color: #86198f;
+  /* Dark Fuchsia */
+  border: 1px solid #f5d0fe;
+}
+
+/* --- Professional Sidebar Layout --- */
+.dashboard-layout {
+  display: flex;
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  align-items: flex-start;
+}
+
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  position: sticky;
+  top: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sidebar-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.main-content {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+/* Sidebar Specific overrides */
+.sidebar .search-group {
+  margin-bottom: 0;
+}
+
+.sidebar .search-group label {
+  font-size: 0.8rem;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.sidebar .btn-search {
+  width: 100%;
+}
+
+@media (max-width: 1000px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .sidebar .search-group {
+    flex: 1;
+    min-width: 200px;
+  }
+}

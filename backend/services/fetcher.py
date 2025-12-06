@@ -4,21 +4,19 @@ import json
 import logging
 from datetime import datetime
 
-# You would technically put API keys in .env, but for this simulation we use placeholders
-# or mock responses if keys aren't actually set.
-YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
-GOOGLE_SEARCH_API_KEY = os.getenv('GOOGLE_SEARCH_API_KEY')
-SEARCH_ENGINE_ID = os.getenv('SEARCH_ENGINE_ID')
-
 class ResourceFetcher:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        # Load keys at runtime (safer than module-level)
+        self.YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
+        self.GOOGLE_SEARCH_API_KEY = os.getenv('GOOGLE_SEARCH_API_KEY')
+        self.SEARCH_ENGINE_ID = os.getenv('SEARCH_ENGINE_ID')
 
-    def fetch_youtube_videos(self, query, max_results=5):
+    def fetch_youtube_videos(self, query, max_results=3, lang_code='en'):
         """
         Fetches videos from YouTube Data API v3 based on a query.
         """
-        if not YOUTUBE_API_KEY:
+        if not self.YOUTUBE_API_KEY:
             self.logger.warning("YouTube API Key not found. Returning empty list.")
             return []
 
@@ -27,13 +25,13 @@ class ResourceFetcher:
             'part': 'snippet',
             'q': query,
             'type': 'video',
-            'key': YOUTUBE_API_KEY,
+            'key': self.YOUTUBE_API_KEY,
             'maxResults': max_results,
-            'relevanceLanguage': 'en'
+            'relevanceLanguage': lang_code
         }
 
         try:
-            response = requests.get(search_url, params=params)
+            response = requests.get(search_url, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
             
@@ -56,25 +54,25 @@ class ResourceFetcher:
             self.logger.error(f"YouTube Fetch Error: {str(e)}")
             return []
 
-    def fetch_web_articles(self, query, max_results=5):
+    def fetch_web_articles(self, query, max_results=3, lang_code='en'):
         """
         Fetches articles using Google Custom Search JSON API.
         """
-        if not GOOGLE_SEARCH_API_KEY or not SEARCH_ENGINE_ID:
+        if not self.GOOGLE_SEARCH_API_KEY or not self.SEARCH_ENGINE_ID:
             self.logger.warning("Google Search API Key/CX not found. Returning empty list.")
             return []
 
         search_url = "https://www.googleapis.com/customsearch/v1"
         params = {
-            'key': GOOGLE_SEARCH_API_KEY,
-            'cx': SEARCH_ENGINE_ID,
+            'key': self.GOOGLE_SEARCH_API_KEY,
+            'cx': self.SEARCH_ENGINE_ID,
             'q': query,
             'num': max_results,
-            'lr': 'lang_en'
+            'lr': f'lang_{lang_code}'
         }
 
         try:
-            response = requests.get(search_url, params=params)
+            response = requests.get(search_url, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
             
@@ -99,15 +97,44 @@ class ResourceFetcher:
             self.logger.error(f"Google Search Fetch Error: {str(e)}")
             return []
 
-    def auto_fetch_resources(self, topic_name, course_name):
+    def auto_fetch_resources(self, topic_name, course_name, search_query=None, language='English', resource_format=None):
         """
         High-level function to fetch both videos and articles for a topic.
-        Generates an enhanced query string.
+        Generates an enhanced query string with language support.
         """
+        lang_map = {
+            'Tamil': 'ta',
+            'Sinhala': 'si',
+            'English': 'en'
+        }
+        lang_code = lang_map.get(language, 'en')
+
         # Intelligent query expansion
-        search_query = f"{topic_name} {course_name} tutorial education"
+        keywords = []
         
-        videos = self.fetch_youtube_videos(search_query, max_results=3)
-        articles = self.fetch_web_articles(search_query, max_results=3)
+        # If user provides a description/search query, it's the most important intent
+        if search_query and search_query.strip():
+            keywords.append(search_query) # e.g. "Simple explanation for beginners"
+            keywords.append(topic_name)   # Context
+        else:
+            keywords.append(topic_name)
+            keywords.append(course_name)
+            keywords.append("tutorial")
+        
+        # Append language instruction to query text as well for better matches
+        if language != 'English':
+             keywords.append(f"in {language}")
+        
+        final_query = " ".join(keywords)
+        self.logger.info(f"Auto-fetching with query: {final_query} (Lang: {lang_code}) (Format: {resource_format})")
+
+        videos = []
+        articles = []
+
+        if not resource_format or resource_format == 'video':
+            videos = self.fetch_youtube_videos(final_query, max_results=3, lang_code=lang_code)
+        
+        if not resource_format or resource_format in ['article', 'pdf']:
+            articles = self.fetch_web_articles(final_query, max_results=3, lang_code=lang_code)
         
         return videos + articles
