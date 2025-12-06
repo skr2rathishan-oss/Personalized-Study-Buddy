@@ -274,3 +274,201 @@ body {
   box-shadow: var(--shadow-md);
   border-color: var(--primary);
 }
+
+/* --- Dashboard Hero & Search Bar --- */
+.dashboard-hero {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem 0;
+}
+
+.dashboard-hero h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+.dashboard-hero p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.search-bar-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: flex-end;
+  /* Align inputs and button at bottom */
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+  flex-wrap: wrap;
+  /* responsive */
+}
+
+/* Override form group for search bar to be compact */
+.search-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background-color: white;
+  font-size: 1rem;
+  color: var(--text-main);
+  cursor: pointer;
+  appearance: none;
+  /* Remove default arrow */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.25rem;
+  font-family: 'Outfit', sans-serif;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.btn-search {
+  padding: 0.75rem 2rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  height: 46px;
+  /* Match input height roughly */
+  font-size: 1rem;
+}
+
+.btn-search:hover {
+  background-color: var(--primary-dark);
+}
+
+/* New Resource Card Styles */
+.resource-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.resource-card-modern {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.resource-card-modern:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.badge-video {
+  background: #EEF2FF;
+  color: #4F46E5;
+}
+
+.badge-article {
+  background: #ECFDF5;
+  color: #10B981;
+}
+
+.badge-pdf {
+  background: #FFF7ED;
+  color: #F97316;
+}
+
+.modern-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  align-self: flex-start;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+  color: var(--text-main);
+}
+
+.card-rating {
+  font-size: 0.9rem;
+  color: #FBBF24;
+  /* Amber 400 */
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rating-count {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.card-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-open-resource {
+  background: #1F2937;
+  /* Gray 800 */
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-open-resource:hover {
+  background: black;
+}
+
+.rate-dropdown {
+  border: 1px solid var(--border-light);
+  background: white;
+  color: var(--text-secondary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+}

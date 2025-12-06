@@ -228,6 +228,34 @@ def get_students(course_id):
             students.append({'id': u.id, 'username': u.username})
     return jsonify(students)
 
+@app.route('/admin/courses', methods=['POST'])
+@jwt_required()
+def create_course():
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.json
+    name = data.get('name')
+    code = data.get('code')
+
+    if not name or not code:
+        return jsonify({'error': 'Name and Code are required'}), 400
+    
+    if Course.query.filter_by(code=code).first():
+        return jsonify({'error': 'Course code already exists'}), 400
+
+    new_course = Course(name=name, code=code)
+    db.session.add(new_course)
+    db.session.commit()
+    
+    # Auto-enroll the creator (admin/management) so they can see it immediately
+    user_id = int(get_jwt_identity())
+    enrollment = Enrollment(user_id=user_id, course_id=new_course.id)
+    db.session.add(enrollment)
+    db.session.commit()
+
+    return jsonify({'message': 'Course created successfully', 'course': {'id': new_course.id, 'name': new_course.name}})
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

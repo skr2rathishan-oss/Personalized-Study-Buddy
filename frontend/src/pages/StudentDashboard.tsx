@@ -37,12 +37,13 @@ function StudentDashboard() {
         fetchCourses();
     }, []);
 
-    // Re-fetch recommendations when filters change (and topic is selected)
+    // Re-fetch recommendations when filters change (ONLY if resources are already showing)
     useEffect(() => {
-        if (selectedTopic) {
-            fetchRecommendations();
+        if (selectedTopic && resources.length > 0) {
+            // Optional: You could auto-fetch here, but image implies manual button click/flow
+            // For now, let's keep it manual or rigorous on the button
         }
-    }, [selectedTopic, selectedFormat]);
+    }, [selectedFormat]);
 
     const fetchCourses = async () => {
         try {
@@ -53,10 +54,16 @@ function StudentDashboard() {
         }
     };
 
-    const handleCourseSelect = async (courseId: number) => {
+    const handleCourseChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const courseId = Number(e.target.value);
+        if (!courseId) {
+            setSelectedCourse(null);
+            setTopics([]);
+            return;
+        }
+
         setSelectedCourse(courseId);
         setSelectedTopic(null);
-        setSelectedFormat(''); // Reset format on course change
         setResources([]);
         try {
             const res = await api.get(`/courses/${courseId}/topics`);
@@ -66,13 +73,16 @@ function StudentDashboard() {
         }
     };
 
-    const handleTopicSelect = (topicId: number) => {
-        setSelectedTopic(topicId);
-        // The useEffect above will trigger the fetch
+    const handleTopicChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const topicId = Number(e.target.value);
+        setSelectedTopic(topicId || null);
     };
 
-    const fetchRecommendations = async () => {
-        if (!selectedTopic) return;
+    const handleFetch = async () => {
+        if (!selectedCourse || !selectedTopic) {
+            alert("Please select both a course and a topic.");
+            return;
+        }
         setLoading(true);
         try {
             const res = await api.post('/recommend', {
@@ -93,7 +103,7 @@ function StudentDashboard() {
             await api.post('/rate', {
                 resource_id: resourceId,
                 score: score,
-                time_spent: 30 // Mock time spent
+                time_spent: 30 // Mock
             });
             alert('Rated successfully!');
         } catch (err) {
@@ -103,125 +113,106 @@ function StudentDashboard() {
 
     return (
         <div className="dashboard-container animate-fade-in">
-            <h1 className="section-title">Student Dashboard</h1>
-
-            {/* Step 1: Course Selection */}
-            <div style={{ marginBottom: '2.5rem' }}>
-                <h3 className="form-label" style={{ fontSize: '1.1rem' }}>1. Select Course</h3>
-                <div className="selection-grid">
-                    {courses.map(c => (
-                        <div
-                            key={c.id}
-                            onClick={() => handleCourseSelect(c.id)}
-                            className={`selection-card ${selectedCourse === c.id ? 'active' : ''}`}
-                        >
-                            {c.name} <span style={{ opacity: 0.8, fontSize: '0.9em' }}>({c.code})</span>
-                        </div>
-                    ))}
-                </div>
+            {/* 1. Hero Section */}
+            <div className="dashboard-hero">
+                <h1>Find Your Perfect Study Material</h1>
+                <p>AI-powered recommendations tailored to your course and learning style.</p>
             </div>
 
-            {/* Step 2: Topic Selection */}
-            {selectedCourse && (
-                <div style={{ marginBottom: '2.5rem' }} className="animate-fade-in">
-                    <h3 className="form-label" style={{ fontSize: '1.1rem' }}>2. Select Topic</h3>
-                    <div className="selection-grid">
+            {/* 2. Horizontal Search Bar */}
+            <div className="search-bar-container">
+                <div className="search-group">
+                    <label>Select Course</label>
+                    <select
+                        className="form-select"
+                        value={selectedCourse || ''}
+                        onChange={handleCourseChange}
+                    >
+                        <option value="">Select a course...</option>
+                        {courses.map(c => (
+                            <option key={c.id} value={c.id}>
+                                {c.code} - {c.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="search-group">
+                    <label>Select Topic</label>
+                    <select
+                        className="form-select"
+                        value={selectedTopic || ''}
+                        onChange={handleTopicChange}
+                        disabled={!selectedCourse}
+                    >
+                        <option value="">{selectedCourse ? "Select a topic..." : "Select course first"}</option>
                         {topics.map(t => (
-                            <div
-                                key={t.id}
-                                onClick={() => handleTopicSelect(t.id)}
-                                className={`selection-card ${selectedTopic === t.id ? 'active' : ''}`}
-                            >
-                                {t.name}
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="search-group">
+                    <label>Preferred Format</label>
+                    <select
+                        className="form-select"
+                        value={selectedFormat}
+                        onChange={e => setSelectedFormat(e.target.value)}
+                    >
+                        <option value="">Any Format</option>
+                        <option value="video">Video</option>
+                        <option value="article">Article</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </div>
+
+                <button className="btn-search" onClick={handleFetch}>
+                    Get Recommendations
+                </button>
+            </div>
+
+            {/* 3. Results Section */}
+            {resources.length > 0 && (
+                <div className="animate-fade-in">
+                    <h3 className="section-title">Recommended Resources</h3>
+
+                    <div className="resource-grid-modern">
+                        {resources.map((r, idx) => (
+                            <div key={r.id} className="resource-card-modern" style={{ animationDelay: `${idx * 0.05}s` }}>
+                                <span className={`modern-badge badge-${r.format}`}>{r.format}</span>
+                                <h4 className="card-title">{r.title}</h4>
+
+                                <div className="card-rating">
+                                    <span>★</span>
+                                    <span>{r.average_rating}</span>
+                                    <span className="rating-count">({r.rating_count} ratings)</span>
+                                </div>
+
+                                <div className="card-footer">
+                                    <a href={r.url} target="_blank" rel="noopener noreferrer" className="btn-open-resource">
+                                        Open Resource
+                                    </a>
+
+                                    <select
+                                        className="rate-dropdown"
+                                        onChange={(e) => handleRate(r.id, Number(e.target.value))}
+                                        defaultValue=""
+                                    >
+                                        <option value="" disabled>Rate...</option>
+                                        <option value="5">5 - Excellent</option>
+                                        <option value="4">4 - Very Good</option>
+                                        <option value="3">3 - Good</option>
+                                        <option value="2">2 - Fair</option>
+                                        <option value="1">1 - Poor</option>
+                                    </select>
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
 
-            {/* Step 3: Recommendations with Format Filter */}
-            {selectedTopic && (
-                <div className="animate-fade-in">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                        <h3 className="section-title" style={{ marginBottom: 0 }}>Recommended Documents</h3>
-
-                        {/* Format Filter Chips */}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                                onClick={() => setSelectedFormat('')}
-                                style={{
-                                    padding: '6px 12px',
-                                    borderRadius: '20px',
-                                    border: '1px solid var(--border-color)',
-                                    background: selectedFormat === '' ? 'var(--primary)' : 'white',
-                                    color: selectedFormat === '' ? 'white' : 'var(--text-secondary)',
-                                    cursor: 'pointer',
-                                    fontSize: '0.9rem',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                All
-                            </button>
-                            {formats.map(f => (
-                                <button
-                                    key={f}
-                                    onClick={() => setSelectedFormat(f)}
-                                    style={{
-                                        padding: '6px 12px',
-                                        borderRadius: '20px',
-                                        border: '1px solid var(--border-color)',
-                                        background: selectedFormat === f ? 'var(--primary)' : 'white',
-                                        color: selectedFormat === f ? 'white' : 'var(--text-secondary)',
-                                        cursor: 'pointer',
-                                        fontSize: '0.9rem',
-                                        textTransform: 'capitalize',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    {f}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {loading ? <p>Loading resources...</p> : (
-                        <div className="resources-grid">
-                            {resources.map((r, idx) => (
-                                <div key={r.id} className="resource-card" style={{ animationDelay: `${idx * 0.05}s` }}>
-                                    <span className={`resource-badge`}>{r.format}</span>
-                                    <h4 className="resource-title">{r.title}</h4>
-                                    <div className="resource-meta">
-                                        <span className="star-rating">★ {r.average_rating}</span>
-                                        <span>({r.rating_count} ratings)</span>
-                                    </div>
-
-                                    <div className="resource-footer">
-                                        <a href={r.url} target="_blank" rel="noopener noreferrer" className="btn-open">View Document &rarr;</a>
-
-                                        <div className="rating-actions">
-                                            {[1, 2, 3, 4, 5].map(star => (
-                                                <button
-                                                    key={star}
-                                                    onClick={() => handleRate(r.id, star)}
-                                                    className="btn-rate"
-                                                    title={`Rate ${star} stars`}
-                                                >
-                                                    ★
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {resources.length === 0 && !loading && (
-                        <div style={{ padding: '3rem', textAlign: 'center', background: 'var(--card-bg)', borderRadius: '12px', color: 'var(--text-secondary)' }}>
-                            <p>No documents found for this selection.</p>
-                        </div>
-                    )}
-                </div>
-            )}
+            {loading && <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Finding the best resources for you...</p>}
         </div>
     );
 }
