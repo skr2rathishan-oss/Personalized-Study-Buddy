@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import api from '../api';
 
 interface Course {
@@ -15,10 +15,12 @@ function AdminDashboard() {
     const [courses, setCourses] = useState<Course[]>([]);
     const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
+    const exportRef = useRef<HTMLDivElement>(null);
 
     // Create Mode States
     const [newCourseName, setNewCourseName] = useState('');
     const [newCourseCode, setNewCourseCode] = useState('');
+    const [showExportModal, setShowExportModal] = useState(false);
 
     const fetchMyCourses = async () => {
         try {
@@ -52,6 +54,19 @@ function AdminDashboard() {
         fetchMyCourses();
     }, []);
 
+    // Close export popup when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
+                setShowExportModal(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [exportRef]);
+
     const handleCourseSelect = async (courseId: number) => {
         setSelectedCourse(courseId);
         try {
@@ -62,9 +77,86 @@ function AdminDashboard() {
         }
     };
 
+    const handleExportData = () => {
+        setShowExportModal(true);
+    };
+
+    const handleExportConfirm = async (mode: 'new' | 'update') => {
+        setShowExportModal(false);
+        try {
+            const res = await api.get(`/admin/export-data?mode=${mode}`);
+            // Show alert with the path where file is saved
+            alert(`Data exported successfully!\nFile saved at: ${res.data.file_path}`);
+        } catch (err: any) {
+            console.error(err);
+            alert('Failed to export data: ' + (err.response?.data?.error || err.message));
+        }
+    };
+
     return (
         <div className="dashboard-container animate-fade-in">
-            <h1 className="section-title">Admin Dashboard</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h1 className="section-title" style={{ margin: 0 }}>Admin Dashboard</h1>
+
+                {/* Export Button & Popup Container */}
+                <div style={{ position: 'relative' }} ref={exportRef}>
+                    <button onClick={handleExportData} className="btn-modern-outline" style={{ width: 'auto', marginTop: 0 }}>
+                        📥 Export Data
+                    </button>
+
+                    {showExportModal && (
+                        <div className="animate-fade-in" style={{
+                            position: 'absolute',
+                            top: '110%',
+                            right: 0,
+                            background: 'white',
+                            minWidth: '200px',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                            border: '1px solid #e2e8f0',
+                            zIndex: 50,
+                            overflow: 'hidden'
+                        }}>
+                            <button
+                                onClick={() => handleExportConfirm('new')}
+                                style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    padding: '0.75rem 1rem',
+                                    background: 'none',
+                                    border: 'none',
+                                    borderBottom: '1px solid #f1f5f9',
+                                    cursor: 'pointer',
+                                    color: '#1e293b',
+                                    fontSize: '0.9rem'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                🆕 Create Snapshot
+                            </button>
+                            <button
+                                onClick={() => handleExportConfirm('update')}
+                                style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    padding: '0.75rem 1rem',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#1e293b',
+                                    fontSize: '0.9rem'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                🔄 Update Master
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
 
             <div style={{ display: 'flex', gap: '3rem', flexDirection: 'row', flexWrap: 'wrap' }}>
                 <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>

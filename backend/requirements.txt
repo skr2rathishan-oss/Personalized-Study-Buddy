@@ -7,3 +7,7 @@ numpy
 scikit-learn
 flask-jwt-extended
 flask-bcrypt
+openpyxl
+python-dotenv
+requests
+sentence-transformers

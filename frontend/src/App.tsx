@@ -24,42 +24,49 @@ const PrivateRoute = ({ children, role }: PrivateRouteProps) => {
     return children;
 };
 
+import Footer from './components/Footer';
+
 function App() {
     return (
         <Router>
-            <Navbar />
-            <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                <Navbar />
+                <div style={{ flex: 1 }}>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
 
-                {/* Main Landing is the Student Dashboard (Course Selection) for EVERYONE */}
-                <Route path="/" element={
-                    <PrivateRoute>
-                        <StudentDashboard />
-                    </PrivateRoute>
-                } />
+                        {/* Main Landing is the Student Dashboard (Course Selection) for EVERYONE */}
+                        <Route path="/" element={
+                            <PrivateRoute>
+                                <StudentDashboard />
+                            </PrivateRoute>
+                        } />
 
-                {/* Admin/Mgmt specific route accessed via menu */}
-                <Route path="/admin" element={
-                    <PrivateRoute role="admin">
-                        <AdminDashboard />
-                    </PrivateRoute>
-                } />
+                        {/* Admin/Mgmt specific route accessed via menu */}
+                        <Route path="/admin" element={
+                            <PrivateRoute role="admin">
+                                <AdminDashboard />
+                            </PrivateRoute>
+                        } />
 
-                {/* Fallback settings/profile pages (placeholders) */}
-                <Route path="/profile" element={
-                    <PrivateRoute>
-                        <div style={{ padding: '2rem', textAlign: 'center' }}><h2>Profile Page</h2><p>Coming Soon...</p></div>
-                    </PrivateRoute>
-                } />
-                <Route path="/settings" element={
-                    <PrivateRoute>
-                        <div style={{ padding: '2rem', textAlign: 'center' }}><h2>Settings Page</h2><p>Coming Soon...</p></div>
-                    </PrivateRoute>
-                } />
+                        {/* Fallback settings/profile pages (placeholders) */}
+                        <Route path="/profile" element={
+                            <PrivateRoute>
+                                <div style={{ padding: '2rem', textAlign: 'center' }}><h2>Profile Page</h2><p>Coming Soon...</p></div>
+                            </PrivateRoute>
+                        } />
+                        <Route path="/settings" element={
+                            <PrivateRoute>
+                                <div style={{ padding: '2rem', textAlign: 'center' }}><h2>Settings Page</h2><p>Coming Soon...</p></div>
+                            </PrivateRoute>
+                        } />
 
-                <Route path="*" element={<Navigate to="/login" />} />
-            </Routes>
+                        <Route path="*" element={<Navigate to="/login" />} />
+                    </Routes>
+                </div>
+                <Footer />
+            </div>
         </Router>
     );
 }

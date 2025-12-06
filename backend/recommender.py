@@ -1,75 +1,95 @@
-from models import Resource, Course, Topic
-from sqlalchemy import desc
-import pickle
-import os
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+from models import Resource, Rating, InteractionLog
+import json
+import logging
 
-class Recommender:
-    def __init__(self):
-        self.model = None
-        self.output_path = os.path.join(os.path.dirname(__file__), 'recommendation_model.pkl')
-        if os.path.exists(self.output_path):
-            try:
-                with open(self.output_path, 'rb') as f:
-                    self.model = pickle.load(f)
-                print("ML Model loaded successfully.")
-            except Exception as e:
-                print(f"Error loading ML model: {e}")
+# Initialize Sentence Transformer (Lightweight model)
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
-    def get_recommendations(self, course_id, topic_id, preferred_format=None, user_id=1):
-        results = []
+class HybridRecommender:
+    def __init__(self, db_session):
+        self.db = db_session
+        self.logger = logging.getLogger(__name__)
+
+    def generate_embedding(self, text):
+        """Generates a 384-dim vector for text."""
+        return model.encode(text).tolist()
+
+    def update_resource_embedding(self, resource):
+        """Computes and saves embedding for a resource based on title/description."""
+        # For simplicity, we use title. If description exists in future, concatenate it.
+        text = f"{resource.title}"
+        vector = self.generate_embedding(text)
+        resource.embedding_vector = json.dumps(vector)
+        self.db.commit()
+
+    def get_content_similarity(self, query_text, resources):
+        """
+        Computes cosine similarity between query and list of resources.
+        Returns a dictionary {resource_id: similarity_score}.
+        """
+        query_vec = model.encode(query_text).reshape(1, -1)
+        scores = {}
         
-        # Step 1: Topic-based resources (Highest Priority)
-        query = Resource.query.filter_by(topic_id=topic_id)
-        if preferred_format:
-            query = query.filter_by(format=preferred_format)
+        for res in resources:
+            if not res.embedding_vector:
+                self.update_resource_embedding(res)
+            
+            res_vec = np.array(json.loads(res.embedding_vector)).reshape(1, -1)
+            sim = cosine_similarity(query_vec, res_vec)[0][0]
+            scores[res.id] = sim
+            
+        return scores
+
+    def get_collaborative_score(self, resource):
+        """
+        Calculates a score based on user ratings and engagement.
+        Score = (AvgRating * 0.7) + (NormWatchTime * 0.3)
+        """
+        ratings = resource.ratings
+        if not ratings:
+            return 0.5  # Cold start default neutral score
         
-        topic_resources = query.all()
-        results.extend(topic_resources)
+        avg_rating = sum(r.score for r in ratings) / len(ratings)
+        # Normalize 1-5 to 0-1
+        norm_rating = avg_rating / 5.0 
         
-        # Step 2: Course-level resources (Fallback if few results)
-        if len(results) < 3:
-            course_topics = Topic.query.filter_by(course_id=course_id).all()
-            course_topic_ids = [t.id for t in course_topics]
-            found_ids = [r.id for r in results]
-            
-            course_resources = Resource.query.filter(Resource.topic_id.in_(course_topic_ids))\
-                                             .filter(Resource.id.notin_(found_ids))
-            
-            if preferred_format:
-                course_resources = course_resources.filter_by(format=preferred_format)
-                
-            results.extend(course_resources.limit(5).all())
-            
-        # Step 3: Popularity Fallback
-        if len(results) == 0:
-            popular_resources = Resource.query.limit(5).all()
-            results.extend(popular_resources)
-            
-        # Sort using ML model if available
-        if self.model:
-            # Predict score for each resource for the current user
-            scored_results = []
-            preds_df = self.model.get('preds_df')
-            
-            for r in results:
-                score = 0
-                try:
-                    # Check if user and resource exist in our pre-computed matrix
-                    if preds_df is not None and user_id in preds_df.index and r.id in preds_df.columns:
-                        score = preds_df.loc[user_id, r.id]
-                    else:
-                        # Fallback for cold-start users or items
-                        score = r.to_dict()['average_rating']
-                except Exception:
-                    score = r.to_dict()['average_rating']
-                
-                scored_results.append((r, score))
-            
-            # Sort by predicted score descending
-            scored_results.sort(key=lambda x: x[1], reverse=True)
-            results = [x[0] for x in scored_results]
-        else:
-            # Fallback to existing logic
-            results.sort(key=lambda x: x.to_dict()['average_rating'], reverse=True)
+        # Simple popularity boost (could be more complex SVD later)
+        popularity = min(len(ratings) / 10.0, 1.0) # Cap at 10 ratings
         
-        return [r.to_dict() for r in results]
+        return (norm_rating * 0.8) + (popularity * 0.2)
+
+    def recommend(self, user_id, topic_name, resources, top_k=5):
+        """
+        Hybrid Recommendation Logic.
+        """
+        if not resources:
+            return []
+
+        # 1. Content-Based Scoring (Semantic Similarity to Topic)
+        content_scores = self.get_content_similarity(topic_name, resources)
+        
+        # 2. Collaborative/Popularity Scoring
+        final_scores = []
+        for res in resources:
+            cont_score = content_scores.get(res.id, 0)
+            collab_score = self.get_collaborative_score(res)
+            
+            # 3. Personalization (Did this user like similar format?)
+            # (Simple heuristic: if user rated this format highly before, boost it)
+            user_boost = 0.0
+            # user_history = ... (query user's high rated resources)
+            # if res.format in user_preferred_formats: user_boost = 0.1
+            
+            # Weighted Hybrid Formula
+            # 60% Relevancy to Topic + 30% Quality/Popularity + 10% User Boost
+            final_score = (cont_score * 0.6) + (collab_score * 0.4) + user_boost
+            
+            final_scores.append((res, final_score))
+        
+        # Sort by final score
+        final_scores.sort(key=lambda x: x[1], reverse=True)
+        
+        return [item[0] for item in final_scores[:top_k]]

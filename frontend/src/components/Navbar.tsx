@@ -1,17 +1,33 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
+import { useRef, useEffect } from 'react';
+
 function Navbar() {
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
     const username = localStorage.getItem('username');
     const role = localStorage.getItem('role');
     const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
 
     const handleLogout = () => {
         localStorage.clear();
         navigate('/login');
     };
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowMenu(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [menuRef]);
 
     if (!token) return null;
 
@@ -72,7 +88,7 @@ function Navbar() {
                 <div style={{ width: '1px', height: '24px', background: 'var(--border-light)' }}></div>
 
                 {/* User Profile / Menu Trigger */}
-                <div style={{ position: 'relative' }}>
+                <div style={{ position: 'relative' }} ref={menuRef}>
                     <div
                         onClick={() => setShowMenu(!showMenu)}
                         style={{

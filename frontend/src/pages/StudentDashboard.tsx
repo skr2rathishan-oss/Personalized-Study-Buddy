@@ -31,7 +31,6 @@ function StudentDashboard() {
 
     // Format Filter Logic
     const [selectedFormat, setSelectedFormat] = useState<string>('');
-    const formats = ['video', 'article', 'pdf'];
 
     useEffect(() => {
         fetchCourses();
@@ -79,10 +78,11 @@ function StudentDashboard() {
     };
 
     const handleFetch = async () => {
-        if (!selectedCourse || !selectedTopic) {
-            alert("Please select both a course and a topic.");
+        if (!selectedCourse) {
+            alert("Please select a course.");
             return;
         }
+        // Proceed even if topic is not selected (Course-wide recommendations)
         setLoading(true);
         try {
             const res = await api.post('/recommend', {

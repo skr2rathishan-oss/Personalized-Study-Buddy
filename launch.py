@@ -56,13 +56,17 @@ def install_dependencies(python_exec):
 def init_database(python_exec):
     """Initializes the database."""
     if os.path.exists(INIT_DB_SCRIPT):
-        print("Initializing database...")
-        try:
-            subprocess.check_call([python_exec, INIT_DB_SCRIPT])
-            print("Database initialized.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error initializing database: {e}")
-            # Don't exit, maybe it's already initialized or minor error
+        # Only run init db if db file doesn't exist to prevent overwrite
+        if not os.path.exists(os.path.join("backend", "db.sqlite3")):
+            print("Initializing database...")
+            try:
+                subprocess.check_call([python_exec, INIT_DB_SCRIPT])
+                print("Database initialized.")
+            except subprocess.CalledProcessError as e:
+                print(f"Error initializing database: {e}")
+                # Don't exit, maybe it's already initialized or minor error
+        else:
+            print("Database already initialized.")
     else:
 
         print(f"Warning: '{INIT_DB_SCRIPT}' not found. Skipping DB initialization.")
@@ -155,6 +159,7 @@ def main():
     finally:
         if backend_process:
             backend_process.terminate()
+            backend_process.wait()
         # npm run dev spawns child processes, terminate might not kill everything but it is a start.
         if frontend_process:
             # On windows shell=True makes it harder to kill tree
