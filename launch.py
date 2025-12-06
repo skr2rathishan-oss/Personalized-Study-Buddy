@@ -72,26 +72,22 @@ def run_backend(python_exec):
     return subprocess.Popen([python_exec, BACKEND_SCRIPT], cwd=os.getcwd())
 
 def run_frontend(python_exec):
-    """Runs the Frontend using Python's http.server."""
-    print(f"Starting Frontend on port {FRONTEND_PORT}...")
-    # We use the venv python to run http.server just to be consistent, though system python would work too
-    return subprocess.Popen([python_exec, "-m", "http.server", str(FRONTEND_PORT), "--directory", FRONTEND_DIR])
+    """Runs the React Frontend."""
+    print(f"Starting React Frontend in frontend/...")
+    return subprocess.Popen(["npm", "run", "dev"], cwd="frontend", shell=True)
 
 def main():
     # 1. Virtual Environment Check & Creation
     if not is_venv():
-        # If we are not in the venv, check if we need to create it
         if not os.path.exists(VENV_DIR):
             create_venv()
         
-        # Re-run this script using the venv's python
         venv_python = get_python_executable()
         if not os.path.exists(venv_python):
             print(f"Error: Virtual environment python not found at {venv_python}")
             sys.exit(1)
 
         print(f"Restarting script inside virtual environment: {venv_python}")
-        # Pass all arguments along
         subprocess.call([venv_python, __file__] + sys.argv[1:])
         return
 
@@ -114,10 +110,10 @@ def main():
         frontend_process = run_frontend(python_exec)
 
         # Wait a moment for servers to start
-        time.sleep(3)
+        time.sleep(5)
 
         # 5. Open Browser
-        url = f"http://localhost:{FRONTEND_PORT}"
+        url = "http://localhost:5173"
         print(f"Opening browser at {url}")
         webbrowser.open(url)
 
@@ -129,6 +125,7 @@ def main():
             if backend_process.poll() is not None:
                 print("Backend process ended unexpectedly.")
                 break
+            # Frontend via npm shell might not expose poll() correctly heavily, but good enough
             if frontend_process.poll() is not None:
                 print("Frontend process ended unexpectedly.")
                 break
@@ -138,9 +135,12 @@ def main():
     finally:
         if backend_process:
             backend_process.terminate()
+        # npm run dev spawns child processes, terminate might not kill everything but it is a start.
         if frontend_process:
-            frontend_process.terminate()
+            # On windows shell=True makes it harder to kill tree
+            subprocess.call(['taskkill', '/F', '/T', '/PID', str(frontend_process.pid)])
         print("Goodbye!")
+
 
 if __name__ == "__main__":
     main()

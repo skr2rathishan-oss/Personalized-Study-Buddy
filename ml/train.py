@@ -4,10 +4,14 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 import pickle
+import sqlite3
 import os
-
 # 1. Load Data
-ratings = pd.read_csv('../backend/data/user_ratings.csv')
+base_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(base_dir, '../backend/db.sqlite3')
+conn = sqlite3.connect(db_path)
+ratings = pd.read_sql_query("SELECT user_id, resource_id, score as rating, time_spent FROM rating", conn)
+conn.close()
 
 # 2. Preprocessing
 # Normalize engagement
@@ -48,29 +52,36 @@ for idx in test_idx_in_known:
     train_X[r, c] = 0 # Mask it
 
 # Train SVD on masked matrix
-n_components = min(10, min(X.shape) - 1) # Ensure components < min dims
-svd = TruncatedSVD(n_components=n_components, random_state=42)
-U = svd.fit_transform(train_X)
-Sigma = svd.singular_values_
-VT = svd.components_
+if min(X.shape) < 2:
+    print("Not enough data for SVD (need at least 2 users/items). Using placeholder.")
+    preds_matrix = np.zeros(X.shape)
+else:
+    n_components = min(10, min(X.shape) - 1) # Ensure components < min dims
+    svd = TruncatedSVD(n_components=n_components, random_state=42)
+    U = svd.fit_transform(train_X)
+    Sigma = svd.singular_values_
+    VT = svd.components_
 
-# Reconstruct Matrix
-preds_matrix = np.dot(np.dot(U, np.diag(Sigma)), VT)
+    # Reconstruct Matrix
+    preds_matrix = np.dot(np.dot(U, np.diag(Sigma)), VT)
 
 # 4. Evaluation
 y_true = []
 y_pred = []
 
-for r, c, val in test_pairs:
-    y_true.append(val)
-    predicted_val = preds_matrix[r, c]
-    y_pred.append(predicted_val)
+if len(test_pairs) > 0:
+    for r, c, val in test_pairs:
+        y_true.append(val)
+        predicted_val = preds_matrix[r, c]
+        y_pred.append(predicted_val)
 
-rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-mae = mean_absolute_error(y_true, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+    mae = mean_absolute_error(y_true, y_pred)
 
-print(f"Test RMSE: {rmse:.4f}")
-print(f"Test MAE: {mae:.4f}")
+    print(f"Test RMSE: {rmse:.4f}")
+    print(f"Test MAE: {mae:.4f}")
+else:
+    print("Not enough data to calculate evaluation metrics.")
 
 
 
@@ -86,7 +97,7 @@ model_data = {
     'resource_ids': list(pivot_table.columns)
 }
 
-output_path = '../backend/recommendation_model.pkl'
+output_path = os.path.join(base_dir, '../backend/recommendation_model.pkl')
 with open(output_path, 'wb') as f:
     pickle.dump(model_data, f)
 

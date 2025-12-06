@@ -5,3 +5,5 @@ pandas
 numpy
 
 scikit-learn
+flask-jwt-extended
+flask-bcrypt

@@ -2,6 +2,23 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False) # Used as Email or unique handle
+    password_hash = db.Column(db.String(128), nullable=False)
+    role = db.Column(db.String(20), nullable=False) # student, admin, management
+    
+    # Registration Details
+    first_name = db.Column(db.String(50), nullable=True)
+    last_name = db.Column(db.String(50), nullable=True)
+    nic = db.Column(db.String(20), nullable=True)
+    university = db.Column(db.String(100), nullable=True)
+    university_course = db.Column(db.String(100), nullable=True)
+    university_id = db.Column(db.String(50), nullable=True)
+    phone_number = db.Column(db.String(20), nullable=True)
+    
+    enrollments = db.relationship('Enrollment', backref='user', lazy=True)
+
 class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -31,13 +48,18 @@ class Resource(db.Model):
             'title': self.title,
             'url': self.url,
             'format': self.format,
-            'topic_id': self.topic_id,
             'average_rating': round(avg_rating, 1),
             'rating_count': len(self.ratings)
         }
 
+class Enrollment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+
 class Rating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    score = db.Column(db.Integer, nullable=False) # 1-5
-    time_spent = db.Column(db.Integer, default=0) # time in seconds
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     resource_id = db.Column(db.Integer, db.ForeignKey('resource.id'), nullable=False)
+    score = db.Column(db.Integer, nullable=False)
+    time_spent = db.Column(db.Integer, nullable=True) # in seconds

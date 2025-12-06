@@ -1,71 +1,16 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personalized Study Buddy</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PSBR - Study Buddy</title>
 </head>
 
 <body>
-    <div class="app-container">
-        <header>
-            <div class="logo">📚 StudyBuddy</div>
-            <nav>
-                <a href="#" class="active">Home</a>
-                <a href="#">My History</a>
-                <a href="#">Profile</a>
-            </nav>
-        </header>
-
-        <main>
-            <section class="hero-section">
-                <h1>Find Your Perfect Study Material</h1>
-                <p>AI-powered recommendations tailored to your course and learning style.</p>
-            </section>
-
-            <section class="search-panel">
-                <div class="form-group">
-                    <label for="course-select">Select Course</label>
-                    <select id="course-select">
-                        <option value="">-- Choose Course --</option>
-                        <!-- Populated by JS -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="topic-select">Select Topic</label>
-                    <select id="topic-select" disabled>
-                        <option value="">-- Choose Topic --</option>
-                        <!-- Populated by JS -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="format-select">Preferred Format</label>
-                    <select id="format-select">
-                        <option value="">Any Format</option>
-                        <option value="video">Video</option>
-                        <option value="article">Article</option>
-                        <option value="pdf">PDF</option>
-                    </select>
-                </div>
-
-                <button id="get-recs-btn" disabled>Get Recommendations</button>
-            </section>
-
-            <section id="results-section" class="hidden">
-                <h2>Recommended Resources</h2>
-                <div id="results-container" class="cards-grid">
-                    <!-- Cards injected here -->
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <script src="js/api.js"></script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 
 </html>

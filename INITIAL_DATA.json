@@ -1,0 +1,26 @@
+[
+    {
+        "course": "Programming Basics (IT101)",
+        "topic": "Loops",
+        "resource": "Loops Explained for Beginners",
+        "rating": 5
+    },
+    {
+        "course": "Web Development (WEB301)",
+        "topic": "HTML Basics",
+        "resource": "HTML Crash Course",
+        "rating": 5
+    },
+    {
+        "course": "Web Development (WEB301)",
+        "topic": "CSS flexbox",
+        "resource": "CSS Flexbox Guide",
+        "rating": 5
+    },
+    {
+        "course": "Intro to Data Science (DS401)",
+        "topic": "Pandas",
+        "resource": "10 Minutes to Pandas",
+        "rating": 5
+    }
+]
