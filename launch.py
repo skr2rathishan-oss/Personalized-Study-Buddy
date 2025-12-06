@@ -63,7 +63,8 @@ def init_database(python_exec):
         except subprocess.CalledProcessError as e:
             print(f"Error initializing database: {e}")
             # Don't exit, maybe it's already initialized or minor error
-    else:
+    else
+    main
         print(f"Warning: '{INIT_DB_SCRIPT}' not found. Skipping DB initialization.")
 
 def install_frontend_dependencies():
