@@ -65,7 +65,7 @@ function Calendar() {
     });
 
     return (
-        <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem' }}>
+        <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem', maxWidth: '900px', margin: '2rem auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h1 className="section-title" style={{ margin: 0 }}>Study Schedule</h1>
 
@@ -176,15 +176,16 @@ function Calendar() {
                 }
                 .calendar-header {
                     background: var(--bg-color);
-                    padding: 1rem;
+                    padding: 0.75rem;
                     text-align: center;
                     font-weight: 600;
                     color: var(--text-secondary);
+                    font-size: 0.9rem;
                 }
                 .calendar-day {
                     background: var(--surface-color);
-                    min-height: 120px;
-                    padding: 0.5rem;
+                    min-height: 100px; /* Reduced from 120px */
+                    padding: 0.25rem;
                     position: relative;
                 }
                 .calendar-day.empty {

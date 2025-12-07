@@ -11,6 +11,23 @@ function Navbar() {
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
+    // Theme State
+    const [darkMode, setDarkMode] = useState(() => {
+        return localStorage.getItem('theme') === 'dark';
+    });
+
+    useEffect(() => {
+        if (darkMode) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+        }
+    }, [darkMode]);
+
+    // Theme State Removed
+
     const handleLogout = () => {
         localStorage.clear();
         navigate('/login');
@@ -34,8 +51,8 @@ function Navbar() {
     return (
         <nav className="navbar">
             <div className="navbar-links" style={{ alignItems: 'baseline', gap: '2rem' }}>
-                <Link to="/" className="navbar-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 800, background: 'linear-gradient(to right, #4F46E5, #EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                <Link to="/" className="navbar-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
+                    <span className="brand-gradient" style={{ fontSize: '1.8rem', fontWeight: 800 }}>
                         StudyBuddy
                     </span>
                 </Link>
@@ -98,6 +115,38 @@ function Navbar() {
                         <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
                 </Link>
+
+                {/* Theme Toggle */}
+                <button
+                    onClick={() => setDarkMode(!darkMode)}
+                    className="nav-icon"
+                    title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+                >
+                    {darkMode ? (
+                        // Sun Icon for Dark Mode (to switch to light)
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                    ) : (
+                        // Moon Icon for Light Mode (to switch to dark)
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    )}
+                </button>
+
+
+
+
 
                 <div style={{ width: '1px', height: '24px', background: 'var(--border-light)' }}></div>
 
@@ -225,7 +274,7 @@ function Navbar() {
                     }
                 }
             `}</style>
-        </nav>
+        </nav >
     );
 }
 
