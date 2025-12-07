@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   /* Modern Professional Palette */
   --primary: #4F46E5;
@@ -45,13 +51,37 @@ body.dark-mode {
   z-index: 50;
 }
 
+.brand-gradient {
+  background: linear-gradient(to right, #4F46E5, #EC4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  /* Fallback */
+}
+
+body.dark-mode .brand-gradient {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: initial;
+  color: #818CF8;
+  /* Bright Indigo for better visibility */
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
 /* Global Form Elements for Dark Mode */
 body.dark-mode select,
 body.dark-mode input[type="text"],
 body.dark-mode input[type="password"],
-body.dark-mode input[type="date"] {
+body.dark-mode input[type="date"],
+body.dark-mode .form-select,
+body.dark-mode .form-input,
+body.dark-mode textarea {
   background-color: var(--surface-color);
+  /* Dark Gray #1F2937 */
   color: var(--text-main);
+  /* White/Light Gray */
   border-color: var(--border-light);
 }
 
@@ -81,6 +111,201 @@ body {
 .login-hero-section {
   flex: 1;
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  padding: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-content {
+  z-index: 2;
+  max-width: 500px;
+}
+
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  line-height: 1.1;
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+/* Abstract shapes */
+.hero-shapes::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  right: -10%;
+  width: 400px;
+  height: 400px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.hero-shapes::after {
+  content: '';
+  position: absolute;
+  bottom: -5%;
+  left: -5%;
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.login-form-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-color);
+  padding: 2rem;
+}
+
+@media (max-width: 900px) {
+  /* Mobile view: Only form */
+}
+
+
+/* Shared Auth Aliases */
+.auth-hero-section {
+  flex: 1;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  padding: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-form-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-color);
+  padding: 2rem;
+  position: relative;
+}
+
+/* Registration Specifics */
+.register-card {
+  width: 100%;
+  max-width: 600px;
+  /* Wider for 2-col */
+  padding: 2.5rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: var(--shadow-xl);
+  /* Pop out more */
+}
+
+.auth-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--border-light);
+  transition: all 0.3s;
+}
+
+.step-dot.active {
+  background: var(--primary);
+  transform: scale(1.2);
+}
+
+.otp-input {
+  letter-spacing: 0.5em;
+  font-size: 1.5rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.login-card-clean {
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem;
+}
+
+.login-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+.login-header p {
+  color: var(--text-secondary);
+  margin-bottom: 2.5rem;
+}
+
+.form-group-clean {
+  margin-bottom: 1.5rem;
+}
+
+.form-group-clean label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.form-group-clean input {
+  width: 100%;
+  padding: 0.875rem;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s;
+  box-sizing: border-box;
+  /* Fix width issues */
+}
+
+.form-group-clean input:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2rem;
+}
+
+.forgot-password {
+  color: var(--primary);
+  font-size: 0.9rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.btn-modern-primary {
+  width: 100%;
+  padding: 1rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -367,6 +592,81 @@ body {
   border-color: var(--primary);
 }
 
+/* --- Dashboard Stats Grid --- */
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.stat-card {
+  background: linear-gradient(145deg, #1e293b, #0f172a);
+  /* Deep gradient */
+  padding: 1.75rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(79, 70, 229, 0.2);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  position: relative;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+/* Icon backgrounds handled inline or here - adding subtle glow behind icon */
+.stat-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  opacity: 0.4;
+  filter: blur(8px);
+  z-index: -1;
+  background: inherit;
+  /* Inherits color from inline style if possible, else defaults */
+}
+
+.stat-card h4 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+  display: block;
+}
+
+
+
 /* --- Dashboard Hero & Search Bar --- */
 .dashboard-hero {
   text-align: center;
@@ -416,22 +716,32 @@ body {
   letter-spacing: 0.05em;
 }
 
-.form-select {
+.form-select,
+.form-input {
   width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-light);
   border-radius: 8px;
-  background-color: white;
-  font-size: 1rem;
+  background-color: #f1f5f9;
+  /* Original light gray */
+  font-size: 0.9rem;
   color: var(--text-main);
+  font-family: 'Outfit', sans-serif;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-select {
   cursor: pointer;
   appearance: none;
-  /* Remove default arrow */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 1rem center;
   background-size: 1.25rem;
-  font-family: 'Outfit', sans-serif;
 }
 
 .form-select:focus {
@@ -479,32 +789,6 @@ body {
 .resource-card-modern:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
-}
-
-.badge-video {
-  background: #EEF2FF;
-  color: #4F46E5;
-}
-
-.badge-article {
-  background: #ECFDF5;
-  color: #10B981;
-}
-
-.badge-pdf {
-  background: #FFF7ED;
-  color: #F97316;
-}
-
-.modern-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  margin-bottom: 1rem;
-  align-self: flex-start;
 }
 
 .card-title {
@@ -566,33 +850,44 @@ body {
 }
 
 /* --- Footer Styles --- */
+/* --- Footer Styles --- */
 .site-footer {
-  background-color: var(--text-main);
+  background-color: #111827;
   color: #E5E7EB;
-  padding: 1.5rem 0 0.5rem 0;
+  padding: 1rem 0 0.5rem 0;
   /* Minimized padding */
   margin-top: auto;
+  border-top: 1px solid #374151;
+  /* Subtle divider from body */
+}
+
+body.dark-mode .site-footer {
+  background-color: #0F172A;
+  border-top: 1px solid #1e293b;
 }
 
 .footer-container {
-  max-width: 1200px;
+  max-width: 1100px;
+  /* Constrain width for better centering */
   margin: 0 auto;
   padding: 0 1rem;
 }
 
 .footer-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
   /* Tighter gap */
-  margin-bottom: 1rem;
-  /* Minimized margin */
+  margin-bottom: 0.5rem;
+  justify-items: center;
+  /* Center columns */
+  text-align: center;
+  /* Center text within columns */
 }
 
 .footer-logo {
   color: white;
   font-size: 1.1rem;
-  /* Smaller */
   font-weight: 700;
   margin-top: 0;
   margin-bottom: 0.25rem;
@@ -600,18 +895,20 @@ body {
 
 .footer-description {
   color: #9CA3AF;
-  line-height: 1.4;
-  font-size: 0.75rem;
-  /* Smaller */
+  line-height: 1.3;
+  font-size: 0.85rem;
   margin-bottom: 0;
+  max-width: 250px;
+  /* Prevent text from spreading too wide */
+  margin-inline: auto;
+  /* Center block */
 }
 
 .footer-heading {
   color: white;
-  font-size: 0.9rem;
-  /* Smaller */
+  font-size: 0.85rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
   margin-top: 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -622,37 +919,18 @@ body {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Center list items */
 }
 
 .footer-contact-list li {
   margin-bottom: 0.25rem;
-  /* Very tight spacing */
   display: flex;
-  flex-direction: row;
-  /* Horizontal layout for compactness if needed, or stick to col but tight */
-  align-items: baseline;
-  gap: 0.5rem;
-}
-
-/* Override flex-dir for contact list to be more compact or stick to previous if better. 
-   Let's keep it clean but tight. 
-   Actually, let's keep vertical for readability but reduce font/margin. 
-*/
-.footer-contact-list li {
   flex-direction: column;
   gap: 0;
-}
-
-
-.contact-label {
-  font-size: 0.7rem;
-  color: #9CA3AF;
-  font-weight: 600;
-}
-
-.contact-value {
-  color: #E5E7EB;
-  font-size: 0.8rem;
+  align-items: center;
 }
 
 .footer-links li {
@@ -663,36 +941,19 @@ body {
   color: #D1D5DB;
   text-decoration: none;
   transition: color 0.2s;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 }
 
 .footer-links a:hover {
-  color: var(--secondary);
+  color: white;
+  text-decoration: underline;
 }
 
 .social-links {
   display: flex;
-  gap: 0.5rem;
-}
-
-.social-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  display: flex;
-  align-items: center;
+  gap: 0.75rem;
   justify-content: center;
-  color: white;
-  text-decoration: none;
-  font-size: 0.75rem;
-  font-weight: 700;
-  transition: all 0.2s;
-}
-
-.social-icon:hover {
-  background: var(--primary);
-  transform: translateY(-2px);
+  align-items: center;
 }
 
 .footer-bottom {
@@ -733,26 +994,29 @@ body {
 /* --- Professional Sidebar Layout --- */
 .dashboard-layout {
   display: flex;
-  gap: 2rem;
+  flex-direction: row;
+  /* Force row layout */
+  gap: 2.5rem;
+  /* Force row layout */
+  /* Force row layout */
+  gap: 3rem;
+  /* Balanced spacing: 3rem gap */
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
-  align-items: flex-start;
+  /* Center container */
+  justify-content: center;
+  /* Center items */
+  padding: 0 1rem;
+  /* Align to top */
+  position: relative;
+  /* Remove sticky from container */
 }
 
-.sidebar {
-  width: 280px;
-  flex-shrink: 0;
-  background: white;
-  padding: 1.5rem;
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-light);
-  position: sticky;
-  top: 90px;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+/* Vertical Alignment Fix */
+.sidebar,
+.main-content {
+  padding-top: 1rem;
+  /* Ensure consistent start */
 }
 
 .sidebar-title {
@@ -766,24 +1030,66 @@ body {
   border-bottom: 1px solid var(--border-light);
 }
 
-.main-content {
-  flex-grow: 1;
-  min-width: 0;
+/* Sidebar Dimensions ("Big Size") */
+.sidebar {
+  min-width: 450px;
+  /* Increased to 450px for wider inputs */
+  width: 450px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  /* Separator Line */
+  padding-right: 3rem;
+  /* Balanced spacing: 3rem padding */
+  margin-right: 0;
+  /* Gap handles spacing, but border needs padding. 
+                      Actually, flex gap is 5rem. 
+                      Let's move gap to margin/padding combo for border placement. */
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  height: fit-content;
+  /* Ensure border doesn't stretch weirdly if not needed, though flex stretch default is usually fine */
 }
 
-/* Sidebar Specific overrides */
 .sidebar .search-group {
   margin-bottom: 0;
 }
 
 .sidebar .search-group label {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  /* Increased legibility */
   color: var(--text-main);
   font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.sidebar .form-input,
+.sidebar .form-select {
+  padding: 0.875rem;
+  /* Larger touch target */
+  font-size: 1rem;
+  width: 100%;
+  /* Ensure they fill the expanded sidebar */
+}
+
+/* Big Notepad Search */
+.sidebar textarea.form-input {
+  min-height: 160px;
+  resize: vertical;
 }
 
 .sidebar .btn-search {
   width: 100%;
+}
+
+/* Dark Mode Sidebar Text Overrides */
+body.dark-mode .sidebar-title {
+  color: #E5E7EB;
+  /* Light gray for title */
+}
+
+body.dark-mode .sidebar .search-group label {
+  color: #D1D5DB;
+  /* Slightly darker gray for labels */
 }
 
 @media (max-width: 1000px) {

@@ -120,10 +120,22 @@ function StudentDashboard() {
         <div className="dashboard-layout animate-fade-in" style={{ marginTop: '1rem' }}>
 
             {/* Left Sidebar: Filters & Search */}
-            <aside className="sidebar" style={{ background: 'linear-gradient(to bottom, #ffffff, #f8fafc)', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '1rem', borderBottom: '1px solid #e2e8f0', width: '100%' }}>
-                    <span style={{ fontSize: '1.2rem' }}>⚡</span>
-                    <h3 className="sidebar-title" style={{ border: 'none', padding: 0, margin: 0, color: '#0f172a', textTransform: 'none', fontSize: '1.1rem' }}>
+            <aside className="sidebar">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', paddingBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', width: '100%' }}>
+                    <span style={{ fontSize: '2rem' }}>⚡</span>
+                    <h3 className="sidebar-title" style={{
+                        border: 'none',
+                        padding: 0,
+                        margin: 0,
+                        textTransform: 'none',
+                        fontSize: '1.75rem',
+                        fontWeight: '800',
+                        lineHeight: '1.2',
+                        background: 'linear-gradient(90deg, #f97316, #ef4444)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        display: 'inline-block'
+                    }}>
                         Smart Filters
                     </h3>
                 </div>
@@ -136,7 +148,6 @@ function StudentDashboard() {
                         className="form-select"
                         value={selectedCourse || ''}
                         onChange={handleCourseChange}
-                        style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', fontSize: '0.9rem' }}
                     >
                         <option value="">Select a course...</option>
                         {courses.map(c => (
@@ -156,7 +167,6 @@ function StudentDashboard() {
                         value={selectedTopic || ''}
                         onChange={handleTopicChange}
                         disabled={!selectedCourse}
-                        style={{ background: selectedCourse ? '#f1f5f9' : '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', fontSize: '0.9rem', opacity: selectedCourse ? 1 : 0.7 }}
                     >
                         <option value="">{selectedCourse ? (topics.length > 0 ? "Select a topic..." : "No topics available") : "Select course first"}</option>
                         {topics.map(t => (
@@ -174,7 +184,6 @@ function StudentDashboard() {
                             className="form-select"
                             value={selectedFormat}
                             onChange={e => setSelectedFormat(e.target.value)}
-                            style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', fontSize: '0.9rem' }}
                         >
                             <option value="">Any</option>
                             <option value="video">Video</option>
@@ -191,7 +200,6 @@ function StudentDashboard() {
                             className="form-select"
                             value={selectedLanguage}
                             onChange={e => setSelectedLanguage(e.target.value)}
-                            style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', fontSize: '0.9rem' }}
                         >
                             <option value="English">EN</option>
                             <option value="Tamil">TA</option>
@@ -209,17 +217,6 @@ function StudentDashboard() {
                         placeholder="Tell me specifically what you want to learn..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            border: '1px solid #cbd5e1',
-                            borderRadius: '8px',
-                            minHeight: '100px',
-                            fontSize: '0.9rem',
-                            resize: 'none',
-                            background: '#f8fafc',
-                            fontFamily: 'inherit'
-                        }}
                     />
                 </div>
 
@@ -257,7 +254,7 @@ function StudentDashboard() {
 
                 {/* Hero / Stats Section */}
                 <div style={{ marginBottom: '2.5rem' }}>
-                    <h1 className="section-title" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                    <h1 className="section-title" style={{ fontSize: '2rem', marginBottom: '0.5rem', marginTop: 0, background: 'linear-gradient(90deg, #4F46E5, #9333EA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block' }}>
                         Welcome back, Student!
                     </h1>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
@@ -295,48 +292,6 @@ function StudentDashboard() {
                         </div>
                     </div>
                 </div>
-
-                <style>{`
-                    .dashboard-stats-grid {
-                        display: grid;
-                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                        gap: 1.5rem;
-                    }
-                    .stat-card {
-                        background: var(--surface-color);
-                        padding: 1.25rem;
-                        border-radius: 12px;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                        display: flex;
-                        align-items: center;
-                        gap: 1rem;
-                        transition: transform 0.2s;
-                    }
-                    .stat-card:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-                    }
-                    .stat-icon {
-                        width: 48px;
-                        height: 48px;
-                        border-radius: 12px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-size: 1.5rem;
-                    }
-                    .stat-card h4 {
-                        margin: 0;
-                        font-size: 1.1rem;
-                        font-weight: 700;
-                        color: var(--text-main);
-                    }
-                    .stat-label {
-                        font-size: 0.85rem;
-                        color: var(--text-secondary);
-                    }
-                `}</style>
-
 
                 {/* Results Section */}
                 {resources.length > 0 && (
@@ -390,5 +345,4 @@ function StudentDashboard() {
         </div>
     );
 }
-
 export default StudentDashboard;
