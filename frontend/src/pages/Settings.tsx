@@ -1,30 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 function Settings() {
     const [showPassword, setShowPassword] = useState(false);
-    const [darkMode, setDarkMode] = useState(false);
-
-    useEffect(() => {
-        // Check local storage for theme
-        const isDark = localStorage.getItem('theme') === 'dark';
-        setDarkMode(isDark);
-        if (isDark) {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
-        }
-    }, []);
-
-    const toggleTheme = () => {
-        const newMode = !darkMode;
-        setDarkMode(newMode);
-        localStorage.setItem('theme', newMode ? 'dark' : 'light');
-        if (newMode) {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
-        }
-    };
 
     return (
         <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem', maxWidth: '800px' }}>
@@ -33,21 +10,6 @@ function Settings() {
             <div className="profile-content-card">
                 <div className="animate-fade-in">
                     <h3 className="section-subtitle">Preferences</h3>
-
-                    <div className="setting-row">
-                        <div>
-                            <h4>Dark Mode</h4>
-                            <p>Switch between light and dark themes.</p>
-                        </div>
-                        <label className="switch">
-                            <input
-                                type="checkbox"
-                                checked={darkMode}
-                                onChange={toggleTheme}
-                            />
-                            <span className="slider round"></span>
-                        </label>
-                    </div>
 
                     <div className="setting-row">
                         <div>

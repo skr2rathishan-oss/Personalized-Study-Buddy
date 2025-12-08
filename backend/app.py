@@ -224,7 +224,12 @@ def login():
             identity=str(user.id), 
             additional_claims={'role': user.role, 'username': user.username}
         )
-        return jsonify({'token': token, 'role': user.role, 'username': user.username})
+        return jsonify({
+            'token': token, 
+            'role': user.role, 
+            'username': user.username,
+            'profile_image': user.profile_image
+        })
 
     return jsonify({'error': 'Invalid credentials'}), 401
 
@@ -249,7 +254,10 @@ def profile():
             'phone_number': user.phone_number,
             'university': user.university,
             'university_course': user.university_course,
-            'university_id': user.university_id
+            'university': user.university,
+            'university_course': user.university_course,
+            'university_id': user.university_id,
+            'profile_image': user.profile_image
         })
     
     if request.method == 'PUT':
@@ -260,7 +268,10 @@ def profile():
         if 'phone_number' in data: user.phone_number = data['phone_number']
         if 'university' in data: user.university = data['university']
         if 'university_course' in data: user.university_course = data['university_course']
+        if 'university' in data: user.university = data['university']
+        if 'university_course' in data: user.university_course = data['university_course']
         if 'university_id' in data: user.university_id = data['university_id']
+        if 'profile_image' in data: user.profile_image = data['profile_image']
         
         db.session.commit()
         return jsonify({'message': 'Profile updated successfully'})
