@@ -1,5 +1,5 @@
 from app import app, db, bcrypt
-from models import Course, Topic, Resource, Rating, User, Enrollment
+from models import Course, Topic, Resource, Rating, User, Enrollment, University, Degree
 
 def seed_data():
     with app.app_context():
@@ -15,14 +15,44 @@ def seed_data():
         s2 = User(username="student2", password_hash=pw, role="student")
         a1 = User(username="admin1", password_hash=pw, role="admin")
         m1 = User(username="manager1", password_hash=pw, role="management")
-        db.session.add_all([s1, s2, a1, m1])
+        a2 = User(username="admin2", password_hash=pw, role="admin")
+        a3 = User(username="admin3", password_hash=pw, role="admin")
+        
+        # Create Universities
+        u1 = University(name="University of Technology")
+        u2 = University(name="Science Academy")
+        db.session.add_all([u1, u2])
+        db.session.commit()
+        
+        # Assign Users to Unis
+        s1.university_id = u1.id
+        s2.university_id = u2.id
+        
+        db.session.add_all([s1, s2, a1, a2, a3, m1])
         db.session.commit()
 
-        # Create Courses
-        c1 = Course(name="Programming Basics", code="IT101")
-        c2 = Course(name="Data Structures", code="CS201")
-        c3 = Course(name="Web Development", code="WEB301")
-        c4 = Course(name="Intro to Data Science", code="DS401")
+        # Create Degrees
+        d1 = Degree(name="BSc Computer Science", university="University of Technology", admin_id=a1.id)
+        d2 = Degree(name="BSc Software Engineering", university="University of Technology", admin_id=a2.id)
+        d3 = Degree(name="BSc Data Science", university="Science Academy", admin_id=a3.id)
+        db.session.add_all([d1, d2, d3])
+        db.session.commit()
+
+        # Update Users with Degree info (for testing)
+        s1.university_course = "BSc Computer Science"
+        s1.university = "University of Technology"
+        s2.university_course = "BSc Data Science"
+        s2.university = "Science Academy"
+        a1.university = "University of Technology"
+        a2.university = "University of Technology"
+        a3.university = "Science Academy"
+        db.session.commit()
+
+        # Create Courses (Modules) linked to Degrees
+        c1 = Course(module_name="Programming Basics", module_id="IT101", degree_id=d1.id)
+        c2 = Course(module_name="Data Structures", module_id="CS201", degree_id=d1.id)
+        c3 = Course(module_name="Web Development", module_id="WEB301", degree_id=d2.id)
+        c4 = Course(module_name="Intro to Data Science", module_id="DS401", degree_id=d3.id)
         db.session.add_all([c1, c2, c3, c4])
         db.session.commit()
 

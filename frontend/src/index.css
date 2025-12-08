@@ -985,71 +985,277 @@ body.dark-mode .site-footer {
 
 .source-web {
   background-color: #fae8ff;
+
   /* Light Fuchsia */
   color: #86198f;
   /* Dark Fuchsia */
   border: 1px solid #f5d0fe;
 }
 
-/* --- Professional Sidebar Layout --- */
-.dashboard-layout {
+.card-footer {
+  margin-top: auto;
   display: flex;
-  flex-direction: row;
-  /* Force row layout */
-  gap: 2.5rem;
-  /* Force row layout */
-  /* Force row layout */
-  gap: 3rem;
-  /* Balanced spacing: 3rem gap */
+  /* Space between Sidebar and Main Content */
+  gap: 2rem;
   max-width: 1400px;
   margin: 0 auto;
-  /* Center container */
-  justify-content: center;
-  /* Center items */
   padding: 0 1rem;
-  /* Align to top */
-  position: relative;
-  /* Remove sticky from container */
 }
 
-/* Vertical Alignment Fix */
-.sidebar,
-.main-content {
-  padding-top: 1rem;
-  /* Ensure consistent start */
+.btn-open-resource {
+  background: #1F2937;
+  /* Gray 800 */
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.2s;
 }
 
-.sidebar-title {
-  font-size: 0.9rem;
-  font-weight: 700;
+.btn-open-resource:hover {
+  background: black;
+}
+
+.rate-dropdown {
+  border: 1px solid var(--border-light);
+  background: white;
   color: var(--text-secondary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* --- Footer Styles --- */
+/* 5. Footer (Styled like Header, at bottom of content) */
+.site-footer {
+  margin-left: 280px;
+  /* Align with content */
+  background-color: var(--surface-color);
+  border-top: 1px solid var(--border-light);
+  padding: 0 2rem;
+  height: 64px;
+  /* Match Header Height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Or space-between */
+}
+
+.footer-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 auto;
+  padding: 0;
+  /* Reset internal padding */
+}
+
+/* Footer Adjustments for "Header-like" appearance */
+.footer-grid {
+  display: none;
+  /* Hide complex grid for this clean look if desired, or re-style */
+}
+
+.footer-logo {
+  color: white;
+  font-size: 1.1rem;
+  /* Smaller */
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+}
+
+.footer-description {
+  color: #9CA3AF;
+  line-height: 1.4;
+  font-size: 0.75rem;
+  /* Smaller */
+  margin-bottom: 0;
+}
+
+.footer-heading {
+  color: white;
+  font-size: 0.9rem;
+  /* Smaller */
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.footer-contact-list,
+.footer-links {
+  list-style: none;
+  padding: 0;
   margin: 0;
-  padding-bottom: 0.5rem;
+}
+
+.footer-contact-list li {
+  margin-bottom: 0.25rem;
+  /* Very tight spacing */
+  display: flex;
+  flex-direction: row;
+  /* Horizontal layout for compactness if needed, or stick to col but tight */
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+/* Override flex-dir for contact list to be more compact or stick to previous if better. 
+   Let's keep it clean but tight. 
+   Actually, let's keep vertical for readability but reduce font/margin. 
+*/
+.footer-contact-list li {
+  flex-direction: column;
+  gap: 0;
+}
+
+
+.contact-label {
+  font-size: 0.7rem;
+  color: #9CA3AF;
+  font-weight: 600;
+}
+
+.contact-value {
+  color: #E5E7EB;
+  font-size: 0.8rem;
+}
+
+.footer-links li {
+  margin-bottom: 0.25rem;
+}
+
+.footer-links a {
+  color: #D1D5DB;
+  text-decoration: none;
+  transition: color 0.2s;
+  font-size: 0.8rem;
+}
+
+.footer-links a:hover {
+  color: var(--secondary);
+}
+
+.social-links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.social-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.social-icon:hover {
+  background: var(--primary);
+  transform: translateY(-2px);
+}
+
+.footer-bottom {
+  border-top: none;
+  padding-top: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Source Badges */
+.badge-source {
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.source-db {
+  background-color: #dbeafe;
+  /* Light Blue */
+  color: #1e40af;
+  /* Dark Blue */
+  border: 1px solid #bfdbfe;
+}
+
+.source-web {
+  background-color: #fae8ff;
+  /* Light Fuchsia */
+  color: #86198f;
+  /* Dark Fuchsia */
+  border: 1px solid #f5d0fe;
+}
+
+/* --- Professional Dashboard Grid Layout --- */
+
+/* 1. Header (Fixed Top) */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: var(--surface-color);
   border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  z-index: 1001;
+  /* Highest priority */
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+}
+
+/* 2. Sidebar (Fixed Left, Below Header) */
+/* 2. Sidebar (Fixed Left, Below Header) */
+.sidebar {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background-color: white;
+  border-right: 1px solid var(--border-light);
+  padding: 1.5rem;
+  overflow-y: auto;
+  z-index: 1000;
+  /* Remove floating card styles */
+  box-shadow: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 3. Layout Wrapper for Main Content */
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-top: 64px;
+  /* Clear Header */
+  background-color: var(--bg-color);
 }
 
 /* Sidebar Dimensions ("Big Size") */
-.sidebar {
-  min-width: 450px;
-  /* Increased to 450px for wider inputs */
-  width: 450px;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  /* Separator Line */
-  padding-right: 3rem;
-  /* Balanced spacing: 3rem padding */
-  margin-right: 0;
-  /* Gap handles spacing, but border needs padding. 
-                      Actually, flex gap is 5rem. 
-                      Let's move gap to margin/padding combo for border placement. */
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  height: fit-content;
-  /* Ensure border doesn't stretch weirdly if not needed, though flex stretch default is usually fine */
-}
-
 .sidebar .search-group {
   margin-bottom: 0;
 }
@@ -1092,21 +1298,50 @@ body.dark-mode .sidebar .search-group label {
   /* Slightly darker gray for labels */
 }
 
+/* 4. Main Content Area (Pushed by Sidebar) */
+.main-content {
+  margin-left: 280px;
+  /* Exact width of sidebar */
+  padding: 2rem;
+  flex-grow: 1;
+  /* Pushes footer down */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* Prevention flex overflow */
+}
+
+/* Mobile Responsiveness */
 @media (max-width: 1000px) {
+  .sidebar {
+    position: fixed;
+    /* Keep fixed or change to overlay? Let's keep distinct for now or hide */
+    transform: translateX(-100%);
+    /* Hide off-screen by default on mobile? */
+    transition: transform 0.3s;
+    /* For simple fix: Static */
+    position: static;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+    transform: none;
+    z-index: 1;
+  }
+
   .dashboard-layout {
     flex-direction: column;
   }
 
-  .sidebar {
-    width: 100%;
-    position: static;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-end;
+
+  .main-content {
+    margin-left: 0;
+    padding: 1.5rem;
   }
 
-  .sidebar .search-group {
-    flex: 1;
-    min-width: 200px;
+  .site-footer {
+    margin-left: 0;
+    height: auto;
+    padding: 1.5rem;
   }
 }
