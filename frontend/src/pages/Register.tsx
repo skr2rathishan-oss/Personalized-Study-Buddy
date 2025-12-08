@@ -1,6 +1,7 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
+import { UNIVERSITY_COURSES } from '../data/UniversityInfo';
 
 function Register() {
     const navigate = useNavigate();
@@ -9,8 +10,7 @@ function Register() {
     const [step, setStep] = useState(1); // 1: Details, 2: OTP
     const [loading, setLoading] = useState(false);
 
-    // Details - Split into logical groups
-    // Personal
+    // Details
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [nic, setNic] = useState('');
@@ -18,23 +18,56 @@ function Register() {
 
     // Academic
     const [university, setUniversity] = useState('');
+    const [selectedUniId, setSelectedUniId] = useState('');
     const [course, setCourse] = useState('');
-    const [uniId, setUniId] = useState('');
+    const [studentId, setStudentId] = useState('');
+
+    // Dynamic Course Logic
+    const [availableCourses, setAvailableCourses] = useState<string[]>([]);
+    const [isCustomCourse, setIsCustomCourse] = useState(false);
 
     // Credentials
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-
-    // OTP
     const [otp, setOtp] = useState('');
+
+    // List of Universities
+    const sriLankaUniversities = [
+        "University of Colombo", "University of Peradeniya", "University of Sri Jayewardenepura",
+        "University of Kelaniya", "University of Moratuwa", "University of Jaffna",
+        "University of Ruhuna", "Eastern University, Sri Lanka", "South Eastern University of Sri Lanka",
+        "Rajarata University of Sri Lanka", "Sabaragamuwa University of Sri Lanka", "Wayamba University of Sri Lanka",
+        "Uva Wellassa University", "University of the Visual & Performing Arts", "Gampaha Wickramarachchi University",
+        "University of Vavuniya", "Open University of Sri Lanka", "Ocean University of Sri Lanka",
+        "SLIIT (Sri Lanka Institute of Information Technology)", "NSBM Green University",
+        "CINEC Campus", "Horizon Campus", "SAEGIS Campus", "ESOFT Metro Campus", "ICBT Campus",
+        "IIT (Informatics Institute of Technology)", "KDU (Kotelawala Defence University)",
+        "APIIT (Asia Pacific Institute of Information Technology)", "Royal Institute of Colombo",
+        "SLTC Research University", "Aquinas College of Higher Studies", "KIU (KAATSU International University)",
+        "NIBM (National Institute of Business Management)", "Saegis Campus", "Other"
+    ].sort();
+
+    // Update available courses when university changes
+    useEffect(() => {
+        if (university && UNIVERSITY_COURSES[university]) {
+            setAvailableCourses(UNIVERSITY_COURSES[university]);
+            setIsCustomCourse(false);
+            setCourse(''); // Reset course selection
+        } else if (university) {
+            // Fallback to standard list if specific uni not found in our data map
+            setAvailableCourses(UNIVERSITY_COURSES['Standard']);
+            setIsCustomCourse(false);
+            setCourse('');
+        } else {
+            setAvailableCourses([]);
+        }
+    }, [university]);
 
     const handleSaveDetails = async (e: FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
-            // Trigger OTP Send
             await api.post('/auth/otp/send', { phone_number: phoneNumber });
-            // If successful, move to next step
             setStep(2);
         } catch (err: any) {
             alert('Failed to send OTP: ' + (err.response?.data?.error || err.message));
@@ -53,9 +86,9 @@ function Register() {
                 first_name: firstName,
                 last_name: lastName,
                 nic,
-                university,
+                university: university,
                 university_course: course,
-                university_id: uniId,
+                university_student_id: studentId,
                 phone_number: phoneNumber,
                 otp
             });
@@ -70,7 +103,6 @@ function Register() {
 
     return (
         <div className="login-page-wrapper">
-            {/* Left Side: Branding / Hero */}
             <div className="auth-hero-section">
                 <div className="hero-content">
                     <h1 className="hero-title">Join<br />Study Buddy</h1>
@@ -82,7 +114,6 @@ function Register() {
                 </div>
             </div>
 
-            {/* Right Side: Registration Form */}
             <div className="auth-form-section">
                 <div className="register-card animate-slide-up">
                     <div className="auth-progress">
@@ -97,7 +128,6 @@ function Register() {
 
                     {step === 1 && (
                         <form onSubmit={handleSaveDetails}>
-                            {/* Personal Info Grid */}
                             <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Personal Info</h4>
                             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1fr) 1fr', gap: '20px' }}>
                                 <div className="form-group-clean">
@@ -121,25 +151,72 @@ function Register() {
                                 </div>
                             </div>
 
-                            {/* Academic Info */}
                             <h4 style={{ marginTop: '1.5rem', marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Academic Details</h4>
                             <div className="form-group-clean">
                                 <label>University</label>
-                                <input type="text" required value={university} onChange={e => setUniversity(e.target.value)} placeholder="e.g. University of Colombo" />
+                                <select
+                                    required
+                                    value={university}
+                                    onChange={e => setUniversity(e.target.value)}
+                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }}
+                                >
+                                    <option value="">Select your university...</option>
+                                    {sriLankaUniversities.map((uni, idx) => (
+                                        <option key={idx} value={uni}>{uni}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
                                 <div className="form-group-clean">
                                     <label>Course / Major</label>
-                                    <input type="text" required value={course} onChange={e => setCourse(e.target.value)} placeholder="Computer Science" />
+                                    {!isCustomCourse ? (
+                                        <select
+                                            required
+                                            disabled={!university}
+                                            value={course}
+                                            onChange={e => {
+                                                if (e.target.value === 'Other') {
+                                                    setIsCustomCourse(true);
+                                                    setCourse('');
+                                                } else {
+                                                    setCourse(e.target.value);
+                                                }
+                                            }}
+                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', background: !university ? '#F3F4F6' : 'white' }}
+                                        >
+                                            <option value="">{university ? "Select Course..." : "Select University First"}</option>
+                                            {availableCourses.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                                            <option value="Other">Other / Not Listed</option>
+                                        </select>
+                                    ) : (
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={course}
+                                                onChange={e => setCourse(e.target.value)}
+                                                placeholder="Enter Course name manually..."
+                                                style={{ flex: 1 }}
+                                                autoFocus
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => { setIsCustomCourse(false); setCourse(''); }}
+                                                style={{ background: '#FECACA', color: '#DC2626', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}
+                                                title="Back to list"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="form-group-clean">
                                     <label>Student ID</label>
-                                    <input type="text" required value={uniId} onChange={e => setUniId(e.target.value)} />
+                                    <input type="text" required value={studentId} onChange={e => setStudentId(e.target.value)} />
                                 </div>
                             </div>
 
-                            {/* Credentials */}
                             <h4 style={{ marginTop: '1.5rem', marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Account Security</h4>
                             <div className="form-group-clean">
                                 <label>Email Address</label>

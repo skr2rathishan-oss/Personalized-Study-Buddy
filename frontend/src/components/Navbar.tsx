@@ -209,7 +209,7 @@ function Navbar() {
                                 <>
                                     <div style={{ height: '1px', background: '#f1f5f9', margin: '0.5rem 0' }}></div>
                                     <div className="menu-item" onClick={() => navigate('/admin')}>
-                                        {role === 'management' ? 'Full Management' : 'Admin Dashboard'}
+                                        {role === 'management' ? 'Management Dashboard' : 'Admin Dashboard'}
                                     </div>
                                 </>
                             )}

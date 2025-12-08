@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_jwt
 from flask_bcrypt import Bcrypt
 import pandas as pd
-from models import db, Course, Topic, Resource, Rating, User, Enrollment, Event, InteractionLog
+from models import db, Course, Topic, Resource, Rating, User, Enrollment, Event, InteractionLog, University, Degree
 import os
 import shutil
 from datetime import datetime, timedelta
@@ -218,14 +218,23 @@ def login():
     data = request.json
     username = data.get('username')
     password = data.get('password')
+    
+    print(f"Login Attempt: User={username}")
 
-    user = User.query.filter_by(username=username).first()
-    if user and bcrypt.check_password_hash(user.password_hash, password):
-        token = create_access_token(
-            identity=str(user.id), 
-            additional_claims={'role': user.role, 'username': user.username}
-        )
-        return jsonify({'token': token, 'role': user.role, 'username': user.username})
+    # Case insensitive search
+    user = User.query.filter(User.username.ilike(username)).first()
+    if user:
+        if bcrypt.check_password_hash(user.password_hash, password):
+            print("Login Success: Creds valid")
+            token = create_access_token(
+                identity=str(user.id), 
+                additional_claims={'role': user.role, 'username': user.username}
+            )
+            return jsonify({'token': token, 'role': user.role, 'username': user.username})
+        else:
+            print("Login Failed: Password incorrect")
+    else:
+        print("Login Failed: User not found")
 
     return jsonify({'error': 'Invalid credentials'}), 401
 
@@ -273,7 +282,8 @@ def profile():
 @jwt_required()
 def get_courses():
     courses = Course.query.all()
-    return jsonify([{'id': c.id, 'name': c.name, 'code': c.code} for c in courses])
+    # Sending both new and old keys for frontend compatibility
+    return jsonify([{'id': c.id, 'name': c.module_name, 'code': c.module_id, 'module_name': c.module_name, 'module_id': c.module_id} for c in courses])
 
 @app.route('/enroll', methods=['POST'])
 @jwt_required()
@@ -312,12 +322,12 @@ def recommend():
     query = None
     
     # Validation: Minimum one input required (Expanded)
+    # Validation: Minimum one input required (Expanded)
+    # We allows simple search queries even without course/topic context
     has_input = any([
         topic_id, 
         course_id, 
-        (search_query and search_query.strip()), 
-        (language and language != 'English'),
-        (req_format and req_format.strip())
+        (search_query and search_query.strip())
     ])
 
     if not has_input:
@@ -332,11 +342,17 @@ def recommend():
         course = Course.query.get(course_id)
         if not course: return jsonify({'error': 'Course not found'}), 404
         query = Resource.query.join(Topic).filter(Topic.course_id == course_id)
-        context_name = course.name
+        context_name = course.module_name
     else:
+        course = None
         # Search/Agent Only Mode
         context_name = search_query if search_query else "General"
         candidates = [] 
+
+    candidate_limit = 10
+    
+    # Execution Mode: 'fast' (DB only), 'agent' (Fetch new only), 'all' (Default: both)
+    execution_mode = data.get('execution_mode', 'all')
 
     # If we have a DB query, execute it
     if query:
@@ -347,16 +363,28 @@ def recommend():
             query = query.filter(Resource.format == req_format)
         candidates = query.all()
 
-    # Auto-fetch Logic
+    # If mode is 'fast', we stop here and return what we have (or filtered db results)
+    if execution_mode == 'fast':
+         if not candidates and query: 
+             # If candidates empty but we did a query, it's just empty.
+             pass
+         recommendations = recommender_system.recommend(user_id, context_name, candidates, top_k=candidate_limit)
+         return jsonify([r.to_dict() for r in recommendations])
+
+    # Auto-fetch Logic (Agent Mode)
     # Trigger if fewer than 10 resources found OR we serve a specific user request
-    should_fetch = len(candidates) < 10 or has_input
+    # BUT only if mode allows agent
+    should_fetch = (len(candidates) < 10 or has_input) and (execution_mode in ['agent', 'all'])
     
+    fetched_candidates = []
+
     if should_fetch:
         print(f"[{datetime.now()}] Auto-fetching for context: {context_name}")
         
         # Determine names for the Agent
         t_name = topic.name if topic else (search_query if search_query else "General")
-        c_name = topic.course.name if topic else "General" 
+        # If topic exists, use topic.course.module_name. Else if course object exists, use its name. Else General.
+        c_name = topic.course.module_name if topic else (course.module_name if course else "General") 
         
         try:
             fetched_items = resource_fetcher.auto_fetch_resources(
@@ -372,6 +400,7 @@ def recommend():
             # Only save to DB if we have a valid Topic ID
             if topic:
                 for item in fetched_items:
+                    # Check duplication against DB
                     if not Resource.query.filter_by(url=item['url'], topic_id=topic.id).first():
                         new_res = Resource(
                             title=item['title'],
@@ -390,10 +419,12 @@ def recommend():
                     if recommender_system:
                          for r in new_resources:
                              recommender_system.update_resource_embedding(r)
-                    candidates = query.all()
+                    
+                    fetched_candidates = new_resources
+                    if execution_mode == 'all':
+                         candidates = query.all()
             else:
-                # Search Only Mode (No DB Save): Convert dict items to temporary objects for consistency
-                # We need mock Resource objects for the recommender/frontend
+                # Search Only Mode (No DB Save)
                 for item in fetched_items:
                     mock_res = Resource(
                         id=-1, # Dummy ID
@@ -404,23 +435,25 @@ def recommend():
                         is_auto_fetched=True,
                         quality_score=0.0
                     )
-                    # We can't use DB embeddings easily here without saving, so we rely on raw sorting or just return them
-                    candidates.append(mock_res)
-
-            # Internet Only Logic for Explicit Search (REMOVED: User wants DB items prioritized, not hidden)
-            # if search_query and search_query.strip():
-            #     candidates = [c for c in candidates if c.is_auto_fetched]
+                    fetched_candidates.append(mock_res)
+                
+                if execution_mode == 'all':
+                    candidates.extend(fetched_candidates)
 
         except Exception as e:
             print(f"[{datetime.now()}] Error: {str(e)}")
 
     # Proceed to Recommend
-
+    final_pool = fetched_candidates if execution_mode == 'agent' else candidates
     
+    if not final_pool:
+        return jsonify([])
+
     # Use the new hybrid recommender
-    recommendations = recommender_system.recommend(user_id, context_name, candidates, top_k=10)
+    recommendations = recommender_system.recommend(user_id, context_name, final_pool, top_k=candidate_limit)
     
     return jsonify([r.to_dict() for r in recommendations])
+
 
 @app.route('/api/recommendations', methods=['GET'])
 @jwt_required()
@@ -439,7 +472,7 @@ def get_recommendations_api():
         if not course: return jsonify({'error': 'Course not found'}), 404
         
         query = Resource.query.join(Topic).filter(Topic.course_id == course_id)
-        context_name = course.name
+        context_name = course.module_name
     else:
         topic = Topic.query.get(topic_id)
         if not topic:
@@ -463,7 +496,7 @@ def get_recommendations_api():
     if (len(candidates) < 10 or (search_query and search_query.strip())) and topic:
         print(f"No resources found for {topic.name}. Auto-fetching...")
         course = Course.query.get(topic.course_id)
-        fetched_items = resource_fetcher.auto_fetch_resources(topic.name, course.name, search_query)
+        fetched_items = resource_fetcher.auto_fetch_resources(topic.name, course.module_name, search_query)
         
         new_resources = []
         for item in fetched_items:
@@ -561,7 +594,7 @@ def generate_resources():
         
     course = Course.query.get(topic.course_id)
     
-    results = resource_fetcher.auto_fetch_resources(topic.name, course.name)
+    results = resource_fetcher.auto_fetch_resources(topic.name, course.module_name)
     
     count = 0
     for item in results:
@@ -591,9 +624,16 @@ def get_admin_courses():
     if not check_role(['admin', 'management']):
         return jsonify({'error': 'Unauthorized'}), 403
     user_id = int(get_jwt_identity())
-    enrollments = Enrollment.query.filter_by(user_id=user_id).all()
-    courses = [Course.query.get(e.course_id) for e in enrollments]
-    return jsonify([{'id': c.id, 'name': c.name} for c in courses if c])
+    
+    # 1. Get Degree managed by admin
+    degree = Degree.query.filter_by(admin_id=user_id).first()
+    
+    modules = []
+    if degree:
+        # Get Modules in this Degree
+        modules = Course.query.filter_by(degree_id=degree.id).all()
+        
+    return jsonify([{'id': c.id, 'name': c.module_name, 'module_name': c.module_name, 'module_id': c.module_id, 'degree_name': degree.name if degree else 'Unknown'} for c in modules])
 
 @app.route('/admin/students/<int:course_id>', methods=['GET'])
 @jwt_required()
@@ -633,20 +673,33 @@ def create_course():
     if not check_role(['admin', 'management']):
         return jsonify({'error': 'Unauthorized'}), 403
     data = request.json
-    name = data.get('name')
-    code = data.get('code')
+    module_name = data.get('module_name') or data.get('name')
+    module_id = data.get('module_id') or data.get('code')
     
-    if Course.query.filter_by(code=code).first():
-        return jsonify({'error': 'Code exists'}), 400
+    if Course.query.filter_by(module_id=module_id).first():
+        return jsonify({'error': 'Module ID exists'}), 400
 
-    new_course = Course(name=name, code=code)
+    user_id = int(get_jwt_identity())
+    
+    # Ensure Admin has a Degree assigned (Auto-create based on Profile if missing)
+    degree = Degree.query.filter_by(admin_id=user_id).first()
+    if not degree:
+        u = User.query.get(user_id)
+        degree_name = u.university_course if u.university_course else f"Degree of {u.username}"
+        degree = Degree(name=degree_name, university=u.university if u.university else 'N/A', admin_id=user_id)
+        db.session.add(degree)
+        db.session.commit()
+    
+    # Create Module linked to Degree
+    # We keep admin_id for safety/migration but primary link is degree_id
+    new_course = Course(module_name=module_name, module_id=module_id, degree_id=degree.id)
     db.session.add(new_course)
     db.session.commit()
     
-    # Auto-enroll admin
-    db.session.add(Enrollment(user_id=int(get_jwt_identity()), course_id=new_course.id))
+    # Auto-enroll admin (optional, for access check simplicity)
+    db.session.add(Enrollment(user_id=user_id, course_id=new_course.id))
     db.session.commit()
-    return jsonify({'message': 'Course created'})
+    return jsonify({'message': 'Module created under ' + degree.name})
 
 @app.route('/admin/courses/<int:course_id>/topics', methods=['POST'])
 @jwt_required()
@@ -689,11 +742,11 @@ def update_course(course_id):
     if not course: return jsonify({'error': 'Course not found'}), 404
 
     data = request.json
-    course.name = data.get('name', course.name)
-    course.code = data.get('code', course.code)
+    course.module_name = data.get('module_name', data.get('name', course.module_name))
+    course.module_id = data.get('module_id', data.get('code', course.module_id))
     
     db.session.commit()
-    return jsonify({'message': 'Course updated'})
+    return jsonify({'message': 'Module updated'})
 
 @app.route('/admin/courses/<int:course_id>', methods=['DELETE'])
 @jwt_required()
@@ -812,28 +865,159 @@ def export_data():
 
     try:
         users = User.query.all()
+        unis = University.query.all()
         courses = Course.query.all()
         topics = Topic.query.all()
         resources = Resource.query.all()
         
-        # Simple export logic for brevity
+        # Enhanced Export with Linking IDs for easier management editing
         data = {
-            'Users': [{'ID': u.id, 'Username': u.username, 'Role': u.role} for u in users],
-            'Courses': [{'ID': c.id, 'Name': c.name} for c in courses],
-            'Resources': [{'ID': r.id, 'Title': r.title, 'URL': r.url} for r in resources]
+            'Universities': [{'ID': u.id, 'Name': u.name} for u in unis],
+            'Modules': [{'ID': c.id, 'Module Name': c.module_name, 'Module ID': c.module_id, 'Degree ID': c.degree_id} for c in courses],
+            'Topics': [{'ID': t.id, 'Name': t.name, 'Module ID (System)': t.course_id, 'Module Name': t.course.module_name} for t in topics],
+            'Resources': [{'ID': r.id, 'Title': r.title, 'URL': r.url, 'Format': r.format, 'Topic ID': r.topic_id, 'Topic Name': r.topic.name, 'Quality Score': r.quality_score} for r in resources],
+            'Users': [{'ID': u.id, 'Username': u.username, 'Role': u.role} for u in users]
         }
         
-        filename = f"export_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
+        filename = f"studybuddy_data_{datetime.now().strftime('%Y%m%d%H%M')}.xlsx"
         export_dir = os.path.join(basedir, 'exports')
         if not os.path.exists(export_dir): os.makedirs(export_dir)
         path = os.path.join(export_dir, filename)
         
         with pd.ExcelWriter(path, engine='openpyxl') as writer:
             for sheet, rows in data.items():
-                pd.DataFrame(rows).to_excel(writer, sheet_name=sheet, index=False)
+                if rows:
+                    pd.DataFrame(rows).to_excel(writer, sheet_name=sheet, index=False)
+                else:
+                    # Create empty df with columns if no data
+                    pd.DataFrame(columns=['ID', 'Name']).to_excel(writer, sheet_name=sheet, index=False)
                 
-        return jsonify({'file_path': path, 'message': 'Export successful'})
+        # In a real deployed app, you'd upload this to S3 or send_file directly. 
+        # For local dev, returning path/downloading via backend is fine.
+        return send_file(path, as_attachment=True, download_name=filename)
     except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/import-data', methods=['POST'])
+@jwt_required()
+def import_data():
+    if not check_role(['admin', 'management']):
+         return jsonify({'error': 'Unauthorized'}), 403
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    if not file.filename.endswith('.xlsx'):
+        return jsonify({'error': 'Invalid file type. Please upload Excel (.xlsx)'}), 400
+
+    try:
+        # Load sheets
+        xls = pd.ExcelFile(file)
+        
+        stats = {'updated': 0, 'created': 0, 'errors': 0}
+        
+        # 1. Sync Universities
+        if 'Universities' in xls.sheet_names:
+            df = pd.read_excel(xls, 'Universities')
+            for _, row in df.iterrows():
+                try:
+                    # If ID exists and is valid number, update. Else Create.
+                    row_id = row.get('ID')
+                    name = row.get('Name')
+                    
+                    if pd.notna(row_id) and str(row_id).isdigit():
+                        u = University.query.get(int(row_id))
+                        if u: 
+                            if name and name != u.name: u.name = name; stats['updated'] += 1
+                        else:
+                            # ID provided but not found? We usually treat as create or error. Let's create new with Auto ID.
+                            db.session.add(University(name=name))
+                            stats['created'] += 1
+                    elif name:
+                        db.session.add(University(name=name))
+                        stats['created'] += 1
+                except Exception: stats['errors'] += 1
+            db.session.commit()
+
+        # 2. Sync Modules
+        if 'Modules' in xls.sheet_names:
+            df = pd.read_excel(xls, 'Modules')
+            for _, row in df.iterrows():
+                try:
+                    row_id = row.get('ID')
+                    m_name = row.get('Module Name')
+                    m_code = row.get('Module ID')
+                    
+                    if pd.notna(row_id) and str(row_id).isdigit():
+                        c = Course.query.get(int(row_id))
+                        if c:
+                            if m_name: c.module_name = m_name
+                            if m_code: c.module_id = m_code
+                            stats['updated'] += 1
+                    elif m_name and m_code:
+                        db.session.add(Course(module_name=m_name, module_id=m_code))
+                        stats['created'] += 1
+                except: stats['errors'] += 1
+            db.session.commit()
+
+        # 3. Sync Topics (More complex due to FK)
+        if 'Topics' in xls.sheet_names:
+            df = pd.read_excel(xls, 'Topics')
+            for _, row in df.iterrows():
+                try:
+                    row_id = row.get('ID')
+                    name = row.get('Name')
+                    course_id = row.get('Module ID (System)')
+                    
+                    if pd.notna(row_id) and str(row_id).isdigit():
+                        t = Topic.query.get(int(row_id))
+                        if t:
+                            if name: t.name = name
+                            # We allow moving topics between courses if ID is valid
+                            if course_id and str(course_id).isdigit(): t.course_id = int(course_id)
+                            stats['updated'] += 1
+                    elif name and course_id and str(course_id).isdigit():
+                         db.session.add(Topic(name=name, course_id=int(course_id)))
+                         stats['created'] += 1
+                except: stats['errors'] += 1
+            db.session.commit()
+
+        # 4. Sync Resources
+        if 'Resources' in xls.sheet_names:
+            df = pd.read_excel(xls, 'Resources')
+            for _, row in df.iterrows():
+                try:
+                    row_id = row.get('ID')
+                    title = row.get('Title')
+                    url = row.get('URL')
+                    fmt = row.get('Format')
+                    topic_id = row.get('Topic ID')
+                    qs = row.get('Quality Score')
+                    
+                    if pd.notna(row_id) and str(row_id).isdigit():
+                        r = Resource.query.get(int(row_id))
+                        if r:
+                            if title: r.title = title
+                            if url: r.url = url
+                            if fmt: r.format = fmt
+                            if topic_id and str(topic_id).isdigit(): r.topic_id = int(topic_id)
+                            if pd.notna(qs): r.quality_score = float(qs)
+                            stats['updated'] += 1
+                    elif title and url and topic_id:
+                        db.session.add(Resource(title=title, url=url, format=fmt or 'article', topic_id=int(topic_id), quality_score=float(qs) if pd.notna(qs) else 0.0))
+                        stats['created'] += 1
+                except: stats['errors'] += 1
+            db.session.commit()
+            
+        return jsonify({'message': 'Data sync complete', 'stats': stats})
+
+    except Exception as e:
+        print(e)
         return jsonify({'error': str(e)}), 500
 
 
@@ -872,7 +1056,216 @@ def create_event():
 
     return jsonify({'message': 'Event created successfully', 'event': {'id': new_event.id, 'title': title}})
 
+@app.route('/universities', methods=['GET'])
+def get_universities():
+    unis = University.query.all()
+    return jsonify([{'id': u.id, 'name': u.name} for u in unis])
+
+@app.route('/admin/courses/<int:course_id>/full_structure', methods=['GET'])
+@jwt_required()
+def get_course_structure(course_id):
+    if not check_role(['admin', 'management']): return jsonify({'error': 'Unauthorized'}), 403
+    topics = Topic.query.filter_by(course_id=course_id).all()
+    result = []
+    for t in topics:
+        res_list = Resource.query.filter_by(topic_id=t.id).all()
+        result.append({
+            'id': t.id,
+            'name': t.name,
+            'resources': [r.to_dict() for r in res_list]
+        })
+    return jsonify(result)
+
+@app.route('/admin/resources', methods=['POST'])
+@jwt_required()
+def add_admin_resource():
+    if not check_role(['admin', 'management']): return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json
+    topic_id = data.get('topic_id')
+    if not topic_id: return jsonify({'error': 'topic_id required'}), 400
+    
+    new_res = Resource(
+        title=data.get('title'),
+        url=data.get('url'),
+        format=data.get('format'), # video, article, pdf
+        topic_id=topic_id,
+        source='manual',
+        is_auto_fetched=False
+    )
+    db.session.add(new_res)
+    db.session.commit()
+    return jsonify(new_res.to_dict())
+
+@app.route('/admin/resources/<int:resource_id>', methods=['DELETE'])
+@jwt_required()
+def delete_admin_resource(resource_id):
+    if not check_role(['admin', 'management']): return jsonify({'error': 'Unauthorized'}), 403
+    res = Resource.query.get(resource_id)
+    if not res: return jsonify({'error': 'Resource not found'}), 404
+    db.session.delete(res)
+    db.session.commit()
+    return jsonify({'message': 'Resource deleted'})
+
+
+@app.route('/management/analytics', methods=['POST'])
+@jwt_required()
+def management_analytics():
+    if not check_role(['management', 'admin']):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.json or {}
+    uni_filter = data.get('university')
+    # 'course' in frontend filter context now means 'Degree' (e.g. BSc Engineering)
+    degree_filter = data.get('degree') 
+    role_filter = data.get('role', 'admin') # Default to admin for backward compat
+    
+    results = []
+
+    if role_filter == 'student':
+        # --- STUDENT QUERY ---
+        query = User.query.filter_by(role='student')
+        
+        if uni_filter:
+            query = query.filter(User.university == uni_filter)
+        
+        if degree_filter:
+            query = query.filter(User.university_course == degree_filter)
+            
+        students = query.all()
+        
+        for s in students:
+            # Calculate simple stats for student
+            enrolled_count = Enrollment.query.filter_by(user_id=s.id).count()
+            
+            # Calculate total study time (sum of ratings time_spent)
+            ratings = Rating.query.filter_by(user_id=s.id).all()
+            total_time = sum([r.time_spent for r in ratings]) if ratings else 0
+            
+            # Format time (mins or hrs)
+            time_display = f"{round(total_time/60, 1)} Hrs"
+            
+            results.append({
+                'id': s.id,
+                'name': f"{s.first_name} {s.last_name}" if s.first_name else s.username,
+                'email': s.username,
+                'university': s.university or 'N/A',
+                'degree': s.university_course or 'N/A',
+                'enrolled_courses': enrolled_count,
+                'study_time': time_display,
+                'role': 'student'
+            })
+
+    else:
+        # --- ADMIN QUERY ---
+        query = User.query.filter_by(role='admin')
+        
+        if uni_filter:
+            query = query.filter(User.university.ilike(f"%{uni_filter}%"))
+            
+        admins = query.all()
+        
+        for admin in admins:
+            # Get Degree managed by this admin
+            degree = Degree.query.filter_by(admin_id=admin.id).first()
+            
+            # Filter by Degree Name if provided
+            if degree_filter:
+                if not degree or degree.name != degree_filter:
+                    continue
+
+            courses = []
+            degree_name = "N/A"
+            if degree:
+                degree_name = degree.name
+                courses = Course.query.filter_by(degree_id=degree.id).all()
+            
+            # Stats Aggregation
+            res_count = 0
+            total_rating = 0
+            rating_count = 0
+            students_set = set()
+            course_names = []
+            
+            for c in courses:
+                course_names.append(c.module_name)
+                # Resources (via Topics)
+                topics = Topic.query.filter_by(course_id=c.id).all()
+                for t in topics:
+                    resources = Resource.query.filter_by(topic_id=t.id).all()
+                    res_count += len(resources)
+                    for r in resources:
+                        ratings = Rating.query.filter_by(resource_id=r.id).all()
+                        for rt in ratings:
+                            total_rating += rt.score
+                            rating_count += 1
+                
+                # Engagement
+                enrollments = Enrollment.query.filter_by(course_id=c.id).all()
+                for e in enrollments:
+                    students_set.add(e.user_id)
+            
+            avg_rating = round(total_rating / rating_count, 1) if rating_count > 0 else 0
+            
+            results.append({
+                'id': admin.id,
+                'name': f"{admin.first_name} {admin.last_name}" if admin.first_name else admin.username,
+                'email': admin.username,
+                'university': admin.university or 'N/A',
+                'degree': degree_name,
+                'courses': course_names,
+                'content_contributions': res_count,
+                'avg_rating': avg_rating,
+                'active_students': len(students_set),
+                'role': 'admin'
+            })
+        
+    return jsonify(results)
+
+
+@app.route('/management/admin-details/<int:admin_id>', methods=['GET'])
+@jwt_required()
+def get_admin_details(admin_id):
+    if not check_role(['management', 'admin']):
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    degree = Degree.query.filter_by(admin_id=admin_id).first()
+    courses = []
+    if degree:
+        courses = Course.query.filter_by(degree_id=degree.id).all()
+
+    course_details = []
+    
+    for c in courses:
+        # Stats per course
+        res_count = 0
+        total_rating = 0
+        rating_count = 0
+        
+        topics = Topic.query.filter_by(course_id=c.id).all()
+        for t in topics:
+            resources = Resource.query.filter_by(topic_id=t.id).all()
+            res_count += len(resources)
+            for r in resources:
+                ratings = Rating.query.filter_by(resource_id=r.id).all()
+                for rt in ratings:
+                    total_rating += rt.score
+                    rating_count += 1
+                    
+        avg = round(total_rating / rating_count, 1) if rating_count > 0 else 0
+        enrollment_count = Enrollment.query.filter_by(course_id=c.id).count()
+        
+        course_details.append({
+            'id': c.id,
+            'name': c.module_name,
+            'code': c.module_id,
+            'resources': res_count,
+            'rating': avg,
+            'students': enrollment_count
+        })
+        
+    return jsonify(course_details)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, use_reloader=False)
