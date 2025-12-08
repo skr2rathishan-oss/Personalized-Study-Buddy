@@ -72,7 +72,7 @@ function PersonalTracking() {
             <style>{`
                 .tracking-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    grid-template-columns: repeat(2, 1fr);
                     gap: 1.5rem;
                 }
                 .tracking-card {
@@ -80,6 +80,8 @@ function PersonalTracking() {
                     padding: 1.5rem;
                     border-radius: 12px;
                     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+                    display: flex;
+                    flex-direction: column;
                 }
                 .full-width {
                     grid-column: 1 / -1;
