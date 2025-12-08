@@ -661,9 +661,60 @@ def get_all_users():
             'role': u.role,
             'first_name': u.first_name,
             'last_name': u.last_name,
-            'university': u.university
+            'university': u.university,
+            'course': u.university_course,
+            'student_id': u.university_id,
+            'phone': u.phone_number,
+            'nic': u.nic
         })
     return jsonify(user_list)
+
+@app.route('/admin/users/promote', methods=['POST'])
+@jwt_required()
+def promote_user():
+    if not check_role(['management']):
+        return jsonify({'error': 'Unauthorized. Only Management can promote users.'}), 403
+        
+    data = request.json
+    user_id = data.get('user_id')
+    
+    if not user_id: return jsonify({'error': 'User ID required'}), 400
+    
+    user = User.query.get(user_id)
+    if not user: return jsonify({'error': 'User not found'}), 404
+    
+    if user.role == 'admin' or user.role == 'management':
+         return jsonify({'message': 'User is already an Admin or Manager'}), 200
+
+    user.role = 'admin'
+    db.session.commit()
+    
+    return jsonify({'message': f'User {user.username} promoted to Admin successfully.'})
+
+@app.route('/admin/users/demote', methods=['POST'])
+@jwt_required()
+def demote_user():
+    if not check_role(['management']):
+        return jsonify({'error': 'Unauthorized. Only Management can demote users.'}), 403
+        
+    data = request.json
+    user_id = data.get('user_id')
+    
+    if not user_id: return jsonify({'error': 'User ID required'}), 400
+    
+    user = User.query.get(user_id)
+    if not user: return jsonify({'error': 'User not found'}), 404
+    
+    if user.role == 'student':
+         return jsonify({'message': 'User is already a Student'}), 200
+    
+    if user.role == 'management':
+        return jsonify({'error': 'Cannot demote another Manager'}), 403
+
+    user.role = 'student'
+    db.session.commit()
+    
+    return jsonify({'message': f'User {user.username} demoted to Student successfully.'})
 
 @app.route('/admin/courses', methods=['POST'])
 @jwt_required()

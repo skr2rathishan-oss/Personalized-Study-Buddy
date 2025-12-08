@@ -309,15 +309,15 @@ function StudentDashboard() {
 
                 {/* Hero / Stats Section */}
                 <div style={{ marginBottom: '2.5rem' }}>
-                    <h1 className="section-title" style={{ fontSize: '2rem', marginBottom: '0.5rem', marginTop: 0, background: 'linear-gradient(90deg, #4F46E5, #9333EA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block' }}>
+                    <h1 className="section-title" style={{ fontSize: '2rem', marginBottom: '1rem', marginTop: 0, background: 'linear-gradient(90deg, #4F46E5, #9333EA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                         Welcome back, {localStorage.getItem('username') || 'Student'}!
                     </h1>
                     {studentInfo && (
-                        <div className="animate-slide-up" style={{ fontSize: '1.1rem', fontWeight: 600, color: '#4F46E5', marginBottom: '0.5rem', background: '#EEF2FF', display: 'inline-block', padding: '4px 12px', borderRadius: '20px' }}>
+                        <div className="animate-slide-up" style={{ fontSize: '1.1rem', fontWeight: 600, color: '#4F46E5', marginBottom: '1rem', background: '#EEF2FF', display: 'inline-block', padding: '6px 16px', borderRadius: '20px', border: '1px solid #E0E7FF' }}>
                             🎓 {studentInfo.uni} <span style={{ margin: '0 8px', color: '#CBD5E1' }}>|</span> 📚 {studentInfo.course}
                         </div>
                     )}
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', display: 'block' }}>
                         Ready to learn something new today?
                     </p>
 

@@ -1,5 +1,5 @@
 import { JSX } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -40,72 +40,82 @@ const AdminRoute = () => {
     return role === 'management' ? <ManagementAnalytics /> : <AdminDashboard />;
 };
 
+function AppContent() {
+    const location = useLocation();
+    // Hide footer on auth pages
+    const hideFooter = ['/login', '/register', '/forgot-password'].includes(location.pathname);
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <Navbar />
+            <div style={{ flex: 1 }}>
+                <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+
+                    {/* Main Landing is the Student Dashboard (Course Selection) for EVERYONE */}
+                    <Route path="/" element={
+                        <PrivateRoute>
+                            <StudentDashboard />
+                        </PrivateRoute>
+                    } />
+
+                    {/* Admin/Mgmt specific route accessed via menu */}
+                    <Route path="/admin" element={
+                        <PrivateRoute allowedRoles={['admin', 'management']}>
+                            <AdminRoute />
+                        </PrivateRoute>
+                    } />
+
+                    {/* Profile & Settings */}
+                    <Route path="/profile" element={
+                        <PrivateRoute>
+                            <Profile />
+                        </PrivateRoute>
+                    } />
+                    <Route path="/settings" element={
+                        <PrivateRoute>
+                            <Settings />
+                        </PrivateRoute>
+                    } />
+
+                    {/* New Feature Pages */}
+                    <Route path="/calendar" element={
+                        <PrivateRoute>
+                            <Calendar />
+                        </PrivateRoute>
+                    } />
+                    <Route path="/tracking" element={
+                        <PrivateRoute>
+                            <PersonalTracking />
+                        </PrivateRoute>
+                    } />
+                    <Route path="/history" element={
+                        <PrivateRoute>
+                            <History />
+                        </PrivateRoute>
+                    } />
+
+                    {/* User Management (Admin) */}
+                    <Route path="/users" element={
+                        <PrivateRoute allowedRoles={['admin', 'management']}>
+                            <UserManagement />
+                        </PrivateRoute>
+                    } />
+
+                    <Route path="*" element={<Navigate to="/login" />} />
+                </Routes>
+            </div>
+            {!hideFooter && <Footer />}
+        </div>
+    );
+}
+
 function App() {
     return (
         <Router>
-            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-                <Navbar />
-                <div style={{ flex: 1 }}>
-                    <Routes>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route path="/forgot-password" element={<ForgotPassword />} />
-
-                        {/* Main Landing is the Student Dashboard (Course Selection) for EVERYONE */}
-                        <Route path="/" element={
-                            <PrivateRoute>
-                                <StudentDashboard />
-                            </PrivateRoute>
-                        } />
-
-                        {/* Admin/Mgmt specific route accessed via menu */}
-                        <Route path="/admin" element={
-                            <PrivateRoute allowedRoles={['admin', 'management']}>
-                                <AdminRoute />
-                            </PrivateRoute>
-                        } />
-
-                        {/* Profile & Settings */}
-                        <Route path="/profile" element={
-                            <PrivateRoute>
-                                <Profile />
-                            </PrivateRoute>
-                        } />
-                        <Route path="/settings" element={
-                            <PrivateRoute>
-                                <Settings />
-                            </PrivateRoute>
-                        } />
-
-                        {/* New Feature Pages */}
-                        <Route path="/calendar" element={
-                            <PrivateRoute>
-                                <Calendar />
-                            </PrivateRoute>
-                        } />
-                        <Route path="/tracking" element={
-                            <PrivateRoute>
-                                <PersonalTracking />
-                            </PrivateRoute>
-                        } />
-                        <Route path="/history" element={
-                            <PrivateRoute>
-                                <History />
-                            </PrivateRoute>
-                        } />
-
-                        {/* User Management (Admin) */}
-                        <Route path="/users" element={
-                            <PrivateRoute allowedRoles={['admin', 'management']}>
-                                <UserManagement />
-                            </PrivateRoute>
-                        } />
-
-                        <Route path="*" element={<Navigate to="/login" />} />
-                    </Routes>
-                </div>
-                <Footer />
-            </div>
+            <AppContent />
         </Router>
     );
 }
