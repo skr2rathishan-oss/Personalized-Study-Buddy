@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import StudentDashboard from './pages/StudentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import ManagementAnalytics from './pages/ManagementAnalytics';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Calendar from './pages/Calendar';
@@ -12,6 +13,7 @@ import PersonalTracking from './pages/PersonalTracking';
 import History from './pages/History';
 import UserManagement from './pages/UserManagement';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 interface PrivateRouteProps {
     children: JSX.Element;
@@ -32,7 +34,11 @@ const PrivateRoute = ({ children, allowedRoles }: PrivateRouteProps) => {
     return children;
 };
 
-import Footer from './components/Footer';
+// Intelligently route based on role for /admin path
+const AdminRoute = () => {
+    const role = localStorage.getItem('role');
+    return role === 'management' ? <ManagementAnalytics /> : <AdminDashboard />;
+};
 
 function App() {
     return (
@@ -55,7 +61,7 @@ function App() {
                         {/* Admin/Mgmt specific route accessed via menu */}
                         <Route path="/admin" element={
                             <PrivateRoute allowedRoles={['admin', 'management']}>
-                                <AdminDashboard />
+                                <AdminRoute />
                             </PrivateRoute>
                         } />
 

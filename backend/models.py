@@ -19,12 +19,37 @@ class User(db.Model):
     profile_image = db.Column(db.Text, nullable=True) # Base64 string
     
     enrollments = db.relationship('Enrollment', backref='user', lazy=True)
+    
+    # Removed conflicting university_id FK. university_id line 17 handles the Student ID string.
 
-class Course(db.Model):
+
+class University(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    code = db.Column(db.String(20), unique=True, nullable=False)
+    name = db.Column(db.String(150), unique=True, nullable=False)
+
+
+
+class Degree(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False) # e.g. "BSc Engineering"
+    university = db.Column(db.String(150), nullable=False)
+    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Admin responsible for this Degree
+    # Relationship defined in Course via backref
+
+class Course(db.Model): # Represents a 'Module' (e.g. Web Dev, AI Basics)
+    id = db.Column(db.Integer, primary_key=True)
+    module_name = db.Column(db.String(100), nullable=False)
+    module_id = db.Column(db.String(20), nullable=False) # e.g. CS101. Removed unique constraint to allow same code in diff degrees if needed
+    
+    # Linked to Degree (The main Course)
+    # Linked to Degree (The main Course)
+    # Linked to Degree (The main Course)
+    degree_id = db.Column(db.Integer, db.ForeignKey('degree.id'), nullable=True)
+
+    
+    
     topics = db.relationship('Topic', backref='course', lazy=True)
+
 
 class Topic(db.Model):
     id = db.Column(db.Integer, primary_key=True)

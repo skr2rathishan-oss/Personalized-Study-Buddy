@@ -55,12 +55,12 @@ function Login() {
 
                     <form onSubmit={handleLogin}>
                         <div className="form-group-clean">
-                            <label>User Name</label>
+                            <label>Email or Username</label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={e => setUsername(e.target.value)}
-                                placeholder="Enter your username"
+                                placeholder="Enter your email or username"
                                 required
                             />
                         </div>

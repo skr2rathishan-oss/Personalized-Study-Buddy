@@ -101,6 +101,7 @@ class ResourceFetcher:
         """
         High-level function to fetch both videos and articles for a topic.
         Generates an enhanced query string with language support.
+        Uses ThreadPoolExecutor to fetch from reliable sources in parallel.
         """
         lang_map = {
             'Tamil': 'ta',
@@ -109,32 +110,81 @@ class ResourceFetcher:
         }
         lang_code = lang_map.get(language, 'en')
 
-        # Intelligent query expansion
-        keywords = []
+        # --- OPTIMIZED QUERY GENERATION ---
+        # Format: "{module_name} {topic_name} in {language} language"
+        # We strip the module code (e.g. "CS101 - Intro" -> "Intro") for cleaner search
+        clean_course_name = course_name.split('-')[-1].strip() if '-' in course_name else course_name
         
-        # If user provides a description/search query, it's the most important intent
-        if search_query and search_query.strip():
-            keywords.append(search_query) # e.g. "Simple explanation for beginners"
-            keywords.append(topic_name)   # Context
-        else:
+        keywords = [clean_course_name]
+        
+        if topic_name and topic_name != "General":
             keywords.append(topic_name)
-            keywords.append(course_name)
-            keywords.append("tutorial")
-        
-        # Append language instruction to query text as well for better matches
+            
         if language != 'English':
-             keywords.append(f"in {language}")
+             keywords.append(f"in {language} language")
         
-        final_query = " ".join(keywords)
-        self.logger.info(f"Auto-fetching with query: {final_query} (Lang: {lang_code}) (Format: {resource_format})")
+        # If user provided a specific description, we append it but keep the structural context
+        if search_query and search_query.strip():
+             # We use the raw user query but prepend the course context to ground it
+             final_query = f"{clean_course_name} {search_query}"
+             if language != 'English': final_query += f" in {language}"
+        else:
+             final_query = " ".join(keywords)
+
+        self.logger.info(f"Auto-fetching with Optimized Query: {final_query} (Lang: {lang_code})")
 
         videos = []
         articles = []
+        
+        # Helper wrappers for parallel execution
+        def get_videos():
+            if not resource_format or resource_format == 'video':
+                return self.fetch_youtube_videos(final_query, max_results=5, lang_code=lang_code)
+            return []
 
-        if not resource_format or resource_format == 'video':
-            videos = self.fetch_youtube_videos(final_query, max_results=3, lang_code=lang_code)
+        def get_articles():
+            if not resource_format or resource_format in ['article', 'pdf']:
+                return self.fetch_web_articles(final_query, max_results=5, lang_code=lang_code)
+            return []
+
+        # Execute in parallel
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            future_videos = executor.submit(get_videos)
+            future_articles = executor.submit(get_articles)
+            
+            try:
+                videos = future_videos.result(timeout=10)
+            except Exception as e:
+                self.logger.error(f"Async Video Fetch Failed: {e}")
+                
+            try:
+                articles = future_articles.result(timeout=10)
+            except Exception as e:
+                self.logger.error(f"Async Article Fetch Failed: {e}")
         
-        if not resource_format or resource_format in ['article', 'pdf']:
-            articles = self.fetch_web_articles(final_query, max_results=3, lang_code=lang_code)
+        results = videos + articles
         
-        return videos + articles
+        # --- FAST RELEVANCE FILTER (The "Gatekeeper") ---
+        # If we have a specific search intent, we filter results that don't match key terms
+        # This acts as a cheap "LLM-lite" layer.
+        filtered_results = []
+        search_terms = set(final_query.lower().split())
+        
+        for item in results:
+            # Combine title and description for checking
+            text_corpus = (item['title'] + " " + item['description']).lower()
+            
+            # Simple scoring: how many query terms appear?
+            # We skip 'in', 'language', 'video' etc common stop words if we want, but for now exact matching is fine
+            score = sum(1 for term in search_terms if term in text_corpus)
+            
+            # Acceptance threshold: match at least 1 significant word from the query
+            if score > 0:
+                filtered_results.append(item)
+            else:
+                 # Fallback: if result list is small, keep it anyway
+                 pass 
+        
+        # If filtering was too aggressive, return original results
+        return filtered_results if filtered_results else results
