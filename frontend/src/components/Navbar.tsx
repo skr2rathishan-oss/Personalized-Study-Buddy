@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import api from '../api';
 
 import { useRef, useEffect } from 'react';
 
@@ -10,6 +11,15 @@ function Navbar() {
     const role = localStorage.getItem('role');
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const [profileImage, setProfileImage] = useState(localStorage.getItem('profile_image'));
+
+    useEffect(() => {
+        const handleStorageChange = () => {
+            setProfileImage(localStorage.getItem('profile_image'));
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
 
     // Theme State
     const [darkMode, setDarkMode] = useState(() => {
@@ -25,6 +35,20 @@ function Navbar() {
             localStorage.setItem('theme', 'light');
         }
     }, [darkMode]);
+
+    // Sync Profile Image from Server
+    useEffect(() => {
+        if (token) {
+            api.get('/auth/profile')
+                .then(res => {
+                    if (res.data.profile_image) {
+                        setProfileImage(res.data.profile_image);
+                        localStorage.setItem('profile_image', res.data.profile_image);
+                    }
+                })
+                .catch(err => console.error("Background profile sync failed", err));
+        }
+    }, [token]);
 
     // Theme State Removed
 
@@ -165,7 +189,7 @@ function Navbar() {
                             width: '38px',
                             height: '38px',
                             borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #6366f1, #ec4899)',
+                            background: profileImage ? `url(${profileImage}) no-repeat center/cover` : 'linear-gradient(135deg, #6366f1, #ec4899)',
                             color: 'white',
                             display: 'flex',
                             alignItems: 'center',
@@ -174,7 +198,7 @@ function Navbar() {
                             fontSize: '1rem',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                         }}>
-                            {username ? username[0].toUpperCase() : 'U'}
+                            {!profileImage && (username ? username[0].toUpperCase() : 'U')}
                         </div>
                     </div>
 

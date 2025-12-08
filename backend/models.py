@@ -16,6 +16,7 @@ class User(db.Model):
     university_course = db.Column(db.String(100), nullable=True)
     university_id = db.Column(db.String(50), nullable=True)
     phone_number = db.Column(db.String(20), nullable=True)
+    profile_image = db.Column(db.Text, nullable=True) # Base64 string
     
     enrollments = db.relationship('Enrollment', backref='user', lazy=True)
     

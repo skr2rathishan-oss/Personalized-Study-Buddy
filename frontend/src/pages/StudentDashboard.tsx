@@ -302,6 +302,38 @@ function StudentDashboard() {
                         </>
                     )}
                 </button>
+{selectedCourse && (
+    <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#64748b' }}>
+        <p style={{ marginBottom: '0.5rem', fontWeight: '600' }}>Try searching for:</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <span
+                onClick={() => {
+                    const c = courses.find(c => c.id === selectedCourse);
+                    if (c) setDescription(c.name);
+                }}
+                style={{
+                    background: '#f1f5f9',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    border: '1px solid #e2e8f0',
+                    transition: 'background 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+            >
+                <span>📚</span>
+                {courses.find(c => c.id === selectedCourse)?.name}
+            </span>
+        </div>
+    </div>
+)}
+
+<style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+
             </aside>
 
             {/* Main Content: Stats & Results */}
