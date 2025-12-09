@@ -1,7 +1,44 @@
-import { useState, FormEvent, useEffect } from 'react';
-import api from '../api';
+import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UNIVERSITY_COURSES } from '../data/UniversityInfo';
+import api from '../api';
+import OtpVerification from '../components/OtpVerification';
+
+const UNIVERSITY_COURSES: { [key: string]: string[] } = {
+    "University of Colombo": ["Medicine", "Science", "Law", "Arts", "Management & Finance", "Technology", "Nursing", "Computing"],
+    "University of Peradeniya": ["Agriculture", "Allied Health Sciences", "Arts", "Dental Sciences", "Engineering", "Management", "Medicine", "Science", "Veterinary Medicine"],
+    "University of Sri Jayewardenepura": ["Humanities and Social Sciences", "Applied Sciences", "Management Studies & Commerce", "Medical Sciences", "Technology", "Engineering", "Allied Health Sciences", "Computing"],
+    "University of Kelaniya": ["Commerce and Management Studies", "Computing and Technology", "Humanities", "Medicine", "Science", "Social Sciences"],
+    "University of Moratuwa": ["Architecture", "Engineering", "Information Technology", "Business"],
+    "University of Jaffna": ["Agriculture", "Arts", "Engineering", "Management Studies & Commerce", "Medicine", "Science", "Technology", "Hindu Studies"],
+    "University of Ruhuna": ["Agriculture", "Allied Health Sciences", "Engineering", "Fisheries and Marine Sciences & Technology", "Humanities and Social Sciences", "Management and Finance", "Medicine", "Science", "Technology"],
+    "Eastern University, Sri Lanka": ["Agriculture", "Arts and Culture", "Commerce and Management", "Health Care Sciences", "Science", "Technology"],
+    "South Eastern University of Sri Lanka": ["Applied Sciences", "Arts and Culture", "Engineering", "Management and Commerce", "Islamic Studies & Arabic Language", "Technology"],
+    "Rajarata University of Sri Lanka": ["Agriculture", "Applied Sciences", "Management Studies", "Medicine and Allied Health Sciences", "Social Sciences and Humanities", "Technology"],
+    "Sabaragamuwa University of Sri Lanka": ["Agricultural Sciences", "Applied Sciences", "Geomatics", "Management Studies", "Medicine", "Social Sciences & Languages", "Technology"],
+    "Wayamba University of Sri Lanka": ["Agriculture and Plantation Management", "Applied Sciences", "Business Studies and Finance", "Livestock, Fisheries and Nutrition", "Medicine", "Technology"],
+    "Uva Wellassa University": ["Animal Science and Export Agriculture", "Applied Sciences", "Management", "Technological Studies"],
+    "University of the Visual & Performing Arts": ["Dance", "Music", "Visual Arts"],
+    "Gampaha Wickramarachchi University": ["Indigenous Medicine", "Technology", "Management"],
+    "University of Vavuniya": ["Applied Science", "Business Studies", "Technological Studies"],
+    "Open University of Sri Lanka": ["Education", "Engineering Technology", "Health Sciences", "Humanities and Social Sciences", "Management", "Natural Sciences"],
+    "Ocean University of Sri Lanka": ["Fisheries and Marine Science", "Marine Engineering", "Maritime Transportation Management"],
+    "SLIIT (Sri Lanka Institute of Information Technology)": ["Computing", "Business", "Engineering", "Humanities & Sciences", "Architecture"],
+    "NSBM Green University": ["Business", "Computing", "Engineering"],
+    "CINEC Campus": ["Maritime Sciences", "Engineering", "Management", "IT", "Aviation"],
+    "Horizon Campus": ["Education", "IT", "Management", "Science"],
+    "SAEGIS Campus": ["Business", "IT"],
+    "ESOFT Metro Campus": ["Computing", "Business", "Engineering"],
+    "ICBT Campus": ["IT", "Business", "Engineering", "Psychology"],
+    "IIT (Informatics Institute of Technology)": ["Software Engineering", "Computer Science", "Business Information Systems"],
+    "KDU (Kotelawala Defence University)": ["Defence Studies", "Medicine", "Engineering", "Law", "Management", "Computing"],
+    "APIIT (Asia Pacific Institute of Information Technology)": ["Computing", "Business", "Law"],
+    "Royal Institute of Colombo": ["Law", "Economics", "International Relations", "Finance"],
+    "SLTC Research University": ["Engineering", "Technology", "Music", "Professional Studies"],
+    "Aquinas College of Higher Studies": ["Theology", "Psychology", "Management", "IT"],
+    "KIU (KAATSU International University)": ["Nursing", "Biomedical Science", "Psychology", "Management"],
+    "NIBM (National Institute of Business Management)": ["Business Management", "Computing", "Design", "Engineering"],
+    "Standard": ["Computer Science", "software Engineering", "Information Technology", "Business Management", "Accounting", "Marketing", "Medicine", "Engineering", "Law", "Arts", "Psychology", "Other"]
+};
 
 function Register() {
     const navigate = useNavigate();
@@ -18,7 +55,7 @@ function Register() {
 
     // Academic
     const [university, setUniversity] = useState('');
-    const [selectedUniId, setSelectedUniId] = useState('');
+
     const [course, setCourse] = useState('');
     const [studentId, setStudentId] = useState('');
 
@@ -29,7 +66,8 @@ function Register() {
     // Credentials
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [otp, setOtp] = useState('');
+    // OTP is now managed in child component, but we keep state here if needed for final register call OR pass it up
+    // Actually, let's just accept it in the final handler
 
     // List of Universities
     const sriLankaUniversities = [
@@ -76,8 +114,8 @@ function Register() {
         }
     };
 
-    const handleVerifyAndRegister = async (e: FormEvent) => {
-        e.preventDefault();
+    const handleVerifyAndRegister = async (otpCode: string) => {
+        // e: FormEvent is no longer passed directly, simpler to just take OTP
         setLoading(true);
         try {
             await api.post('/auth/register', {
@@ -90,7 +128,7 @@ function Register() {
                 university_course: course,
                 university_student_id: studentId,
                 phone_number: phoneNumber,
-                otp
+                otp: otpCode
             });
             alert('Registration verified and successful!');
             navigate('/login');
@@ -239,37 +277,11 @@ function Register() {
                     )}
 
                     {step === 2 && (
-                        <form onSubmit={handleVerifyAndRegister}>
-                            <div className="form-group-clean" style={{ textAlign: 'center' }}>
-                                <label style={{ textAlign: 'center', marginBottom: '1rem' }}>One-Time Password (OTP)</label>
-                                <input
-                                    type="text"
-                                    className="otp-input"
-                                    placeholder="----"
-                                    value={otp}
-                                    onChange={e => setOtp(e.target.value)}
-                                    required
-                                    maxLength={6}
-                                />
-                                <small style={{ display: 'block', marginTop: '1rem', color: 'var(--text-secondary)' }}>
-                                    Please enter the verification code sent to your mobile.
-                                </small>
-                            </div>
-
-                            <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <button type="submit" className="btn-modern-primary" disabled={loading}>
-                                    {loading ? 'Verifying...' : 'Complete Registration'}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn-modern-outline"
-                                    onClick={() => setStep(1)}
-                                    style={{ border: 'none' }}
-                                >
-                                    ← Back to Details
-                                </button>
-                            </div>
-                        </form>
+                        <OtpVerification
+                            phoneNumber={phoneNumber}
+                            onBack={() => setStep(1)}
+                            onSuccess={(otpCode) => handleVerifyAndRegister(otpCode)}
+                        />
                     )}
                 </div>
             </div>

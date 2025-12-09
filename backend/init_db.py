@@ -8,44 +8,23 @@ def seed_data():
         
         print("Seeding database...")
 
-        # Create Users
-        # Using a fixed hash for simplicity/demo
+        # Create Manager Account ONLY
         pw = bcrypt.generate_password_hash("password").decode('utf-8')
-        s1 = User(username="student1", password_hash=pw, role="student")
-        s2 = User(username="student2", password_hash=pw, role="student")
-        a1 = User(username="admin1", password_hash=pw, role="admin")
         m1 = User(username="manager1", password_hash=pw, role="management")
-        a2 = User(username="admin2", password_hash=pw, role="admin")
-        a3 = User(username="admin3", password_hash=pw, role="admin")
+        db.session.add(m1)
+        db.session.commit()
         
-        # Create Universities
+        # Create Universities (Static Data)
         u1 = University(name="University of Technology")
         u2 = University(name="Science Academy")
         db.session.add_all([u1, u2])
         db.session.commit()
         
-        # Assign Users to Unis
-        s1.university_id = u1.id
-        s2.university_id = u2.id
-        
-        db.session.add_all([s1, s2, a1, a2, a3, m1])
-        db.session.commit()
-
-        # Create Degrees
-        d1 = Degree(name="BSc Computer Science", university="University of Technology", admin_id=a1.id)
-        d2 = Degree(name="BSc Software Engineering", university="University of Technology", admin_id=a2.id)
-        d3 = Degree(name="BSc Data Science", university="Science Academy", admin_id=a3.id)
+        # Create Degrees (No Admin initially)
+        d1 = Degree(name="BSc Computer Science", university="University of Technology", admin_id=None)
+        d2 = Degree(name="BSc Software Engineering", university="University of Technology", admin_id=None)
+        d3 = Degree(name="BSc Data Science", university="Science Academy", admin_id=None)
         db.session.add_all([d1, d2, d3])
-        db.session.commit()
-
-        # Update Users with Degree info (for testing)
-        s1.university_course = "BSc Computer Science"
-        s1.university = "University of Technology"
-        s2.university_course = "BSc Data Science"
-        s2.university = "Science Academy"
-        a1.university = "University of Technology"
-        a2.university = "University of Technology"
-        a3.university = "Science Academy"
         db.session.commit()
 
         # Create Courses (Modules) linked to Degrees
@@ -69,15 +48,6 @@ def seed_data():
         db.session.add_all([t1, t2, t3, t4, t5, t6, t7, t8, t9])
         db.session.commit()
         
-        # Enrollments
-        e1 = Enrollment(user_id=s1.id, course_id=c1.id)
-        e2 = Enrollment(user_id=s1.id, course_id=c2.id)
-        e3 = Enrollment(user_id=s1.id, course_id=c3.id) # Student 1 also in Web Dev
-        e4 = Enrollment(user_id=s2.id, course_id=c3.id) # Student 2 in Web Dev
-        e5 = Enrollment(user_id=s2.id, course_id=c4.id) # Student 2 in Data Science
-        db.session.add_all([e1, e2, e3, e4, e5])
-        db.session.commit()
-
         # Create Resources
         resources = [
             # IT101
@@ -103,23 +73,7 @@ def seed_data():
         db.session.add_all(resources)
         db.session.commit()
 
-        # Add some initial ratings
-        # resource_id mapping: 
-        # 1-6 (IT101), 7-8 (CS201), 9-12 (WEB301), 13-15 (DS401)
-        r1 = Rating(resource_id=1, user_id=s1.id, score=5, time_spent=120)
-        r2 = Rating(resource_id=1, user_id=s2.id, score=4, time_spent=100)
-        r3 = Rating(resource_id=2, user_id=s1.id, score=3, time_spent=30)
-        r4 = Rating(resource_id=7, user_id=s1.id, score=5, time_spent=200)
-        # Ratings for new courses
-        r5 = Rating(resource_id=9, user_id=s1.id, score=5, time_spent=300) # HTML Video
-        r6 = Rating(resource_id=10, user_id=s1.id, score=4, time_spent=60) # MDN
-        r7 = Rating(resource_id=11, user_id=s1.id, score=5, time_spent=450) # CSS Tricks (Loved it)
-        r8 = Rating(resource_id=9, user_id=s2.id, score=3, time_spent=100) # HTML Video
-        r9 = Rating(resource_id=13, user_id=s2.id, score=5, time_spent=400) # Pandas Doc
-        db.session.add_all([r1, r2, r3, r4, r5, r6, r7, r8, r9])
-        db.session.commit()
-
-        print("Database seeded successfully!")
+        print("Database seeded successfully! Only Manager1 exists.")
 
 if __name__ == "__main__":
     seed_data()
