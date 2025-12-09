@@ -13,3 +13,4 @@ backend/db.sqlite3
 backend/instance/
 .vscode/
 .idea/
+cloudflared.exe
