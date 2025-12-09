@@ -91,8 +91,20 @@ function Login() {
                         </button>
                     </div>
 
-                    <div className="demo-credentials-clean">
-                        <small>Demo: student1 / password</small>
+                    <div className="demo-credentials-clean" style={{ marginTop: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Demo Accounts</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '0.75rem' }}>
+                            <div onClick={() => { setUsername('student1'); setPassword('password'); }} style={{ cursor: 'pointer', padding: '4px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }}>
+                                <strong>Student</strong><br /><span style={{ color: '#64748b' }}>student1</span>
+                            </div>
+                            <div onClick={() => { setUsername('admin1'); setPassword('password'); }} style={{ cursor: 'pointer', padding: '4px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }}>
+                                <strong>Admin</strong><br /><span style={{ color: '#64748b' }}>admin1</span>
+                            </div>
+                            <div onClick={() => { setUsername('manager1'); setPassword('password'); }} style={{ cursor: 'pointer', padding: '4px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }}>
+                                <strong>Mgmt</strong><br /><span style={{ color: '#64748b' }}>manager1</span>
+                            </div>
+                        </div>
+                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>Password for all: <strong>password</strong></p>
                     </div>
                 </div>
             </div>

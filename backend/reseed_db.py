@@ -134,6 +134,16 @@ def reseed():
                 degree_name = 'BSc Engineering (Computer)'
                 user.university_course = degree_name
 
+            # Create specific Admin1 as per guide
+            if i == 1:
+                user.username = 'admin1'
+                user.email = 'admin1@uni.lk'
+                user.role = 'admin'
+                user.password_hash = bcrypt.generate_password_hash('password').decode('utf-8')
+                user.university = 'University of Ruhuna'
+                degree_name = 'BSc Engineering (Computer)'
+                user.university_course = degree_name
+
             db.session.add(user)
             db.session.commit() # Commit to get ID
             admins.append(user)

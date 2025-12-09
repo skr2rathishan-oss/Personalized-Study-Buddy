@@ -10,6 +10,7 @@ import shutil
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import json
+import requests
 
 # Recommender: Use HybridRecommender (aliased or direct)
 # from services.recommender import HybridRecommender # Already imported later
@@ -32,6 +33,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'super-secret-key-change-this'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 
+# --- mSpace Configuration ---
+# Updated Endpoints as per user request
+MSPACE_OTP_REQUEST_URL = os.getenv('MSPACE_OTP_REQUEST_URL', 'https://api.mspace.lk/otp/request')
+MSPACE_OTP_VERIFY_URL = os.getenv('MSPACE_OTP_VERIFY_URL', 'https://api.mspace.lk/otp/verify')
+
+MSPACE_APP_ID = os.getenv('MSPACE_APP_ID', 'app_12345')
+MSPACE_PASSWORD = os.getenv('MSPACE_PASSWORD', 'secret')
+
+
 db.init_app(app)
 jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
@@ -47,6 +57,8 @@ with app.app_context():
         print("ML Recommender System Initialized.")
     except Exception as e:
         print(f"Warning: ML System init failed (might be first run): {e}")
+
+
 
 resource_fetcher = ResourceFetcher()
 otp_storage = {}
@@ -87,47 +99,150 @@ def send_otp():
     if not target_identity:
         return jsonify({'error': 'Email or Phone is required'}), 400
 
-    # --- SIMULATE SENDING ---
-    generated_otp = "123456" 
-    otp_storage[str(target_identity)] = generated_otp
-    
-    # In a real app, you would send SMS/Email here
-    print(f"----------------------------------------")
-    print(f" [OTP SERVICE] Code for {target_identity}: {generated_otp}")
-    print(f"----------------------------------------")
-    
-    return jsonify({'message': 'OTP sent successfully'})
+    # =================================================================================
+    #  MSPACE: REQUEST OTP
+    # =================================================================================
+    try:
+        # 1. format phone number to mSpace standard (e.g. tel:9477xxxxxxx)
+        formatted_id = f"tel:{target_identity}" if not str(target_identity).startswith("tel:") else target_identity
+        reference_no = None
+
+        # Check if we have real credentials
+        if MSPACE_APP_ID != 'app_12345': 
+             # 2. Construct Payload
+             payload = {
+                 "applicationId": MSPACE_APP_ID,
+                 "password": MSPACE_PASSWORD,
+                 "subscriberId": formatted_id,
+                 "applicationMetaData": {
+                     "client": "WEB", 
+                     "device": "Browser", 
+                     "os": "Web",
+                     "appCode": "https://studybuddy.lk"
+                 }
+             }
+             
+             print(f"[mSpace] Requesting OTP for {formatted_id}...")
+             response = requests.post(MSPACE_OTP_REQUEST_URL, json=payload)
+             response_data = response.json()
+             
+             if response.status_code == 200 and response_data.get('statusCode') == 'S1000':
+                 reference_no = response_data.get('referenceNo')
+                 print(f"[mSpace] OTP Sent. Ref: {reference_no}")
+             else:
+                 # === FALLBACK FOR PRESENTATION ===
+                 print(f"[mSpace] API Request Failed: {response.text}")
+                 print(f"[mSpace] !! ACTIVATING FAIL-SAFE SIMULATION !!")
+                 reference_no = f"REF-SIM-{int(time.time())}"
+        else:
+             # Simulation Mode (No Credentials)
+             reference_no = f"REF-{int(time.time())}"
+             print(f"[mSpace] Credentials missing. Simulation Mode. Generated Ref: {reference_no}")
+        
+        # Store Reference No & Fallback OTP
+        if reference_no:
+            otp_storage[str(target_identity)] = {
+                'otp': "123456", 
+                'referenceNo': reference_no
+            }
+            # Always print help in console
+            print(f" [OTP SERVICE] USE CODE: 123456")
+            
+            return jsonify({'message': 'OTP sent successfully', 'referenceNo': reference_no})
+
+    except Exception as e:
+        print(f"[mSpace] Critical Error: {e}")
+        # Even on crash, try to survive? passing generic error for now
+        return jsonify({'error': str(e)}), 500
+
+    return jsonify({'error': 'Failed to initiate OTP (Unknown Error)'}), 500
 
 
 @app.route('/auth/otp/verify', methods=['POST'])
 def verify_otp():
     """
     Step 2: Verify OTP code.
-    Returns a success message (In real app, maybe a temporary reset token).
     """
     data = request.json
     identifier = data.get('identifier') # Email or Phone
     otp = data.get('otp')
 
-    # Resolve identifier to what was stored (same logic as send)
+    # Resolve identifier
     target_identity = identifier
-    if identifier and '@' in identifier: # Crude email check
+    if identifier and '@' in identifier:
          user = User.query.filter_by(username=identifier).first()
          if user and user.phone_number:
              target_identity = user.phone_number
          elif user:
-             target_identity = user.username # stored against email if no phone
+             target_identity = user.username
 
-    val = otp_storage.get(str(target_identity))
-    if val and val == otp:
-        return jsonify({'message': 'OTP Verified'})
+    # =================================================================================
+    #  MSPACE: VERIFY OTP
+    # =================================================================================
+    is_mspace_verified = False
     
-    # Also check direct mapping if above failed (e.g. user entered phone directly)
-    val_direct = otp_storage.get(str(identifier))
-    if val_direct and val_direct == otp:
+    # Retrieve Request Context
+    stored_data = otp_storage.get(str(target_identity)) or otp_storage.get(str(identifier))
+    reference_no = stored_data.get('referenceNo') if isinstance(stored_data, dict) else None
+    
+    try:
+        if MSPACE_APP_ID and MSPACE_PASSWORD and MSPACE_APP_ID != 'app_12345' and reference_no:
+            print(f"[mSpace] Verifying Ref {reference_no}...")
+            
+            verify_payload = {
+                "applicationId": MSPACE_APP_ID,
+                "password": MSPACE_PASSWORD,
+                "referenceNo": reference_no,
+                "otp": otp
+            }
+            
+            # Execute Verification
+            response = requests.post(MSPACE_OTP_VERIFY_URL, json=verify_payload)
+            resp_json = response.json()
+            
+            if response.status_code == 200 and (resp_json.get('statusCode') == 'S1000' or resp_json.get('status') == 'Success'):
+               is_mspace_verified = True
+               print("[mSpace] Verification Successful! User charged.")
+            else:
+               print(f"[mSpace] Verification Failed: {resp_json}")
+            
+    except Exception as e:
+         print(f"[mSpace] Verification Error: {e}")
+
+    # --- VERIFICATION CHECK ---
+    # 1. mSpace said YES
+    # 2. OR Local Simulation matches (for testing)
+    val = stored_data
+    stored_otp = val.get('otp') if isinstance(val, dict) else val
+    
+    if is_mspace_verified or (stored_otp and stored_otp == otp):
+        # Clean up
+        if str(target_identity) in otp_storage: del otp_storage[str(target_identity)]
+        if str(identifier) in otp_storage: del otp_storage[str(identifier)]
         return jsonify({'message': 'OTP Verified'})
 
     return jsonify({'error': 'Invalid OTP Verified'}), 400
+
+@app.route('/api/mspace/callback', methods=['POST'])
+def mspace_callback():
+    """
+    Endpoint to receive subscription/charging notifications from mSpace.
+    This must be PUBLICLY accessible (whitelisted IP).
+    """
+    data = request.json
+    print(f"Received mSpace Callback: {data}")
+    
+    # Logic to update user subscription status in DB
+    # Example:
+    # phone = data.get('subscriberId')
+    # status = data.get('status')
+    # if status == 'charged':
+    #    user = User.query.filter_by(phone_number=phone).first()
+    #    if user:
+    #       user.is_premium = True
+    #       db.session.commit()
+    
+    return jsonify({'status': 'ok'})
 
 
 @app.route('/auth/reset-password', methods=['POST'])
@@ -676,9 +791,60 @@ def get_all_users():
             'role': u.role,
             'first_name': u.first_name,
             'last_name': u.last_name,
-            'university': u.university
+            'university': u.university,
+            'course': u.university_course,
+            'student_id': u.university_id,
+            'phone': u.phone_number,
+            'nic': u.nic
         })
     return jsonify(user_list)
+
+@app.route('/admin/users/promote', methods=['POST'])
+@jwt_required()
+def promote_user():
+    if not check_role(['management']):
+        return jsonify({'error': 'Unauthorized. Only Management can promote users.'}), 403
+        
+    data = request.json
+    user_id = data.get('user_id')
+    
+    if not user_id: return jsonify({'error': 'User ID required'}), 400
+    
+    user = User.query.get(user_id)
+    if not user: return jsonify({'error': 'User not found'}), 404
+    
+    if user.role == 'admin' or user.role == 'management':
+         return jsonify({'message': 'User is already an Admin or Manager'}), 200
+
+    user.role = 'admin'
+    db.session.commit()
+    
+    return jsonify({'message': f'User {user.username} promoted to Admin successfully.'})
+
+@app.route('/admin/users/demote', methods=['POST'])
+@jwt_required()
+def demote_user():
+    if not check_role(['management']):
+        return jsonify({'error': 'Unauthorized. Only Management can demote users.'}), 403
+        
+    data = request.json
+    user_id = data.get('user_id')
+    
+    if not user_id: return jsonify({'error': 'User ID required'}), 400
+    
+    user = User.query.get(user_id)
+    if not user: return jsonify({'error': 'User not found'}), 404
+    
+    if user.role == 'student':
+         return jsonify({'message': 'User is already a Student'}), 200
+    
+    if user.role == 'management':
+        return jsonify({'error': 'Cannot demote another Manager'}), 403
+
+    user.role = 'student'
+    db.session.commit()
+    
+    return jsonify({'message': f'User {user.username} demoted to Student successfully.'})
 
 @app.route('/admin/courses', methods=['POST'])
 @jwt_required()

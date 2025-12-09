@@ -35,19 +35,6 @@ function StudentDashboard() {
     const [description, setDescription] = useState('');
     const [selectedLanguage, setSelectedLanguage] = useState('English');
 
-    // Student Details
-    const [studentInfo, setStudentInfo] = useState<{ uni: string, course: string } | null>(null);
-
-    useEffect(() => {
-        // Fetch Profile Data
-        api.get('/auth/profile').then(res => {
-            setStudentInfo({
-                uni: res.data.university || 'University Not Set',
-                course: res.data.university_course || 'Course Not Set'
-            });
-        }).catch(console.error);
-    }, []);
-
     useEffect(() => {
         fetchCourses();
     }, []);
@@ -55,7 +42,8 @@ function StudentDashboard() {
     // Re-fetch recommendations when filters change (ONLY if resources are already showing)
     useEffect(() => {
         if (selectedTopic && resources.length > 0) {
-            // Optional: You could auto-fetch here
+            // Optional: You could auto-fetch here, but image implies manual button click/flow
+            // For now, let's keep it manual or rigorous on the button
         }
     }, [selectedFormat]);
 
@@ -93,45 +81,23 @@ function StudentDashboard() {
     };
 
     const handleFetch = async () => {
-        if (!selectedCourse && !description.trim()) {
-            alert("Please select a module or enter a search query.");
+        if (!selectedCourse) {
+            alert("Please select a course.");
             return;
         }
-
+        // Proceed even if topic is not selected (Course-wide recommendations)
         setLoading(true);
-        // Clear resources to show fresh state
-        setResources([]);
-
         try {
-            const payload = {
+            const res = await api.post('/recommend', {
                 course_id: selectedCourse,
                 topic_id: selectedTopic,
+                format: selectedFormat || null,
                 search_query: description,
-                language: selectedLanguage,
-                format: selectedFormat
-            };
-
-            // Stage 1: Fast (DB Only)
-            const resFast = await api.post('/recommend', { ...payload, execution_mode: 'fast' });
-            setResources(resFast.data);
-
-            // Stage 2: Agent (Background Fetch for new items)
-            // We force fetch new items to satisfy "dynamic showing"
-            const resAgent = await api.post('/recommend', { ...payload, execution_mode: 'agent' });
-
-            const newItems = resAgent.data;
-            if (newItems.length > 0) {
-                // Append new items to existing list, avoiding duplicates
-                setResources(prev => {
-                    const existingUrls = new Set(prev.map(r => r.url));
-                    const uniqueNew = newItems.filter((r: Resource) => !existingUrls.has(r.url));
-                    return [...prev, ...uniqueNew];
-                });
-            }
-
+                language: selectedLanguage
+            });
+            setResources(res.data);
         } catch (err) {
             console.error(err);
-            // Don't alert if first stage worked but second failed
         } finally {
             setLoading(false);
         }
@@ -153,187 +119,166 @@ function StudentDashboard() {
     return (
         <div className="dashboard-layout animate-fade-in" style={{ marginTop: '1rem' }}>
 
-            <aside className="sidebar" style={{
-                background: 'white',
-                border: '1px solid rgba(226, 232, 240, 0.8)',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)',
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '1rem', borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ background: '#EEF2FF', padding: '8px', borderRadius: '10px', color: '#4F46E5', fontSize: '1.1rem' }}>⚡</div>
-                    <div>
-                        <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b', fontWeight: 700 }}>Discovery Filters</h3>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Customize your learning</p>
-                    </div>
+            {/* Left Sidebar: Filters & Search */}
+            <aside className="sidebar">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', paddingBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', width: '100%' }}>
+                    <span style={{ fontSize: '2rem' }}>⚡</span>
+                    <h3 className="sidebar-title" style={{
+                        border: 'none',
+                        padding: 0,
+                        margin: 0,
+                        textTransform: 'none',
+                        fontSize: '1.75rem',
+                        fontWeight: '800',
+                        lineHeight: '1.2',
+                        background: 'linear-gradient(90deg, #f97316, #ef4444)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        display: 'inline-block'
+                    }}>
+                        Smart Filters
+                    </h3>
                 </div>
 
-                {/* Scope Selection */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-                    <div className="search-group">
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase', marginBottom: '6px', display: 'block', letterSpacing: '0.5px' }}>
-                            Target Module
-                        </label>
-                        <select
-                            className="form-select-modern"
-                            value={selectedCourse || ''}
-                            onChange={handleCourseChange}
-                            style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#334155', outline: 'none', transition: 'box-shadow 0.2s' }}
-                        >
-                            <option value="">Select a module...</option>
-                            {courses.map(c => (
-                                <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="search-group">
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase', marginBottom: '6px', display: 'block', letterSpacing: '0.5px' }}>
-                            Specific Topic
-                        </label>
-                        <select
-                            className="form-select-modern"
-                            value={selectedTopic || ''}
-                            onChange={handleTopicChange}
-                            disabled={!selectedCourse}
-                            style={{
-                                width: '100%',
-                                padding: '12px',
-                                borderRadius: '10px',
-                                border: '1px solid #cbd5e1',
-                                fontSize: '0.9rem',
-                                color: '#334155',
-                                background: selectedCourse ? 'white' : '#f8fafc',
-                                opacity: selectedCourse ? 1 : 0.6,
-                                cursor: selectedCourse ? 'pointer' : 'not-allowed'
-                            }}
-                        >
-                            <option value="">{selectedCourse ? (topics.length > 0 ? "Select a topic..." : "No topics available") : "Select module first"}</option>
-                            {topics.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                <div className="search-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                        <span>📚</span> Course
+                    </label>
+                    <select
+                        className="form-select"
+                        value={selectedCourse || ''}
+                        onChange={handleCourseChange}
+                    >
+                        <option value="">Select a course...</option>
+                        {courses.map(c => (
+                            <option key={c.id} value={c.id}>
+                                {c.code} - {c.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
-                {/* Preferences Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Format</label>
+                <div className="search-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                        <span>🏷️</span> Topic
+                    </label>
+                    <select
+                        className="form-select"
+                        value={selectedTopic || ''}
+                        onChange={handleTopicChange}
+                        disabled={!selectedCourse}
+                    >
+                        <option value="">{selectedCourse ? (topics.length > 0 ? "Select a topic..." : "No topics available") : "Select course first"}</option>
+                        {topics.map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div className="search-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                            <span>📄</span> Format
+                        </label>
                         <select
+                            className="form-select"
                             value={selectedFormat}
                             onChange={e => setSelectedFormat(e.target.value)}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#334155' }}
                         >
-                            <option value="">All</option>
+                            <option value="">Any</option>
                             <option value="video">Video</option>
                             <option value="article">Article</option>
                             <option value="pdf">PDF</option>
                         </select>
                     </div>
-                    <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Language</label>
+
+                    <div className="search-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                            <span>🌐</span> Lang
+                        </label>
                         <select
+                            className="form-select"
                             value={selectedLanguage}
                             onChange={e => setSelectedLanguage(e.target.value)}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#334155' }}
                         >
-                            <option value="English">English</option>
-                            <option value="Tamil">Tamil</option>
-                            <option value="Sinhala">Sinhala</option>
+                            <option value="English">EN</option>
+                            <option value="Tamil">TA</option>
+                            <option value="Sinhala">SI</option>
                         </select>
                     </div>
                 </div>
 
-                {/* AI Search */}
-                <div className="search-group" style={{ background: '#F8FAFC', padding: '12px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4F46E5', fontWeight: 600, fontSize: '0.85rem', marginBottom: '8px' }}>
-                        <span>✨</span> AI Custom Request
+                <div className="search-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                        <span>🔍</span> Smart Search
                     </label>
                     <textarea
-                        placeholder="e.g. 'Explain recursion with simple examples'..."
+                        className="form-input"
+                        placeholder="Tell me specifically what you want to learn..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            minHeight: '80px',
-                            fontSize: '0.9rem',
-                            resize: 'vertical',
-                            background: 'white',
-                            fontFamily: 'inherit',
-                            color: '#334155'
-                        }}
                     />
                 </div>
 
-                {/* Action Button */}
                 <button
+                    className="btn-search"
                     onClick={handleFetch}
                     style={{
                         width: '100%',
-                        background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                        background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
                         color: 'white',
-                        padding: '14px',
-                        borderRadius: '12px',
-                        fontWeight: '700',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        fontWeight: '600',
                         fontSize: '1rem',
-                        border: 'none',
+                        boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)',
                         cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
-                        transition: 'transform 0.1s, box-shadow 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px'
+                        border: 'none',
+                        transition: 'transform 0.1s'
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 15px rgba(37, 99, 235, 0.3)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.2)'; }}
+                    onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+                    onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
                 >
                     {loading ? (
-                        <>
-                            <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                            <span style={{ fontSize: '0.95rem' }}>Processing...</span>
-                        </>
-                    ) : (
-                        <>
-                            <span>🔍</span> Find Resources
-                        </>
-                    )}
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <div className="loading-spinner" style={{ width: '16px', height: '16px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                            Finding...
+                        </span>
+                    ) : 'Find Resources 🚀'}
                 </button>
-{selectedCourse && (
-    <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#64748b' }}>
-        <p style={{ marginBottom: '0.5rem', fontWeight: '600' }}>Try searching for:</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            <span
-                onClick={() => {
-                    const c = courses.find(c => c.id === selectedCourse);
-                    if (c) setDescription(c.name);
-                }}
-                style={{
-                    background: '#f1f5f9',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    border: '1px solid #e2e8f0',
-                    transition: 'background 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
-                onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
-            >
-                <span>📚</span>
-                {courses.find(c => c.id === selectedCourse)?.name}
-            </span>
-        </div>
-    </div>
-)}
 
-<style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                {selectedCourse && (
+                    <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#64748b' }}>
+                        <p style={{ marginBottom: '0.5rem', fontWeight: '600' }}>Try searching for:</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            <span
+                                onClick={() => {
+                                    const c = courses.find(c => c.id === selectedCourse);
+                                    if (c) setDescription(c.name);
+                                }}
+                                style={{
+                                    background: '#f1f5f9',
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    border: '1px solid #e2e8f0',
+                                    transition: 'background 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                                onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+                            >
+                                <span>📚</span>
+                                {courses.find(c => c.id === selectedCourse)?.name}
+                            </span>
+                        </div>
+                    </div>
+                )}
 
+
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
             </aside>
 
             {/* Main Content: Stats & Results */}
@@ -342,13 +287,8 @@ function StudentDashboard() {
                 {/* Hero / Stats Section */}
                 <div style={{ marginBottom: '2.5rem' }}>
                     <h1 className="section-title" style={{ fontSize: '2rem', marginBottom: '0.5rem', marginTop: 0, background: 'linear-gradient(90deg, #4F46E5, #9333EA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block' }}>
-                        Welcome back, {localStorage.getItem('username') || 'Student'}!
+                        Welcome back, Student!
                     </h1>
-                    {studentInfo && (
-                        <div className="animate-slide-up" style={{ fontSize: '1.1rem', fontWeight: 600, color: '#4F46E5', marginBottom: '0.5rem', background: '#EEF2FF', display: 'inline-block', padding: '4px 12px', borderRadius: '20px' }}>
-                            🎓 {studentInfo.uni} <span style={{ margin: '0 8px', color: '#CBD5E1' }}>|</span> 📚 {studentInfo.course}
-                        </div>
-                    )}
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
                         Ready to learn something new today?
                     </p>
