@@ -13,7 +13,8 @@ function Profile() {
         phone_number: '',
         university: '',
         university_course: '',
-        university_id: ''
+        university_id: '',
+        profile_image: ''
     });
 
     useEffect(() => {
@@ -30,7 +31,8 @@ function Profile() {
                 phone_number: res.data.phone_number || '',
                 university: res.data.university || '',
                 university_course: res.data.university_course || '',
-                university_id: res.data.university_id || ''
+                university_id: res.data.university_id || '',
+                profile_image: res.data.profile_image || ''
             });
         } catch (err) {
             console.error("Failed to load profile", err);
@@ -39,12 +41,45 @@ function Profile() {
         }
     };
 
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64String = reader.result as string;
+                // Immediate separate update
+                try {
+                    // Optimistic UI update
+                    setFormData(prev => ({ ...prev, profile_image: base64String }));
+
+                    // Separate API call to update only image logic (simulated via full update for now, 
+                    // but could be separate endpoint if backend supported PATCH)
+                    // For now, we just update the full profile with the new image immediately.
+                    await api.put('/auth/profile', { ...formData, profile_image: base64String });
+
+                    localStorage.setItem('profile_image', base64String);
+                    window.dispatchEvent(new Event('storage'));
+                    alert('Profile photo updated!');
+                } catch (err) {
+                    console.error("Failed to upload photo", err);
+                    alert("Failed to upload photo");
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSave = async (e: FormEvent) => {
         e.preventDefault();
         setSaving(true);
         try {
             await api.put('/auth/profile', formData);
+            if (formData.profile_image) {
+                localStorage.setItem('profile_image', formData.profile_image);
+            }
             alert('Profile updated successfully!');
+            // Trigger storage event for Navbar update (optional, or just reload)
+            window.dispatchEvent(new Event('storage'));
         } catch (err: any) {
             alert('Failed to update: ' + (err.response?.data?.error || err.message));
         } finally {
@@ -58,8 +93,62 @@ function Profile() {
         <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem', maxWidth: '800px' }}>
             <h1 className="section-title">My Profile</h1>
 
+            {/* Separate Profile Photo Card */}
+            <div className="profile-content-card" style={{ marginBottom: '2rem', textAlign: 'center' }}>
+                <h3 className="section-subtitle" style={{ marginBottom: '1rem', textAlign: 'center' }}>Profile Photo</h3>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                    <div style={{ position: 'relative' }}>
+                        <div style={{
+                            width: '120px',
+                            height: '120px',
+                            borderRadius: '50%',
+                            background: formData.profile_image ? `url(${formData.profile_image}) no-repeat center/cover` : 'linear-gradient(135deg, #6366f1, #ec4899)',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '3rem',
+                            fontWeight: '700',
+                            border: '4px solid white',
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                        }}>
+                            {!formData.profile_image && formData.first_name ? formData.first_name[0] : (!formData.profile_image && 'U')}
+                        </div>
+                        <label htmlFor="profile-upload" style={{
+                            position: 'absolute',
+                            bottom: '0',
+                            right: '0',
+                            background: 'white',
+                            borderRadius: '50%',
+                            width: '36px',
+                            height: '36px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            border: '1px solid #e5e7eb',
+                            transition: 'all 0.2s'
+                        }} className="camera-btn">
+                            📷
+                        </label>
+                        <input
+                            id="profile-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            style={{ display: 'none' }}
+                        />
+                    </div>
+                </div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    Click the camera icon to update your photo.<br />Changes are saved automatically.
+                </p>
+            </div>
+
             <div className="profile-content-card">
                 <form onSubmit={handleSave} className="animate-fade-in">
+
                     <div className="grid-2">
                         <div className="form-group-clean">
                             <label>First Name</label>

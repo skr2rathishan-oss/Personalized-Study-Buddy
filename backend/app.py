@@ -218,23 +218,30 @@ def login():
     data = request.json
     username = data.get('username')
     password = data.get('password')
-    
-    print(f"Login Attempt: User={username}")
+# Log login attempt
+print(f"Login Attempt: User={username}")
 
-    # Case insensitive search
-    user = User.query.filter(User.username.ilike(username)).first()
-    if user:
-        if bcrypt.check_password_hash(user.password_hash, password):
-            print("Login Success: Creds valid")
-            token = create_access_token(
-                identity=str(user.id), 
-                additional_claims={'role': user.role, 'username': user.username}
-            )
-            return jsonify({'token': token, 'role': user.role, 'username': user.username})
-        else:
-            print("Login Failed: Password incorrect")
+# Case insensitive search
+user = User.query.filter(User.username.ilike(username)).first()
+
+if user:
+    if bcrypt.check_password_hash(user.password_hash, password):
+        print("Login Success: Creds valid")
+        token = create_access_token(
+            identity=str(user.id), 
+            additional_claims={'role': user.role, 'username': user.username}
+        )
+        return jsonify({
+            'token': token, 
+            'role': user.role, 
+            'username': user.username,
+            'profile_image': user.profile_image  # include profile_image
+        })
     else:
-        print("Login Failed: User not found")
+        print("Login Failed: Password incorrect")
+else:
+    print("Login Failed: User not found")
+
 
     return jsonify({'error': 'Invalid credentials'}), 401
 
@@ -259,7 +266,10 @@ def profile():
             'phone_number': user.phone_number,
             'university': user.university,
             'university_course': user.university_course,
-            'university_id': user.university_id
+            'university': user.university,
+            'university_course': user.university_course,
+            'university_id': user.university_id,
+            'profile_image': user.profile_image
         })
     
     if request.method == 'PUT':
@@ -270,7 +280,10 @@ def profile():
         if 'phone_number' in data: user.phone_number = data['phone_number']
         if 'university' in data: user.university = data['university']
         if 'university_course' in data: user.university_course = data['university_course']
+        if 'university' in data: user.university = data['university']
+        if 'university_course' in data: user.university_course = data['university_course']
         if 'university_id' in data: user.university_id = data['university_id']
+        if 'profile_image' in data: user.profile_image = data['profile_image']
         
         db.session.commit()
         return jsonify({'message': 'Profile updated successfully'})

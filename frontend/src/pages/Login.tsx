@@ -14,6 +14,11 @@ function Login() {
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('role', res.data.role);
             localStorage.setItem('username', res.data.username);
+            if (res.data.profile_image) {
+                localStorage.setItem('profile_image', res.data.profile_image);
+            } else {
+                localStorage.removeItem('profile_image');
+            }
 
             if (res.data.role === 'admin' || res.data.role === 'management') {
                 navigate('/admin');
