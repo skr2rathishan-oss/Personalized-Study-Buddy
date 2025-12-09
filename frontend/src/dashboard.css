@@ -40,7 +40,7 @@ body.dark-mode {
     grid-template-columns: 1.5fr 1fr;
     grid-template-rows: auto 1fr;
     /* Row 1: Headers, Row 2: Content */
-    gap: 0 2rem;
+    gap: 2rem;
     align-items: start;
     width: 98%;
     max-width: 1800px;
