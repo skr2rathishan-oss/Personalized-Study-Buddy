@@ -218,29 +218,29 @@ def login():
     data = request.json
     username = data.get('username')
     password = data.get('password')
-# Log login attempt
-print(f"Login Attempt: User={username}")
+    # Log login attempt
+    print(f"Login Attempt: User={username}")
 
-# Case insensitive search
-user = User.query.filter(User.username.ilike(username)).first()
+    # Case insensitive search
+    user = User.query.filter(User.username.ilike(username)).first()
 
-if user:
-    if bcrypt.check_password_hash(user.password_hash, password):
-        print("Login Success: Creds valid")
-        token = create_access_token(
-            identity=str(user.id), 
-            additional_claims={'role': user.role, 'username': user.username}
-        )
-        return jsonify({
-            'token': token, 
-            'role': user.role, 
-            'username': user.username,
-            'profile_image': user.profile_image  # include profile_image
-        })
+    if user:
+        if bcrypt.check_password_hash(user.password_hash, password):
+            print("Login Success: Creds valid")
+            token = create_access_token(
+                identity=str(user.id), 
+                additional_claims={'role': user.role, 'username': user.username}
+            )
+            return jsonify({
+                'token': token, 
+                'role': user.role, 
+                'username': user.username,
+                'profile_image': user.profile_image  # include profile_image
+            })
+        else:
+            print("Login Failed: Password incorrect")
     else:
-        print("Login Failed: Password incorrect")
-else:
-    print("Login Failed: User not found")
+        print("Login Failed: User not found")
 
 
     return jsonify({'error': 'Invalid credentials'}), 401
@@ -1040,20 +1040,37 @@ def import_data():
 @app.route('/events', methods=['GET'])
 @jwt_required()
 def get_events():
-    events = Event.query.all()
+    current_user_id = int(get_jwt_identity())
+    # We need to know the role. We can query User or check JWT claims if we added them.
+    # In login() we added 'role' to claims: additional_claims={'role': user.role, ...}
+    claims = get_jwt()
+    role = claims.get('role', 'student')
+
+    if role in ['admin', 'management']:
+        events = Event.query.all()
+    else:
+        # Students see their own events AND public events (release, important date, deadline, exam)
+        # Assuming 'deadline' and 'exam' are public course events. 
+        # 'study_goal', 'resource_plan' are private.
+        public_types = ['resource_release', 'important_date', 'exam', 'deadline']
+        events = Event.query.filter(
+            (Event.created_by == current_user_id) | 
+            (Event.type.in_(public_types))
+        ).all()
+
     return jsonify([{
         'id': e.id, 
         'title': e.title, 
         'date': e.date, 
-        'type': e.type
+        'type': e.type,
+        'created_by': e.created_by
     } for e in events])
 
 @app.route('/events', methods=['POST'])
 @jwt_required()
 def create_event():
-    if not check_role(['admin', 'management']):
-        return jsonify({'error': 'Unauthorized'}), 403
-
+    # Allow all authenticated users to create events
+    
     data = request.json
     title = data.get('title')
     date = data.get('date') # YYYY-MM-DD
@@ -1063,6 +1080,19 @@ def create_event():
         return jsonify({'error': 'Title, Date, and Type are required'}), 400
 
     user_id = int(get_jwt_identity())
+    claims = get_jwt()
+    role = claims.get('role', 'student')
+
+    # Optional: Enforce type restrictions
+    if role == 'student':
+        if ev_type not in ['study_goal', 'resource_plan', 'deadline']: 
+             # allowing deadline for personal use or just goal/plan?
+             # User said "schedule study resources and set goals".
+             pass
+        # Maybe restrict 'resource_release' to admins
+        if ev_type in ['resource_release']:
+             return jsonify({'error': 'Students cannot create resource releases'}), 403
+
     new_event = Event(title=title, date=date, type=ev_type, created_by=user_id)
     db.session.add(new_event)
     db.session.commit()
