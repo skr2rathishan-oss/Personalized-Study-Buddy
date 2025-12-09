@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import api from '../api';
 
@@ -6,6 +6,7 @@ import { useRef, useEffect } from 'react';
 
 function Navbar() {
     const navigate = useNavigate();
+    const location = useLocation();
     const token = localStorage.getItem('token');
     const username = localStorage.getItem('username');
     const role = localStorage.getItem('role');
@@ -27,6 +28,12 @@ function Navbar() {
     });
 
     useEffect(() => {
+        // Force light mode on Login page
+        if (location.pathname === '/login') {
+            document.body.classList.remove('dark-mode');
+            return;
+        }
+
         if (darkMode) {
             document.body.classList.add('dark-mode');
             localStorage.setItem('theme', 'dark');
@@ -34,7 +41,7 @@ function Navbar() {
             document.body.classList.remove('dark-mode');
             localStorage.setItem('theme', 'light');
         }
-    }, [darkMode]);
+    }, [darkMode, location.pathname]);
 
     // Sync Profile Image from Server
     useEffect(() => {

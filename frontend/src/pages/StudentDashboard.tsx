@@ -153,31 +153,26 @@ function StudentDashboard() {
     return (
         <div className="dashboard-layout animate-fade-in" style={{ marginTop: '1rem' }}>
 
-            <aside className="sidebar" style={{
-                background: 'white',
-                border: '1px solid rgba(226, 232, 240, 0.8)',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)',
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '1rem', borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ background: '#EEF2FF', padding: '8px', borderRadius: '10px', color: '#4F46E5', fontSize: '1.1rem' }}>⚡</div>
+            <aside className="sidebar card-surface">
+                <div className="sidebar-header">
+                    <div className="sidebar-icon">⚡</div>
                     <div>
-                        <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b', fontWeight: 700 }}>Discovery Filters</h3>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Customize your learning</p>
+                        <h3 className="sidebar-title">Discovery Filters</h3>
+                        <p className="sidebar-subtitle">Customize your learning</p>
                     </div>
                 </div>
 
                 {/* Scope Selection */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div className="sidebar-section">
 
                     <div className="search-group">
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase', marginBottom: '6px', display: 'block', letterSpacing: '0.5px' }}>
+                        <label className="input-label">
                             Target Module
                         </label>
                         <select
                             className="form-select-modern"
                             value={selectedCourse || ''}
                             onChange={handleCourseChange}
-                            style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#334155', outline: 'none', transition: 'box-shadow 0.2s' }}
                         >
                             <option value="">Select a module...</option>
                             {courses.map(c => (
@@ -187,7 +182,7 @@ function StudentDashboard() {
                     </div>
 
                     <div className="search-group">
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase', marginBottom: '6px', display: 'block', letterSpacing: '0.5px' }}>
+                        <label className="input-label">
                             Specific Topic
                         </label>
                         <select
@@ -195,17 +190,7 @@ function StudentDashboard() {
                             value={selectedTopic || ''}
                             onChange={handleTopicChange}
                             disabled={!selectedCourse}
-                            style={{
-                                width: '100%',
-                                padding: '12px',
-                                borderRadius: '10px',
-                                border: '1px solid #cbd5e1',
-                                fontSize: '0.9rem',
-                                color: '#334155',
-                                background: selectedCourse ? 'white' : '#f8fafc',
-                                opacity: selectedCourse ? 1 : 0.6,
-                                cursor: selectedCourse ? 'pointer' : 'not-allowed'
-                            }}
+                            style={{ opacity: selectedCourse ? 1 : 0.6, cursor: selectedCourse ? 'pointer' : 'not-allowed' }}
                         >
                             <option value="">{selectedCourse ? (topics.length > 0 ? "Select a topic..." : "No topics available") : "Select module first"}</option>
                             {topics.map(t => (
@@ -216,13 +201,13 @@ function StudentDashboard() {
                 </div>
 
                 {/* Preferences Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="sidebar-grid">
                     <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Format</label>
+                        <label className="input-label">Format</label>
                         <select
+                            className="form-select-modern"
                             value={selectedFormat}
                             onChange={e => setSelectedFormat(e.target.value)}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#334155' }}
                         >
                             <option value="">All</option>
                             <option value="video">Video</option>
@@ -231,11 +216,11 @@ function StudentDashboard() {
                         </select>
                     </div>
                     <div>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Language</label>
+                        <label className="input-label">Language</label>
                         <select
+                            className="form-select-modern"
                             value={selectedLanguage}
                             onChange={e => setSelectedLanguage(e.target.value)}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#334155' }}
                         >
                             <option value="English">English</option>
                             <option value="Tamil">Tamil</option>
@@ -245,56 +230,27 @@ function StudentDashboard() {
                 </div>
 
                 {/* AI Search */}
-                <div className="search-group" style={{ background: '#F8FAFC', padding: '12px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4F46E5', fontWeight: 600, fontSize: '0.85rem', marginBottom: '8px' }}>
+                <div className="ai-search-box">
+                    <label className="ai-label">
                         <span>✨</span> AI Custom Request
                     </label>
                     <textarea
+                        className="form-textarea"
                         placeholder="e.g. 'Explain recursion with simple examples'..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            minHeight: '80px',
-                            fontSize: '0.9rem',
-                            resize: 'vertical',
-                            background: 'white',
-                            fontFamily: 'inherit',
-                            color: '#334155'
-                        }}
                     />
                 </div>
 
                 {/* Action Button */}
                 <button
                     onClick={handleFetch}
-                    style={{
-                        width: '100%',
-                        background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                        color: 'white',
-                        padding: '14px',
-                        borderRadius: '12px',
-                        fontWeight: '700',
-                        fontSize: '1rem',
-                        border: 'none',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
-                        transition: 'transform 0.1s, box-shadow 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 15px rgba(37, 99, 235, 0.3)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.2)'; }}
+                    className="btn-primary-gradient"
                 >
                     {loading ? (
                         <>
-                            <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                            <span style={{ fontSize: '0.95rem' }}>Processing...</span>
+                            <div className="spinner"></div>
+                            <span>Processing...</span>
                         </>
                     ) : (
                         <>
@@ -302,37 +258,25 @@ function StudentDashboard() {
                         </>
                     )}
                 </button>
-{selectedCourse && (
-    <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#64748b' }}>
-        <p style={{ marginBottom: '0.5rem', fontWeight: '600' }}>Try searching for:</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            <span
-                onClick={() => {
-                    const c = courses.find(c => c.id === selectedCourse);
-                    if (c) setDescription(c.name);
-                }}
-                style={{
-                    background: '#f1f5f9',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    border: '1px solid #e2e8f0',
-                    transition: 'background 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
-                onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
-            >
-                <span>📚</span>
-                {courses.find(c => c.id === selectedCourse)?.name}
-            </span>
-        </div>
-    </div>
-)}
+                {selectedCourse && (
+                    <div className="quick-search-suggestion">
+                        <p>Try searching for:</p>
+                        <div className="suggestion-tags">
+                            <span
+                                onClick={() => {
+                                    const c = courses.find(c => c.id === selectedCourse);
+                                    if (c) setDescription(c.name);
+                                }}
+                                className="suggestion-tag"
+                            >
+                                <span>📚</span>
+                                {courses.find(c => c.id === selectedCourse)?.name}
+                            </span>
+                        </div>
+                    </div>
+                )}
 
-<style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
 
             </aside>
 

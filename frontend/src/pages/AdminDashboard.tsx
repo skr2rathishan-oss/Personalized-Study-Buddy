@@ -175,7 +175,7 @@ function AdminDashboard() {
     };
 
     return (
-        <div className="dashboard-container" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="dashboard-container" style={{ padding: '2rem', paddingTop: '4rem', maxWidth: '1200px', margin: '0 auto' }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
                 <div>
@@ -188,6 +188,7 @@ function AdminDashboard() {
                     <button onClick={handleExport} style={{ padding: '0.75rem 1rem', background: 'white', border: '1px solid #CBD5E1', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, color: '#475569' }}>Export Excel 📥</button>
                     <button onClick={handleImportClick} style={{ padding: '0.75rem 1rem', background: 'white', border: '1px solid #CBD5E1', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, color: '#475569' }}>Import Sync 📤</button>
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept=".xlsx" />
+                    {syncStatus && <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem', color: '#64748B', fontWeight: 500 }}>{syncStatus}</span>}
                     <button onClick={() => setIsCreateModalOpen(true)} className="btn-primary-glow" style={{ padding: '0.75rem 1.5rem', fontSize: '1rem', borderRadius: '12px', background: '#2563EB', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 14px 0 rgba(37,99,235,0.39)' }}>+ Add New Module</button>
                 </div>
             </div>
