@@ -139,12 +139,12 @@ class ResourceFetcher:
         # Helper wrappers for parallel execution
         def get_videos():
             if not resource_format or resource_format == 'video':
-                return self.fetch_youtube_videos(final_query, max_results=5, lang_code=lang_code)
+                return self.fetch_youtube_videos(final_query, max_results=10, lang_code=lang_code)
             return []
 
         def get_articles():
             if not resource_format or resource_format in ['article', 'pdf']:
-                return self.fetch_web_articles(final_query, max_results=5, lang_code=lang_code)
+                return self.fetch_web_articles(final_query, max_results=10, lang_code=lang_code)
             return []
 
         # Execute in parallel

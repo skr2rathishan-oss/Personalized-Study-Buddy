@@ -220,7 +220,7 @@ def seed_large_data():
                 # Create Dummy Resources for stats
                 for c in course_objs:
                     # 1-2 resources per course
-                    res = Resource(title=f"Intro to {c.module_name}", url="http://example.com", format="video", is_auto_fetched=True)
+                    res = Resource(title=f"Intro to {c.module_name}", url="https://www.youtube.com/watch?v=dQw4w9WgXcQ", format="video", is_auto_fetched=True)
                     # We need to link resource to a topic.
                     # Create implicit topic
                     top = Topic(name="General", course_id=c.id)

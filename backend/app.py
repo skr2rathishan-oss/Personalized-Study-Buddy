@@ -406,7 +406,9 @@ def profile():
 @app.route('/courses', methods=['GET'])
 @jwt_required()
 def get_courses():
+    print("Fetching courses...")
     courses = Course.query.all()
+    print(f"Found {len(courses)} courses")
     # Sending both new and old keys for frontend compatibility
     return jsonify([{'id': c.id, 'name': c.module_name, 'code': c.module_id, 'module_name': c.module_name, 'module_id': c.module_id} for c in courses])
 
@@ -474,7 +476,7 @@ def recommend():
         context_name = search_query if search_query else "General"
         candidates = [] 
 
-    candidate_limit = 10
+    candidate_limit = data.get('limit', 20)
     
     # Execution Mode: 'fast' (DB only), 'agent' (Fetch new only), 'all' (Default: both)
     execution_mode = data.get('execution_mode', 'all')
@@ -617,9 +619,10 @@ def get_recommendations_api():
 
     candidates = query.all()
 
-    # Auto-fetch if fewer than 10 resources found OR if user has a specific search query (Explicit Intent)
-    if (len(candidates) < 10 or (search_query and search_query.strip())) and topic:
-        print(f"No resources found for {topic.name}. Auto-fetching...")
+    # Auto-fetch if fewer than 10 resources found (Ensure enough for 1 page).
+    # We fetch if candidates < 10 to ensure we have a full page of 10 items.
+    if len(candidates) < 10 and topic:
+        print(f"Few resources ({len(candidates)}) found for {topic.name}. Auto-fetching...")
         course = Course.query.get(topic.course_id)
         fetched_items = resource_fetcher.auto_fetch_resources(topic.name, course.module_name, search_query)
         
@@ -640,8 +643,8 @@ def get_recommendations_api():
         if new_resources:
             db.session.commit()
             if recommender_system:
-                for r in new_resources:
-                    recommender_system.update_resource_embedding(r)
+                recommender_system.update_resource_embeddings_batch(new_resources)
+            # Refresh candidates from DB to include newly fetched items
             candidates = query.all()
     
     # If explicit search, filter candidates to prioritize auto-fetched or relevant items
@@ -657,9 +660,9 @@ def get_recommendations_api():
     # Safety Check
     if recommender_system is None:
         candidates.sort(key=lambda x: (sum(r.score for r in x.ratings)/len(x.ratings) if x.ratings else 0), reverse=True)
-        return jsonify([r.to_dict() for r in candidates[:10]])
+        return jsonify([r.to_dict() for r in candidates[:20]])
         
-    recommendations = recommender_system.recommend(user_id, context_name, candidates, top_k=10)
+    recommendations = recommender_system.recommend(user_id, context_name, candidates, top_k=20)
     return jsonify([r.to_dict() for r in recommendations])
 
 @app.route('/rate', methods=['POST'])
@@ -737,9 +740,11 @@ def generate_resources():
     db.session.commit()
     
     # Update Embeddings
-    for r in Resource.query.filter_by(topic_id=topic_id).all():
-        if not r.embedding_vector:
-            recommender_system.update_resource_embedding(r)
+    # Update Embeddings
+    if recommender_system:
+        resources_to_update = [r for r in Resource.query.filter_by(topic_id=topic_id).all() if not r.embedding_vector]
+        if resources_to_update:
+            recommender_system.update_resource_embeddings_batch(resources_to_update)
             
     return jsonify({'message': f'Fetch complete. Added {count} resources.'})
 

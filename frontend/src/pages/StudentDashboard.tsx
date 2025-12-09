@@ -35,24 +35,64 @@ function StudentDashboard() {
     const [description, setDescription] = useState('');
     const [selectedLanguage, setSelectedLanguage] = useState('English');
 
+    const [limit, setLimit] = useState(20);
+    const [viewingResource, setViewingResource] = useState<Resource | null>(null);
+
+    const getYouTubeEmbedUrl = (url: string) => {
+        try {
+            let videoId = '';
+            if (url.includes('youtube.com/watch?v=')) {
+                videoId = url.split('v=')[1].split('&')[0];
+            } else if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1];
+            }
+            return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : url;
+        } catch (e) {
+            return url;
+        }
+    };
+
     useEffect(() => {
         fetchCourses();
     }, []);
 
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 50) {
+                if (!loading && resources.length >= limit) {
+                    setLimit(prev => prev + 20);
+                }
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [loading, resources, limit]);
+
+    // Fetch when limit increases (Load More)
+    useEffect(() => {
+        if (selectedTopic && limit > 20) {
+            handleFetch(limit);
+        }
+    }, [limit]);
+
     // Re-fetch recommendations when filters change (ONLY if resources are already showing)
     useEffect(() => {
+        setLimit(20); // Reset limit
         if (selectedTopic && resources.length > 0) {
-            // Optional: You could auto-fetch here, but image implies manual button click/flow
-            // For now, let's keep it manual or rigorous on the button
+            handleFetch(20); // Fetch with reset limit
         }
-    }, [selectedFormat]);
+    }, [selectedFormat, selectedLanguage]);
 
     const fetchCourses = async () => {
         try {
+            console.log("Fetching courses...");
             const res = await api.get('/courses');
+            console.log("Courses fetched:", res.data);
             setCourses(res.data);
         } catch (err) {
             console.error(err);
+            // alert("Failed to load courses. Please Login again."); // Optional, but helps debug
         }
     };
 
@@ -67,6 +107,7 @@ function StudentDashboard() {
         setSelectedCourse(courseId);
         setSelectedTopic(null);
         setResources([]);
+        setLimit(20);
         try {
             const res = await api.get(`/courses/${courseId}/topics`);
             setTopics(res.data);
@@ -78,9 +119,10 @@ function StudentDashboard() {
     const handleTopicChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const topicId = Number(e.target.value);
         setSelectedTopic(topicId || null);
+        setLimit(20);
     };
 
-    const handleFetch = async () => {
+    const handleFetch = async (currentLimit = 20) => {
         if (!selectedCourse) {
             alert("Please select a course.");
             return;
@@ -93,7 +135,8 @@ function StudentDashboard() {
                 topic_id: selectedTopic,
                 format: selectedFormat || null,
                 search_query: description,
-                language: selectedLanguage
+                language: selectedLanguage,
+                limit: currentLimit
             });
             setResources(res.data);
         } catch (err) {
@@ -222,7 +265,7 @@ function StudentDashboard() {
 
                 <button
                     className="btn-search"
-                    onClick={handleFetch}
+                    onClick={() => handleFetch(20)}
                     style={{
                         width: '100%',
                         background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
@@ -326,53 +369,94 @@ function StudentDashboard() {
                 </div>
 
                 {/* Results Section */}
+                {/* Results Section */}
                 {resources.length > 0 && (
-                    <div className="animate-fade-in">
-                        <h3 className="section-title" style={{ marginTop: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '2rem' }}>
-                            Recommended Resources
-                        </h3>
-
-                        <div className="resource-grid-modern">
-                            {resources.map((r, idx) => (
-                                <div key={r.id} className="resource-card-modern" style={{ animationDelay: `${idx * 0.05}s` }}>
-                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                                        <span className={`modern-badge badge-${r.format}`}>{r.format}</span>
-                                        <span className={`modern-badge badge-source ${r.source === 'manual' ? 'source-db' : 'source-web'}`}>
-                                            {r.source === 'manual' ? 'database' : 'internet'}
-                                        </span>
-                                    </div>
-                                    <h4 className="card-title">{r.title}</h4>
-
-                                    <div className="card-rating">
-                                        <span>★</span>
-                                        <span>{r.average_rating}</span>
-                                        <span className="rating-count">({r.rating_count} ratings)</span>
-                                    </div>
-
-                                    <div className="card-footer">
-                                        <a href={r.url} target="_blank" rel="noopener noreferrer" className="btn-open-resource">
-                                            Open Resource
-                                        </a>
-
-                                        <select
-                                            className="rate-dropdown"
-                                            onChange={(e) => handleRate(r.id, Number(e.target.value))}
-                                            defaultValue=""
-                                        >
-                                            <option value="" disabled>Rate...</option>
-                                            <option value="5">5 - Excellent</option>
-                                            <option value="4">4 - Very Good</option>
-                                            <option value="3">3 - Good</option>
-                                            <option value="2">2 - Fair</option>
-                                            <option value="1">1 - Poor</option>
-                                        </select>
-                                    </div>
+                    <div className="resource-grid-modern">
+                        {resources.map((r, idx) => (
+                            <div key={r.id} className="resource-card-modern" style={{ animationDelay: `${idx * 0.05}s` }}>
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                                    <span className={`modern-badge badge-${r.format}`}>{r.format}</span>
+                                    <span className={`modern-badge badge-source ${r.source === 'manual' ? 'source-db' : 'source-web'}`}>
+                                        {r.source === 'manual' ? 'database' : 'internet'}
+                                    </span>
                                 </div>
-                            ))}
-                        </div>
+                                <h4 className="card-title">{r.title}</h4>
+
+                                <div className="card-rating">
+                                    <span>★</span>
+                                    <span>{r.average_rating}</span>
+                                    <span className="rating-count">({r.rating_count} ratings)</span>
+                                </div>
+
+                                <div className="card-footer">
+                                    <button
+                                        className="btn-open-resource"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setViewingResource(r);
+                                        }}
+                                        style={{ textDecoration: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                                    >
+                                        Open Resource
+                                    </button>
+
+                                    <select
+                                        className="rate-dropdown"
+                                        onChange={(e) => handleRate(r.id, Number(e.target.value))}
+                                        defaultValue=""
+                                    >
+                                        <option value="" disabled>Rate...</option>
+                                        <option value="5">5 - Excellent</option>
+                                        <option value="4">4 - Very Good</option>
+                                        <option value="3">3 - Good</option>
+                                        <option value="2">2 - Fair</option>
+                                        <option value="1">1 - Poor</option>
+                                    </select>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
                 {loading && <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>Finding the best resources for you...</p>}
+
+                {/* Resource Modal */}
+                {viewingResource && (
+                    <div className='modal-overlay animate-fade-in' style={{
+                        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                        background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex',
+                        alignItems: 'center', justifyContent: 'center'
+                    }}>
+                        <div className='modal-content' style={{
+                            background: 'white', width: '90%', height: '90%', borderRadius: '12px',
+                            display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden'
+                        }}>
+                            <div style={{ padding: '15px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 style={{ margin: 0, fontSize: '1.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>
+                                    {viewingResource.title}
+                                </h3>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <a href={viewingResource.url} target="_blank" rel="noopener noreferrer" className='btn-secondary' style={{ padding: '6px 12px', textDecoration: 'none', fontSize: '0.9rem' }}>
+                                        Open in New Tab ↗
+                                    </a>
+                                    <button onClick={() => setViewingResource(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>
+                                        &times;
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style={{ flex: 1, background: '#000' }}>
+                                <iframe
+                                    src={getYouTubeEmbedUrl(viewingResource.url)}
+                                    width="100%"
+                                    height="100%"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    style={{ border: 'none' }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );
