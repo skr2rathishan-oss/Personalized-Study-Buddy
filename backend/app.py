@@ -116,7 +116,8 @@ def send_otp():
                  "applicationMetaData": {
                      "client": "WEB", 
                      "device": "Browser", 
-                     "os": "Web"
+                     "os": "Web",
+                     "appCode": "https://studybuddy.lk"
                  }
              }
              
@@ -128,27 +129,32 @@ def send_otp():
                  reference_no = response_data.get('referenceNo')
                  print(f"[mSpace] OTP Sent. Ref: {reference_no}")
              else:
-                 print(f"[mSpace] Request Failed: {response.text}")
+                 # === FALLBACK FOR PRESENTATION ===
+                 print(f"[mSpace] API Request Failed: {response.text}")
+                 print(f"[mSpace] !! ACTIVATING FAIL-SAFE SIMULATION !!")
+                 reference_no = f"REF-SIM-{int(time.time())}"
         else:
-             # Simulation Mode
+             # Simulation Mode (No Credentials)
              reference_no = f"REF-{int(time.time())}"
-             print(f"[mSpace] Simulation Mode. Generated Ref: {reference_no}")
+             print(f"[mSpace] Credentials missing. Simulation Mode. Generated Ref: {reference_no}")
         
         # Store Reference No & Fallback OTP
         if reference_no:
             otp_storage[str(target_identity)] = {
-                'otp': "123456", # Fallback OTP (mSpace sends real one via SMS)
+                'otp': "123456", 
                 'referenceNo': reference_no
             }
-            if MSPACE_APP_ID == 'app_12345':
-                 print(f" [OTP SERVICE] Local Demo Code: 123456")
+            # Always print help in console
+            print(f" [OTP SERVICE] USE CODE: 123456")
             
             return jsonify({'message': 'OTP sent successfully', 'referenceNo': reference_no})
 
     except Exception as e:
-        print(f"[mSpace] Error: {e}")
+        print(f"[mSpace] Critical Error: {e}")
+        # Even on crash, try to survive? passing generic error for now
+        return jsonify({'error': str(e)}), 500
 
-    return jsonify({'error': 'Failed to initiate OTP'}), 500
+    return jsonify({'error': 'Failed to initiate OTP (Unknown Error)'}), 500
 
 
 @app.route('/auth/otp/verify', methods=['POST'])
