@@ -72,7 +72,7 @@ def check_role(roles):
 # --- Auth Routes ---
 
 @app.route('/auth/otp/send', methods=['POST'])
-@app.route('/auth/otp/send', methods=['POST'])
+
 def send_otp():
     """
     Step 1: Receive Identifier (Email or Phone).
@@ -355,10 +355,7 @@ def login():
             print("Login Failed: Password incorrect")
     else:
         print("Login Failed: User not found")
-<<<<<<< HEAD
 
-=======
->>>>>>> 37672edd3a7ea57d8134a9c01b37dc4d41e74c7c
 
     return jsonify({'error': 'Invalid credentials'}), 401
 
