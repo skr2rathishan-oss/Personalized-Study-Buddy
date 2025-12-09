@@ -51,6 +51,10 @@ function Calendar() {
     const today = new Date();
     const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
 
+    // Fixed Grid Logic: Ensure 6 rows (42 cells)
+    const totalSlots = 42;
+    const trailingEmptySlots = totalSlots - (startDayOffset + daysInMonth);
+
     // Filter events
     const currentMonthEvents = events.filter(e => {
         const d = new Date(e.date);
@@ -73,7 +77,7 @@ function Calendar() {
     return (
         <div className="dashboard-container animate-fade-in" style={{
             marginTop: '2rem',
-            maxWidth: '900px',
+            maxWidth: '750px',
             margin: '2rem auto',
             display: 'flex',
             flexDirection: 'column',
@@ -136,9 +140,9 @@ function Calendar() {
 
                 {/* Days Grid */}
                 <div className="calendar-grid-body">
-                    {/* Empty Slots */}
+                    {/* Leading Empty Slots */}
                     {Array.from({ length: startDayOffset }).map((_, i) => (
-                        <div key={`empty-${i}`} className="calendar-cell empty"></div>
+                        <div key={`empty-start-${i}`} className="calendar-cell empty"></div>
                     ))}
 
                     {/* Active Days */}
@@ -160,6 +164,11 @@ function Calendar() {
                             </div>
                         );
                     })}
+
+                    {/* Trailing Empty Slots (Fill to 42) */}
+                    {Array.from({ length: Math.max(0, trailingEmptySlots) }).map((_, i) => (
+                        <div key={`empty-end-${i}`} className="calendar-cell empty"></div>
+                    ))}
                 </div>
             </div>
 
@@ -222,7 +231,7 @@ function Calendar() {
                 }
 
                 .calendar-cell {
-                    min-height: 85px;
+                    min-height: 70px;
                     background: var(--calendar-cell-bg);
                     border-right: 1px solid var(--calendar-border);
                     border-bottom: 1px solid var(--calendar-border);
