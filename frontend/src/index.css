@@ -35,9 +35,11 @@
   --calendar-header-text: #ffffff;
   --calendar-border: #e2e8f0;
   --calendar-cell-bg: #ffffff;
-  --calendar-today-bg: #facc15;
-  /* Yellow/Gold for "Type 1" look */
-  --calendar-today-text: #1e293b;
+  --calendar-today-bg: #dbeafe;
+  /* Soft Blue */
+  --calendar-today-text: #1e40af;
+  /* Dark Blue Text */
+
 }
 
 body.dark-mode {
@@ -53,9 +55,11 @@ body.dark-mode {
   --calendar-header-text: #f0f9ff;
   --calendar-border: #374151;
   --calendar-cell-bg: #1f2937;
-  --calendar-today-bg: #ca8a04;
-  /* Darker Gold */
-  --calendar-today-text: #ffffff;
+  --calendar-today-bg: #1e3a8a;
+  /* Deep Blue */
+  --calendar-today-text: #bfdbfe;
+  /* Light Blue Text */
+
 }
 
 .navbar {

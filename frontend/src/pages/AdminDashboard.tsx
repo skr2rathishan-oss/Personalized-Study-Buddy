@@ -563,19 +563,63 @@ function AdminDashboard() {
 
                 /* Modals */
                 .modal-overlay {
-                    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
-                    display: flex; alignItems: center; justifyContent: center; z-index: 1000;
+                    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7);
+                    display: flex; align-items: center; justify-content: center; z-index: 9999;
                     backdrop-filter: blur(4px);
                 }
                 .modal-content {
-                    background: white; padding: 2rem; borderRadius: 20px; width: 400px;
+                    background: white; padding: 2rem; border-radius: 20px; width: 400px;
                     box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+                    position: relative;
                 }
                 .manager-modal {
                     background: white; width: 900px; height: 85vh; border-radius: 24px;
                     box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden;
-                    display: flex; flexDirection: column;
+                    display: flex; flex-direction: column;
+                    position: relative;
                 }
+                
+                /* Dark Mode Overrides */
+                body.dark-mode .modal-content,
+                body.dark-mode .manager-modal {
+                    background: #1e293b; /* Slate 800 */
+                    border: 1px solid #334155;
+                    color: #f8fafc;
+                }
+                body.dark-mode .modal-header {
+                    background: #0f172a; /* Slate 900 */
+                    border-bottom-color: #334155;
+                }
+                body.dark-mode .modal-header h2 { color: #f8fafc !important; }
+                body.dark-mode .settings-sidebar {
+                    background: #0f172a;
+                    border-right-color: #334155;
+                }
+                body.dark-mode .topic-card {
+                    background: #1e293b;
+                    border-color: #334155;
+                }
+                body.dark-mode .topic-card span { color: #e2e8f0 !important; }
+                body.dark-mode .resource-item {
+                    background: #0f172a;
+                }
+                body.dark-mode .resource-link { color: #e2e8f0; }
+                body.dark-mode .resource-link:hover { color: #60a5fa; }
+                body.dark-mode .input-modern, 
+                body.dark-mode .input-modern-sm, 
+                body.dark-mode .input-select {
+                    background: #0f172a;
+                    border-color: #334155;
+                    color: white;
+                }
+                body.dark-mode .input-label { color: #cbd5e1; }
+                body.dark-mode .empty-topics {
+                    background: #0f172a;
+                    border-color: #334155;
+                    color: #94a3b8;
+                }
+                body.dark-mode h2, body.dark-mode h3 { color: #f8fafc !important; }
+
                 .modal-header {
                     padding: 1.5rem; border-bottom: 1px solid #E2E8F0; display: flex;
                     justify-content: space-between; alignItems: center; background: #F8FAFC;

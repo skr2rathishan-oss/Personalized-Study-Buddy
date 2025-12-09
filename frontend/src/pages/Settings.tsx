@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 function Settings() {
     const [showPassword, setShowPassword] = useState(false);
+    const [showAppInfo, setShowAppInfo] = useState(false);
 
     return (
         <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem', maxWidth: '800px' }}>
@@ -94,8 +95,57 @@ function Settings() {
                     </div>
 
                     <hr className="divider" />
-                    <h3 className="section-subtitle">App Info</h3>
-                    <p style={{ color: 'var(--text-secondary)' }}>Version 1.0.0 (Beta)</p>
+                    <div
+                        onClick={() => setShowAppInfo(!showAppInfo)}
+                        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    >
+                        <h3 className="section-subtitle app-info-trigger" style={{ marginBottom: 0, color: showAppInfo ? 'var(--primary)' : undefined }}>App Info</h3>
+                    </div>
+
+                    {showAppInfo && (
+                        <div className="animate-fade-in" style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                                {/* Left Side: Project Details */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div>
+                                        <h5 style={{ margin: '0 0 0.25rem 0', color: 'var(--primary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Project</h5>
+                                        <p style={{ margin: 0, fontWeight: 600, fontSize: '1rem' }}>Code Blast Project</p>
+                                    </div>
+
+                                    <div>
+                                        <h5 style={{ margin: '0 0 0.25rem 0', color: 'var(--primary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Powered By</h5>
+                                        <p style={{ margin: 0, fontWeight: 600, fontSize: '1rem' }}>Mobitel</p>
+                                    </div>
+
+                                    <div>
+                                        <h5 style={{ margin: '0 0 0.25rem 0', color: 'var(--primary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Developed At</h5>
+                                        <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-main)' }}>Faculty of Engineering</p>
+                                        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-main)' }}>University of Ruhuna</p>
+                                    </div>
+                                </div>
+
+                                {/* Right Side: Contact Details */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '1px solid var(--border-light)', paddingLeft: '1.5rem' }}>
+                                    <div>
+                                        <h5 style={{ margin: '0 0 0.25rem 0', color: 'var(--primary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Support</h5>
+                                        <p style={{ margin: '0 0 2px 0', fontSize: '0.95rem', color: 'var(--text-main)' }}><strong>Email:</strong> support@studybuddy.com</p>
+                                        <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-main)' }}><strong>Contact:</strong> +94 77 123 4567</p>
+                                    </div>
+
+                                    <div>
+                                        <h5 style={{ margin: '0 0 0.25rem 0', color: 'var(--primary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Legal</h5>
+                                        <p style={{ margin: 0, fontSize: '0.95rem' }}><a href="#" style={{ color: 'var(--text-main)', textDecoration: 'underline' }}>Privacy Policy</a></p>
+                                        <p style={{ margin: 0, fontSize: '0.95rem' }}><a href="#" style={{ color: 'var(--text-main)', textDecoration: 'underline' }}>Terms of Service</a></p>
+                                    </div>
+
+                                    <div style={{ marginTop: 'auto' }}>
+                                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Version 1.0.0 (Beta)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {!showAppInfo && <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Version 1.0.0 (Beta)</p>}
                 </div>
             </div>
 
@@ -136,6 +186,14 @@ function Settings() {
                 input:checked + .slider:before { transform: translateX(24px); }
                 .slider.round { border-radius: 34px; }
                 .slider.round:before { border-radius: 50%; }
+
+                .app-info-trigger {
+                    transition: color 0.2s;
+                    color: var(--text-main);
+                }
+                .app-info-trigger:hover {
+                    color: var(--primary) !important;
+                }
             `}</style>
         </div>
     );

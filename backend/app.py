@@ -1428,7 +1428,10 @@ def management_analytics():
                 'degree': s.university_course or 'N/A',
                 'enrolled_courses': enrolled_count,
                 'study_time': time_display,
-                'role': 'student'
+                'role': 'student',
+                'student_id': s.student_id,
+                'phone': s.phone,
+                'nic': s.nic
             })
 
     else:

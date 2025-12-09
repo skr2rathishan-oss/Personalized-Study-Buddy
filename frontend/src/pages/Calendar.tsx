@@ -4,7 +4,7 @@ import api from '../api';
 function Calendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+
 
     // Admin/Role State
     useEffect(() => {
@@ -17,18 +17,10 @@ function Calendar() {
             setEvents(res.data);
         } catch (err) {
             console.error("Failed to load events", err);
-        } finally {
-            setLoading(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-                <div style={{ fontSize: '1.2rem', color: 'var(--text-secondary)' }}>Loading Calendar...</div>
-            </div>
-        );
-    }
+
 
     const handlePrevMonth = () => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -51,9 +43,10 @@ function Calendar() {
     const today = new Date();
     const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
 
-    // Fixed Grid Logic: Ensure 6 rows (42 cells)
-    const totalSlots = 42;
-    const trailingEmptySlots = totalSlots - (startDayOffset + daysInMonth);
+
+    // Dynamic Grid Logic: Just fill the last row
+    const totalCells = startDayOffset + daysInMonth;
+    const trailingEmptySlots = (7 - (totalCells % 7)) % 7;
 
     // Filter events
     const currentMonthEvents = events.filter(e => {

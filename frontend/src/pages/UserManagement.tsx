@@ -182,6 +182,8 @@ function UserManagement() {
                 cursor: pointer;
                 font-weight: 600;
                 transition: background 0.2s;
+                width: 140px;
+                text-align: center;
             }
             .btn-promote:hover {
                 background: #059669;
@@ -201,7 +203,8 @@ function UserManagement() {
                 cursor: pointer;
                 font-weight: 600;
                 transition: background 0.2s;
-                margin-left: 0.5rem;
+                width: 140px;
+                text-align: center;
             }
             .btn-demote:hover {
                 background: #DC2626;
