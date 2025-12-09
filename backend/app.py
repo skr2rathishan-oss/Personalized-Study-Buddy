@@ -73,7 +73,6 @@ def check_role(roles):
 # --- Auth Routes ---
 
 @app.route('/auth/otp/send', methods=['POST'])
-@app.route('/auth/otp/send', methods=['POST'])
 def send_otp():
     """
     Step 1: Receive Identifier (Email or Phone).
@@ -395,8 +394,7 @@ def profile():
         if 'phone_number' in data: user.phone_number = data['phone_number']
         if 'university' in data: user.university = data['university']
         if 'university_course' in data: user.university_course = data['university_course']
-        if 'university' in data: user.university = data['university']
-        if 'university_course' in data: user.university_course = data['university_course']
+
         if 'university_id' in data: user.university_id = data['university_id']
         if 'profile_image' in data: user.profile_image = data['profile_image']
         
@@ -451,7 +449,6 @@ def recommend():
     topic = None
     query = None
     
-    # Validation: Minimum one input required (Expanded)
     # Validation: Minimum one input required (Expanded)
     # We allows simple search queries even without course/topic context
     has_input = any([
