@@ -41,20 +41,30 @@ function AdminDashboard() {
     const [newCourseCode, setNewCourseCode] = useState('');
     const [topicInput, setTopicInput] = useState('');
     const [editCourseName, setEditCourseName] = useState('');
-    const [syncStatus, setSyncStatus] = useState('');
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchMyCourses = async () => {
         try {
             const res = await api.get('/admin/my-courses');
-            setCourses(res.data);
+            if (Array.isArray(res.data)) {
+                setCourses(res.data);
+            } else {
+                console.error("Expected array for courses, got:", res.data);
+                setCourses([]);
+            }
         } catch (err) { console.error(err); }
     };
 
     const fetchTopics = async (courseId: number) => {
         try {
             const res = await api.get(`/admin/courses/${courseId}/full_structure`);
-            setTopics(res.data);
+            if (Array.isArray(res.data)) {
+                setTopics(res.data);
+            } else {
+                console.error("Expected array for topics, got:", res.data);
+                setTopics([]);
+            }
         } catch (err) { console.error(err); }
     };
 
@@ -159,16 +169,16 @@ function AdminDashboard() {
         if (!file) return;
         const formData = new FormData();
         formData.append('file', file);
-        setSyncStatus('Uploading & Syncing...');
+
         try {
             const res = await api.post('/admin/import-data', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             const stats = res.data.stats;
             alert(`Sync Complete!\nCreated: ${stats.created}\nUpdated: ${stats.updated}\nErrors: ${stats.errors}`);
-            setSyncStatus('Sync Complete');
+
             fetchMyCourses();
         } catch (err: any) {
             alert('Import failed: ' + (err.response?.data?.error || err.message));
-            setSyncStatus('Failed');
+
         } finally {
             if (fileInputRef.current) fileInputRef.current.value = '';
         }

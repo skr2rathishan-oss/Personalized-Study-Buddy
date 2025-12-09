@@ -23,7 +23,8 @@ from services.recommender import HybridRecommender
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
 
 # Config
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -72,6 +73,8 @@ def check_role(roles):
 # --- Auth Routes ---
 
 @app.route('/auth/otp/send', methods=['POST'])
+
+
 
 def send_otp():
     """
@@ -394,20 +397,22 @@ def profile():
         if 'phone_number' in data: user.phone_number = data['phone_number']
         if 'university' in data: user.university = data['university']
         if 'university_course' in data: user.university_course = data['university_course']
-        if 'university' in data: user.university = data['university']
-        if 'university_course' in data: user.university_course = data['university_course']
+
         if 'university_id' in data: user.university_id = data['university_id']
         if 'profile_image' in data: user.profile_image = data['profile_image']
         
         db.session.commit()
         return jsonify({'message': 'Profile updated successfully'})
+
 # check_role is already defined above
 
 
 @app.route('/courses', methods=['GET'])
 @jwt_required()
 def get_courses():
+    print("Fetching courses...")
     courses = Course.query.all()
+    print(f"Found {len(courses)} courses")
     # Sending both new and old keys for frontend compatibility
     return jsonify([{'id': c.id, 'name': c.module_name, 'code': c.module_id, 'module_name': c.module_name, 'module_id': c.module_id} for c in courses])
 
@@ -448,7 +453,6 @@ def recommend():
     query = None
     
     # Validation: Minimum one input required (Expanded)
-    # Validation: Minimum one input required (Expanded)
     # We allows simple search queries even without course/topic context
     has_input = any([
         topic_id, 
@@ -475,7 +479,7 @@ def recommend():
         context_name = search_query if search_query else "General"
         candidates = [] 
 
-    candidate_limit = 10
+    candidate_limit = data.get('limit', 20)
     
     # Execution Mode: 'fast' (DB only), 'agent' (Fetch new only), 'all' (Default: both)
     execution_mode = data.get('execution_mode', 'all')
@@ -618,9 +622,10 @@ def get_recommendations_api():
 
     candidates = query.all()
 
-    # Auto-fetch if fewer than 10 resources found OR if user has a specific search query (Explicit Intent)
-    if (len(candidates) < 10 or (search_query and search_query.strip())) and topic:
-        print(f"No resources found for {topic.name}. Auto-fetching...")
+    # Auto-fetch if fewer than 10 resources found (Ensure enough for 1 page).
+    # We fetch if candidates < 10 to ensure we have a full page of 10 items.
+    if len(candidates) < 10 and topic:
+        print(f"Few resources ({len(candidates)}) found for {topic.name}. Auto-fetching...")
         course = Course.query.get(topic.course_id)
         fetched_items = resource_fetcher.auto_fetch_resources(topic.name, course.module_name, search_query)
         
@@ -641,8 +646,8 @@ def get_recommendations_api():
         if new_resources:
             db.session.commit()
             if recommender_system:
-                for r in new_resources:
-                    recommender_system.update_resource_embedding(r)
+                recommender_system.update_resource_embeddings_batch(new_resources)
+            # Refresh candidates from DB to include newly fetched items
             candidates = query.all()
     
     # If explicit search, filter candidates to prioritize auto-fetched or relevant items
@@ -658,9 +663,9 @@ def get_recommendations_api():
     # Safety Check
     if recommender_system is None:
         candidates.sort(key=lambda x: (sum(r.score for r in x.ratings)/len(x.ratings) if x.ratings else 0), reverse=True)
-        return jsonify([r.to_dict() for r in candidates[:10]])
+        return jsonify([r.to_dict() for r in candidates[:20]])
         
-    recommendations = recommender_system.recommend(user_id, context_name, candidates, top_k=10)
+    recommendations = recommender_system.recommend(user_id, context_name, candidates, top_k=20)
     return jsonify([r.to_dict() for r in recommendations])
 
 @app.route('/rate', methods=['POST'])
@@ -738,9 +743,11 @@ def generate_resources():
     db.session.commit()
     
     # Update Embeddings
-    for r in Resource.query.filter_by(topic_id=topic_id).all():
-        if not r.embedding_vector:
-            recommender_system.update_resource_embedding(r)
+    # Update Embeddings
+    if recommender_system:
+        resources_to_update = [r for r in Resource.query.filter_by(topic_id=topic_id).all() if not r.embedding_vector]
+        if resources_to_update:
+            recommender_system.update_resource_embeddings_batch(resources_to_update)
             
     return jsonify({'message': f'Fetch complete. Added {count} resources.'})
 
@@ -938,6 +945,102 @@ def delete_course(course_id):
     db.session.commit()
     return jsonify({'message': 'Course deleted'})
 
+# Resource Management Endpoints
+@app.route('/admin/resources', methods=['POST'])
+@jwt_required()
+def create_resource():
+    """Admin endpoint to manually add a resource to a topic"""
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.json
+    title = data.get('title')
+    url = data.get('url')
+    format_type = data.get('format')  # video, article, pdf
+    topic_id = data.get('topic_id')
+    
+    if not all([title, url, format_type, topic_id]):
+        return jsonify({'error': 'All fields required: title, url, format, topic_id'}), 400
+    
+    # Validate topic exists
+    topic = Topic.query.get(topic_id)
+    if not topic:
+        return jsonify({'error': 'Topic not found'}), 404
+    
+    # Check for duplicate URL in the same topic
+    if Resource.query.filter_by(url=url, topic_id=topic_id).first():
+        return jsonify({'error': 'Resource with this URL already exists for this topic'}), 400
+    
+    # Create resource
+    new_resource = Resource(
+        title=title,
+        url=url,
+        format=format_type,
+        topic_id=topic_id,
+        is_auto_fetched=False,
+        source='manual'
+    )
+    db.session.add(new_resource)
+    db.session.commit()
+    
+    # Generate embedding for ML recommendations
+    if recommender_system:
+        try:
+            recommender_system.update_resource_embedding(new_resource)
+        except Exception as e:
+            print(f"Failed to generate embedding: {e}")
+    
+    return jsonify({
+        'message': 'Resource created successfully',
+        'resource': {
+            'id': new_resource.id,
+            'title': new_resource.title,
+            'url': new_resource.url,
+            'format': new_resource.format
+        }
+    })
+
+@app.route('/admin/topics/<int:topic_id>/resources', methods=['GET'])
+@jwt_required()
+def get_topic_resources(topic_id):
+    """Get all resources for a specific topic (admin view)"""
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    topic = Topic.query.get(topic_id)
+    if not topic:
+        return jsonify({'error': 'Topic not found'}), 404
+    
+    resources = Resource.query.filter_by(topic_id=topic_id).all()
+    
+    return jsonify([{
+        'id': r.id,
+        'title': r.title,
+        'url': r.url,
+        'format': r.format,
+        'source': r.source,
+        'is_auto_fetched': r.is_auto_fetched,
+        'click_count': r.click_count,
+        'rating_count': len(r.ratings)
+    } for r in resources])
+
+@app.route('/admin/resources/<int:resource_id>', methods=['DELETE'])
+@jwt_required()
+def delete_resource(resource_id):
+    """Delete a resource"""
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    resource = Resource.query.get(resource_id)
+    if not resource:
+        return jsonify({'error': 'Resource not found'}), 404
+    
+    db.session.delete(resource)
+    db.session.commit()
+    
+    return jsonify({'message': 'Resource deleted successfully'})
+
+
 @app.route('/admin/export-data', methods=['GET'])
 @jwt_required()
 def export_data():
@@ -1108,20 +1211,37 @@ def import_data():
 @app.route('/events', methods=['GET'])
 @jwt_required()
 def get_events():
-    events = Event.query.all()
+    current_user_id = int(get_jwt_identity())
+    # We need to know the role. We can query User or check JWT claims if we added them.
+    # In login() we added 'role' to claims: additional_claims={'role': user.role, ...}
+    claims = get_jwt()
+    role = claims.get('role', 'student')
+
+    if role in ['admin', 'management']:
+        events = Event.query.all()
+    else:
+        # Students see their own events AND public events (release, important date, deadline, exam)
+        # Assuming 'deadline' and 'exam' are public course events. 
+        # 'study_goal', 'resource_plan' are private.
+        public_types = ['resource_release', 'important_date', 'exam', 'deadline']
+        events = Event.query.filter(
+            (Event.created_by == current_user_id) | 
+            (Event.type.in_(public_types))
+        ).all()
+
     return jsonify([{
         'id': e.id, 
         'title': e.title, 
         'date': e.date, 
-        'type': e.type
+        'type': e.type,
+        'created_by': e.created_by
     } for e in events])
 
 @app.route('/events', methods=['POST'])
 @jwt_required()
 def create_event():
-    if not check_role(['admin', 'management']):
-        return jsonify({'error': 'Unauthorized'}), 403
-
+    # Allow all authenticated users to create events
+    
     data = request.json
     title = data.get('title')
     date = data.get('date') # YYYY-MM-DD
@@ -1131,6 +1251,19 @@ def create_event():
         return jsonify({'error': 'Title, Date, and Type are required'}), 400
 
     user_id = int(get_jwt_identity())
+    claims = get_jwt()
+    role = claims.get('role', 'student')
+
+    # Optional: Enforce type restrictions
+    if role == 'student':
+        if ev_type not in ['study_goal', 'resource_plan', 'deadline']: 
+             # allowing deadline for personal use or just goal/plan?
+             # User said "schedule study resources and set goals".
+             pass
+        # Maybe restrict 'resource_release' to admins
+        if ev_type in ['resource_release']:
+             return jsonify({'error': 'Students cannot create resource releases'}), 403
+
     new_event = Event(title=title, date=date, type=ev_type, created_by=user_id)
     db.session.add(new_event)
     db.session.commit()

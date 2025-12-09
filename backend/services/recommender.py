@@ -64,6 +64,25 @@ class HybridRecommender:
         resource.embedding_vector = json.dumps(vector)
         self.db.commit()
 
+    def update_resource_embeddings_batch(self, resources):
+        """Computes and saves embeddings for a list of resources in one batch (Faster)."""
+        load_ml_libs()
+        if not resources: return
+        
+        texts = [f"{r.title}" for r in resources]
+        
+        if model is None:
+            # Fallback if model failed to load
+            for r in resources:
+                r.embedding_vector = json.dumps([0.0]*384)
+        else:
+            # Batch encode
+            vectors = model.encode(texts)
+            for i, r in enumerate(resources):
+                r.embedding_vector = json.dumps(vectors[i].tolist())
+        
+        self.db.commit()
+
     def get_content_similarity(self, query_text, resources):
         """
         Computes cosine similarity between query and list of resources.
@@ -73,16 +92,26 @@ class HybridRecommender:
         if model is None or cosine_similarity is None:
             return {}
             
+        # Optimization: Pre-check and batch update missing embeddings
+        missing_embedding_resources = [r for r in resources if not r.embedding_vector]
+        if missing_embedding_resources:
+            self.update_resource_embeddings_batch(missing_embedding_resources)
+
         query_vec = model.encode(query_text).reshape(1, -1)
         scores = {}
         
         for res in resources:
             if not res.embedding_vector:
+                # Should have been fixed by batch update, but safety check
                 self.update_resource_embedding(res)
             
-            res_vec = np.array(json.loads(res.embedding_vector)).reshape(1, -1)
-            sim = cosine_similarity(query_vec, res_vec)[0][0]
-            scores[res.id] = sim
+            try:
+                res_vec = np.array(json.loads(res.embedding_vector)).reshape(1, -1)
+                sim = cosine_similarity(query_vec, res_vec)[0][0]
+                scores[res.id] = sim
+            except Exception as e:
+                self.logger.error(f"Error computing similarity for resource {res.id}: {e}")
+                scores[res.id] = 0.0
             
         return scores
 
@@ -147,8 +176,9 @@ class HybridRecommender:
                 source_boost = 2.0 # Significant boost to ensure manual resources appear first
             
             # Weighted Hybrid Formula
-            # 60% Relevancy to Topic + 30% Quality/Popularity + 10% User Boost + Source Priority
-            final_score = (cont_score * 0.6) + (collab_score * 0.4) + user_boost + source_boost
+            # Adjusted to prioritize Ratings (Collaborative) more for dynamic re-ordering
+            # 50% Content + 50% Quality/Rating + User Boost + Source Priority
+            final_score = (cont_score * 0.5) + (collab_score * 0.5) + (user_boost * 1.5) + source_boost
             
             final_scores.append((res, final_score))
         

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
+import '../dashboard.css';
 
 interface Course {
     id: number;
@@ -35,24 +36,64 @@ function StudentDashboard() {
     const [description, setDescription] = useState('');
     const [selectedLanguage, setSelectedLanguage] = useState('English');
 
+    const [limit, setLimit] = useState(20);
+    const [viewingResource, setViewingResource] = useState<Resource | null>(null);
+
+    const getYouTubeEmbedUrl = (url: string) => {
+        try {
+            let videoId = '';
+            if (url.includes('youtube.com/watch?v=')) {
+                videoId = url.split('v=')[1].split('&')[0];
+            } else if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1];
+            }
+            return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : url;
+        } catch (e) {
+            return url;
+        }
+    };
+
     useEffect(() => {
         fetchCourses();
     }, []);
 
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 50) {
+                if (!loading && resources.length >= limit) {
+                    setLimit(prev => prev + 20);
+                }
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [loading, resources, limit]);
+
+    // Fetch when limit increases (Load More)
+    useEffect(() => {
+        if (selectedTopic && limit > 20) {
+            handleFetch(limit);
+        }
+    }, [limit]);
+
     // Re-fetch recommendations when filters change (ONLY if resources are already showing)
     useEffect(() => {
+        setLimit(20); // Reset limit
         if (selectedTopic && resources.length > 0) {
-            // Optional: You could auto-fetch here, but image implies manual button click/flow
-            // For now, let's keep it manual or rigorous on the button
+            handleFetch(20); // Fetch with reset limit
         }
-    }, [selectedFormat]);
+    }, [selectedFormat, selectedLanguage]);
 
     const fetchCourses = async () => {
         try {
+            console.log("Fetching courses...");
             const res = await api.get('/courses');
+            console.log("Courses fetched:", res.data);
             setCourses(res.data);
         } catch (err) {
             console.error(err);
+            // alert("Failed to load courses. Please Login again."); // Optional, but helps debug
         }
     };
 
@@ -67,6 +108,7 @@ function StudentDashboard() {
         setSelectedCourse(courseId);
         setSelectedTopic(null);
         setResources([]);
+        setLimit(20);
         try {
             const res = await api.get(`/courses/${courseId}/topics`);
             setTopics(res.data);
@@ -78,9 +120,10 @@ function StudentDashboard() {
     const handleTopicChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const topicId = Number(e.target.value);
         setSelectedTopic(topicId || null);
+        setLimit(20);
     };
 
-    const handleFetch = async () => {
+    const handleFetch = async (currentLimit = 20) => {
         if (!selectedCourse) {
             alert("Please select a course.");
             return;
@@ -93,7 +136,8 @@ function StudentDashboard() {
                 topic_id: selectedTopic,
                 format: selectedFormat || null,
                 search_query: description,
-                language: selectedLanguage
+                language: selectedLanguage,
+                limit: currentLimit
             });
             setResources(res.data);
         } catch (err) {
@@ -177,10 +221,10 @@ function StudentDashboard() {
                             value={selectedFormat}
                             onChange={e => setSelectedFormat(e.target.value)}
                         >
-                            <option value="">Any</option>
-                            <option value="video">Video</option>
-                            <option value="article">Article</option>
-                            <option value="pdf">PDF</option>
+                            <option value="">Select a module...</option>
+                            {courses.map(c => (
+                                <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
+                            ))}
                         </select>
                     </div>
 
@@ -191,10 +235,18 @@ function StudentDashboard() {
 
                             value={selectedLanguage}
                             onChange={e => setSelectedLanguage(e.target.value)}
+                    <div className="filter-group">
+                        <label>Topic</label>
+                        <select
+                            className="form-select-modern glassy-input"
+                            value={selectedTopic || ''}
+                            onChange={handleTopicChange}
+                            disabled={!selectedCourse}
                         >
-                            <option value="English">EN</option>
-                            <option value="Tamil">TA</option>
-                            <option value="Sinhala">SI</option>
+                            <option value="">{selectedCourse ? (topics.length > 0 ? "Select a topic..." : "No topics available") : "Select module first"}</option>
+                            {topics.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
                         </select>
                     </div>
                 </div>
@@ -251,49 +303,107 @@ function StudentDashboard() {
                     )
                 }
 
+                    <div className="filter-row">
+                        <div className="filter-group">
+                            <label>Format</label>
+                            <select
+                                className="form-select-modern glassy-input"
+                                value={selectedFormat}
+                                onChange={e => setSelectedFormat(e.target.value)}
+                            >
+                                <option value="">Any</option>
+                                <option value="video">Video</option>
+                                <option value="article">Article</option>
+                                <option value="pdf">PDF</option>
+                            </select>
+                        </div>
+                        <div className="filter-group">
+                            <label>Lang</label>
+                            <select
+                                className="form-select-modern glassy-input"
+                                value={selectedLanguage}
+                                onChange={e => setSelectedLanguage(e.target.value)}
+                            >
+                                <option value="English">EN</option>
+                                <option value="Tamil">TA</option>
+                                <option value="Sinhala">SI</option>
+                            </select>
+                        </div>
+                    </div>
 
-                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                    <div className="filter-group">
+                        <label>Smart Search</label>
+                        <textarea
+                            className="smart-search-input glassy-input"
+                            placeholder="Tell me specifically what you want to learn..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                        />
+                    </div>
+
+                    <button className="btn-find-resources" onClick={() => handleFetch(20)}>
+                        {loading ? 'Searching...' : 'Find Resources 🚀'}
+                    </button>
+
+                    {selectedCourse && (
+                        <div style={{ marginTop: '1.5rem' }}>
+                            <label style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 }}>Try searching for:</label>
+                            <div className="chip" onClick={() => {
+                                const c = courses.find(c => c.id === selectedCourse);
+                                if (c) setDescription(c.name);
+                            }}>
+                                {courses.find(c => c.id === selectedCourse)?.name}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </aside>
 
-            {/* Main Content: Stats & Results */}
-            <main className="main-content">
+            {/* RIGHT PANEL: Content */}
+            <main className="content-panel">
+                <div className="welcome-header">
+                    <h1 className="gradient-text">Welcome back, {localStorage.getItem('username') || 'Student'}!</h1>
+                    <p className="subtitle">Ready to learn something new today?</p>
+                </div>
 
-                {/* Hero / Stats Section */}
-                <div style={{ marginBottom: '2.5rem' }}>
-                    <h1 className="section-title" style={{ fontSize: '2rem', marginBottom: '0.5rem', marginTop: 0, background: 'linear-gradient(90deg, #4F46E5, #9333EA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block' }}>
-                        Welcome back, Student!
-                    </h1>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                        Ready to learn something new today?
-                    </p>
-
-                    <div className="dashboard-stats-grid">
-                        <div className="stat-card">
-                            <div className="stat-icon" style={{ background: '#EEF2FF', color: '#4F46E5' }}>📚</div>
-                            <div>
-                                <h4>4 Courses</h4>
-                                <span className="stat-label">Enrolled</span>
+                <div className="content-body">
+                    {resources.length === 0 && (
+                        <div className="stats-stack">
+                            <div className="stat-card-wide">
+                                <div className="stat-icon-wrapper" style={{ background: 'white', color: '#4F46E5' }}>
+                                    <img src="https://cdn-icons-png.flaticon.com/512/2232/2232688.png" alt="Courses" width="24" />
+                                </div>
+                                <div className="stat-info">
+                                    <h3>4 Courses</h3>
+                                    <span>Enrolled</span>
+                                </div>
                             </div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon" style={{ background: '#ECFDF5', color: '#10B981' }}>⏱️</div>
-                            <div>
-                                <h4>12.5 Hrs</h4>
-                                <span className="stat-label">Study Time</span>
+                            <div className="stat-card-wide">
+                                <div className="stat-icon-wrapper" style={{ background: 'white', color: '#EC4899' }}>
+                                    ⏱️
+                                </div>
+                                <div className="stat-info">
+                                    <h3>12.5 Hrs</h3>
+                                    <span>Study Time</span>
+                                </div>
                             </div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon" style={{ background: '#FEF2F2', color: '#EF4444' }}>🔥</div>
-                            <div>
-                                <h4>3 Day</h4>
-                                <span className="stat-label">Streak</span>
+                            <div className="stat-card-wide">
+                                <div className="stat-icon-wrapper" style={{ background: 'white', color: '#F59E0B' }}>
+                                    🔥
+                                </div>
+                                <div className="stat-info">
+                                    <h3>3 Day</h3>
+                                    <span>Streak</span>
+                                </div>
                             </div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-icon" style={{ background: '#FFFBEB', color: '#F59E0B' }}>⭐</div>
-                            <div>
-                                <h4>150 pts</h4>
-                                <span className="stat-label">Learner Score</span>
+                            <div className="stat-card-wide">
+                                <div className="stat-icon-wrapper" style={{ background: 'white', color: '#10B981' }}>
+                                    ⭐
+                                </div>
+                                <div className="stat-info">
+                                    <h3>150 pts</h3>
+                                    <span>Learner Score</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -350,6 +460,16 @@ function StudentDashboard() {
                 }
                 {loading && <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>Finding the best resources for you...</p>}
             </main>
+
+            <footer className="dashboard-footer">
+                <span>© 2025 Personalized Study Buddy. All rights reserved.</span>
+                <div className="footer-links">
+                    <a href="#" className="footer-link">help@studybuddy.com</a>
+                    <a href="#" className="footer-link">@studybuddy_app</a>
+                    <a href="#" className="footer-link">Privacy & Terms</a>
+                </div>
+            </footer>
+            </div>
         </div>
     );
 }
