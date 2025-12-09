@@ -28,6 +28,14 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Calendar Specifics - Light Mode */
+  --calendar-primary: #0ea5e9; /* Bright Blue */
+  --calendar-header-text: #ffffff;
+  --calendar-border: #e2e8f0;
+  --calendar-cell-bg: #ffffff;
+  --calendar-today-bg: #facc15; /* Yellow/Gold for "Type 1" look */
+  --calendar-today-text: #1e293b;
 }
 
 body.dark-mode {
@@ -36,6 +44,14 @@ body.dark-mode {
   --text-main: #F9FAFB;
   --text-secondary: #9CA3AF;
   --border-light: #374151;
+
+  /* Calendar Specifics - Dark Mode */
+  --calendar-primary: #0369a1; /* Darker Blue */
+  --calendar-header-text: #f0f9ff;
+  --calendar-border: #374151;
+  --calendar-cell-bg: #1f2937;
+  --calendar-today-bg: #ca8a04; /* Darker Gold */
+  --calendar-today-text: #ffffff;
 }
 
 .navbar {
