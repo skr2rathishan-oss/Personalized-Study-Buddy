@@ -60,7 +60,6 @@ def check_role(roles):
 # --- Auth Routes ---
 
 @app.route('/auth/otp/send', methods=['POST'])
-@app.route('/auth/otp/send', methods=['POST'])
 def send_otp():
     """
     Step 1: Receive Identifier (Email or Phone).
@@ -217,29 +216,29 @@ def login():
     data = request.json
     username = data.get('username')
     password = data.get('password')
-# Log login attempt
-print(f"Login Attempt: User={username}")
+    # Log login attempt
+    print(f"Login Attempt: User={username}")
 
-# Case insensitive search
-user = User.query.filter(User.username.ilike(username)).first()
+    # Case insensitive search
+    user = User.query.filter(User.username.ilike(username)).first()
 
-if user:
-    if bcrypt.check_password_hash(user.password_hash, password):
-        print("Login Success: Creds valid")
-        token = create_access_token(
-            identity=str(user.id), 
-            additional_claims={'role': user.role, 'username': user.username}
-        )
-        return jsonify({
-            'token': token, 
-            'role': user.role, 
-            'username': user.username,
-            'profile_image': user.profile_image  # include profile_image
-        })
+    if user:
+        if bcrypt.check_password_hash(user.password_hash, password):
+            print("Login Success: Creds valid")
+            token = create_access_token(
+                identity=str(user.id), 
+                additional_claims={'role': user.role, 'username': user.username}
+            )
+            return jsonify({
+                'token': token, 
+                'role': user.role, 
+                'username': user.username,
+                'profile_image': user.profile_image  # include profile_image
+            })
+        else:
+            print("Login Failed: Password incorrect")
     else:
-        print("Login Failed: Password incorrect")
-else:
-    print("Login Failed: User not found")
+        print("Login Failed: User not found")
 
 
     return jsonify({'error': 'Invalid credentials'}), 401
@@ -279,8 +278,7 @@ def profile():
         if 'phone_number' in data: user.phone_number = data['phone_number']
         if 'university' in data: user.university = data['university']
         if 'university_course' in data: user.university_course = data['university_course']
-        if 'university' in data: user.university = data['university']
-        if 'university_course' in data: user.university_course = data['university_course']
+
         if 'university_id' in data: user.university_id = data['university_id']
         if 'profile_image' in data: user.profile_image = data['profile_image']
         
@@ -332,7 +330,6 @@ def recommend():
     topic = None
     query = None
     
-    # Validation: Minimum one input required (Expanded)
     # Validation: Minimum one input required (Expanded)
     # We allows simple search queries even without course/topic context
     has_input = any([

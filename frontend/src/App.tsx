@@ -12,8 +12,8 @@ import Calendar from './pages/Calendar';
 import PersonalTracking from './pages/PersonalTracking';
 import History from './pages/History';
 import UserManagement from './pages/UserManagement';
+
 import Navbar from './components/Navbar';
-import Footer from './components/Footer';
 
 interface PrivateRouteProps {
     children: JSX.Element;
@@ -104,7 +104,6 @@ function App() {
                         <Route path="*" element={<Navigate to="/login" />} />
                     </Routes>
                 </div>
-                <Footer />
             </div>
         </Router>
     );

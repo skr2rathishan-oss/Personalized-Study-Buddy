@@ -22,5 +22,53 @@
         "topic": "Pandas",
         "resource": "10 Minutes to Pandas",
         "rating": 5
+    },
+    {
+        "course": "Software Engineering (SE201)",
+        "topic": "Software Development Life Cycle",
+        "resource": "SDLC Models Explained",
+        "rating": 4.5
+    },
+    {
+        "course": "Software Engineering (SE201)",
+        "topic": "Agile Methodology",
+        "resource": "Scrum Basics for Beginners",
+        "rating": 4.8
+    },
+    {
+        "course": "Data Structures & Algorithms (CS202)",
+        "topic": "Arrays & Linked Lists",
+        "resource": "Linked Lists vs Arrays",
+        "rating": 4.7
+    },
+    {
+        "course": "Data Structures & Algorithms (CS202)",
+        "topic": "Binary Search Trees",
+        "resource": "BST Visualization",
+        "rating": 4.9
+    },
+    {
+        "course": "Database Management Systems (DB301)",
+        "topic": "Normalization",
+        "resource": "Database Normalization Forms",
+        "rating": 4.6
+    },
+    {
+        "course": "Database Management Systems (DB301)",
+        "topic": "SQL Joins",
+        "resource": "Visual Guide to SQL Joins",
+        "rating": 5
+    },
+    {
+        "course": "Computer Networks (CN401)",
+        "topic": "OSI Model",
+        "resource": "The OSI Model Explained",
+        "rating": 4.5
+    },
+    {
+        "course": "Computer Networks (CN401)",
+        "topic": "TCP/IP Protocol",
+        "resource": "How TCP/IP Works",
+        "rating": 4.7
     }
 ]
