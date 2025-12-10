@@ -619,7 +619,7 @@ body.dark-mode .dashboard-footer {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     /* Softer multi-layer shadow */
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; Removed to allow AI Popup to overflow */
     animation: fadeIn 0.5s ease-out forwards;
     opacity: 0;
 
@@ -773,6 +773,7 @@ body.dark-mode .rate-dropdown {
     /* Adjust for parent padding to go full width */
     margin: -1.5rem -1.5rem 1rem -1.5rem;
     border-bottom: 1px solid var(--dash-glass-border);
+    border-radius: 16px 16px 0 0;
 
     display: flex;
     align-items: center;
@@ -795,6 +796,80 @@ body.dark-mode .rate-dropdown {
     font-size: 3rem;
     opacity: 0.8;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* --- Resource Modal Styles --- */
+.resource-modal-content {
+    background: var(--dash-card-bg);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--dash-glass-border);
+}
+
+.resource-modal-header {
+    padding: 15px;
+    border-bottom: 1px solid var(--dash-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #E2E8F0;
+    /* Distinct Light Gray */
+    color: var(--dash-text-main);
+}
+
+body.dark-mode .resource-modal-header {
+    background: var(--dash-card-bg);
+}
+
+.resource-modal-title {
+    margin: 0;
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%;
+    color: var(--dash-text-main);
+}
+
+.resource-video-container {
+    flex: 1;
+    background: #000;
+    /* Video background stays dark */
+    padding: 20px;
+}
+
+.btn-close-modal {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--dash-text-muted);
+    transition: color 0.2s;
+}
+
+.btn-close-modal:hover {
+    color: var(--dash-text-main);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--dash-border);
+    color: var(--dash-text-main);
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background: var(--dash-hover);
+    border-color: var(--dash-text-muted);
 }
 
 .card-badges-floating {

@@ -6,6 +6,7 @@ interface Resource {
     title: string;
     url: string;
     format: 'video' | 'article' | 'pdf';
+    quality_score?: number;
 }
 
 interface Topic {
@@ -278,7 +279,10 @@ function AdminDashboard() {
                         </div>
                     </div>
                 </div>
-            )}
+
+            )
+            }
+
 
             {/* Manager Modal */}
             {isManageModalOpen && activeCourse && (
@@ -331,6 +335,11 @@ function AdminDashboard() {
                                                                             <span className={`fmt-badge fmt-${r.format}`}>
                                                                                 {r.format === 'pdf' ? 'PDF' : (r.format === 'article' ? 'LINK' : 'VID')}
                                                                             </span>
+                                                                            {r.quality_score !== undefined && (
+                                                                                <span style={{ fontSize: '0.65rem', background: '#F1F5F9', color: '#64748B', padding: '2px 4px', borderRadius: '4px', border: '1px solid #E2E8F0', fontWeight: 600 }} title="AI Quality Score">
+                                                                                    QS:{r.quality_score}
+                                                                                </span>
+                                                                            )}
                                                                             <a href={r.url} target="_blank" rel="noopener noreferrer" className="resource-link" title={r.title}>{r.title}</a>
                                                                         </div>
                                                                         <button onClick={() => handleDeleteResource(r.id)} className="icon-btn-danger-sm">×</button>

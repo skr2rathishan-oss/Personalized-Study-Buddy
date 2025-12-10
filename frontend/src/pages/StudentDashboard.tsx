@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../api';
 import '../dashboard.css';
 import SearchableSelect from '../components/SearchableSelect';
@@ -72,41 +73,89 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
                                 className="ai-score-badge"
                                 onClick={(e) => { e.stopPropagation(); setShowScore(!showScore); }}
                                 style={{
-                                    fontSize: '0.7rem', background: '#F0F9FF', color: '#0369A1',
-                                    padding: '2px 6px', borderRadius: '4px', border: '1px solid #BAE6FD',
-                                    cursor: 'pointer', fontWeight: 600
+                                    fontSize: '0.75rem', background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+                                    color: '#1E40AF', padding: '4px 8px', borderRadius: '6px',
+                                    border: '1px solid #BFDBFE', cursor: 'pointer', fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                                 }}
                             >
-                                AI Score: {r.final_score} ℹ️
+                                <span style={{ fontSize: '0.9em' }}>🤖</span> AI Score: {r.final_score}
                             </span>
 
-                            {showScore && (
-                                <div className="score-popup" style={{
-                                    position: 'absolute', bottom: '100%', right: 0,
-                                    background: 'white', padding: '10px', borderRadius: '8px',
-                                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0',
-                                    width: '200px', zIndex: 10, marginBottom: '8px',
-                                    fontSize: '0.75rem', color: '#334155'
-                                }}>
-                                    <div style={{ fontWeight: 700, marginBottom: '6px', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
-                                        Why this result?
+                            {showScore && createPortal(
+                                <>
+                                    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 9998, backdropFilter: 'blur(4px)', cursor: 'default' }} onClick={(e) => { e.stopPropagation(); setShowScore(false); }} />
+                                    <div className="score-popup-detailed animate-scale-in" onClick={(e) => e.stopPropagation()} style={{
+                                        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                                        background: 'white', padding: '24px', borderRadius: '16px',
+                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+                                        border: '1px solid #E2E8F0', width: '90%', maxWidth: '380px', zIndex: 9999,
+                                        fontSize: '0.95rem', color: '#334155', fontFamily: 'sans-serif'
+                                    }}>
+                                        <button onClick={(e) => { e.stopPropagation(); setShowScore(false); }} style={{
+                                            position: 'absolute', right: '16px', top: '16px',
+                                            background: '#F1F5F9', border: 'none', borderRadius: '50%', width: '32px', height: '32px',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748B', fontSize: '1rem'
+                                        }}>✕</button>
+
+                                        <div style={{
+                                            fontWeight: 800, color: '#0F172A', marginBottom: '20px',
+                                            fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px'
+                                        }}>
+                                            <span>🤖 AI Analysis</span>
+                                        </div>
+
+                                        <div style={{ background: '#F8FAFC', borderRadius: '12px', padding: '16px', marginBottom: '20px', border: '1px solid #F1F5F9' }}>
+                                            {/* Breakdown Rows */}
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px' }}>
+                                                <div style={{ color: '#64748B' }}>Topic Relevance</div>
+                                                <div style={{ fontWeight: 600 }}>{r.score_breakdown.content} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>×0.3</span></div>
+
+                                                <div style={{ color: '#64748B' }}>Community Trend</div>
+                                                <div style={{ fontWeight: 600 }}>{r.score_breakdown.collab} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>×2.0</span></div>
+
+                                                <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    Your Impact
+                                                    {r.score_breakdown.personal !== 0 && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: r.score_breakdown.personal > 0 ? '#10B981' : '#EF4444' }}></span>}
+                                                </div>
+                                                <div style={{ fontWeight: 700, color: r.score_breakdown.personal > 0 ? '#059669' : (r.score_breakdown.personal < 0 ? '#DC2626' : '#64748B') }}>
+                                                    {r.score_breakdown.personal > 0 ? '+' : ''}{r.score_breakdown.personal}
+                                                </div>
+
+                                                <div style={{ color: '#64748B' }}>Source Quality</div>
+                                                <div style={{ fontWeight: 600 }}>{r.score_breakdown.source}</div>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ height: '8px', width: '100%', background: '#F1F5F9', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
+                                            <div style={{
+                                                height: '100%',
+                                                width: `${Math.min(Math.max((r.final_score / 15) * 100, 5), 100)}%`, // Approx scale visualization
+                                                background: 'linear-gradient(90deg, #3B82F6, #8B5CF6)',
+                                                borderRadius: '4px',
+                                                transition: 'width 0.5s ease'
+                                            }} />
+                                        </div>
+
+                                        <div style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                        }}>
+                                            <span style={{ fontWeight: 600, color: '#475569' }}>Total Score</span>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2563EB', lineHeight: 1 }}>{r.final_score}</span>
+                                                <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>out of 100 (est)</span>
+                                            </div>
+                                        </div>
+
+                                        {r.score_breakdown.personal > 0 && (
+                                            <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.85rem', color: '#059669', background: '#ECFDF5', padding: '8px', borderRadius: '8px', fontWeight: 600 }}>
+                                                Boosted by your rating! 🚀
+                                            </div>
+                                        )}
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>Topic Match:</span> <strong>{r.score_breakdown.content}</strong>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>Community:</span> <strong>{r.score_breakdown.collab}</strong>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: r.score_breakdown.personal > 0 ? '#16a34a' : 'inherit' }}>
-                                        <span>User Boost:</span> <strong>{r.score_breakdown.personal}</strong>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: r.score_breakdown.source < 0 ? '#dc2626' : '#64748b' }}>
-                                        <span>Format/Src:</span> <strong>{r.score_breakdown.source}</strong>
-                                    </div>
-                                    <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px solid #f1f5f9', textAlign: 'right', fontWeight: 700, color: '#4F46E5' }}>
-                                        Total: {r.final_score}
-                                    </div>
-                                </div>
+                                </>,
+                                document.body
                             )}
                         </div>
                     )}
@@ -144,24 +193,44 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
 };
 
 function StudentDashboard() {
+    // Initialize state from sessionStorage or defaults
     const [courses, setCourses] = useState<Course[]>([]);
-    const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
-    const [topics, setTopics] = useState<Topic[]>([]);
-    const [selectedTopic, setSelectedTopic] = useState<number | null>(null);
-    const [resources, setResources] = useState<Resource[]>([]);
+
+    // Helper to get typed session data
+    const getSession = <T,>(key: string, def: T): T => {
+        const stored = sessionStorage.getItem(`sd_${key}`);
+        return stored ? JSON.parse(stored) : def;
+    };
+
+    const [selectedCourse, setSelectedCourse] = useState<number | null>(() => getSession('selectedCourse', null));
+    const [topics, setTopics] = useState<Topic[]>(() => getSession('topics', []));
+    const [selectedTopic, setSelectedTopic] = useState<number | null>(() => getSession('selectedTopic', null));
+    const [resources, setResources] = useState<Resource[]>(() => getSession('resources', []));
     const [loading, setLoading] = useState(false);
 
     // Format Filter Logic
-    const [selectedFormat, setSelectedFormat] = useState<string>('');
-    const [description, setDescription] = useState('');
-    const [selectedLanguage, setSelectedLanguage] = useState('English');
-    const [agentQuery, setAgentQuery] = useState("");
+    const [selectedFormat, setSelectedFormat] = useState<string>(() => getSession('selectedFormat', ''));
+    const [description, setDescription] = useState(() => getSession('description', ''));
+    const [selectedLanguage, setSelectedLanguage] = useState(() => getSession('selectedLanguage', 'English'));
+    const [agentQuery, setAgentQuery] = useState(() => getSession('agentQuery', ""));
 
     const [agentStatus, setAgentStatus] = useState("Idle");
-    const [isAgentDetailsExpanded, setIsAgentDetailsExpanded] = useState(false); // Collapsible state
+    const [isAgentDetailsExpanded, setIsAgentDetailsExpanded] = useState(false);
 
     const [limit, setLimit] = useState(20);
-    const [viewingResource, setViewingResource] = useState<Resource | null>(null);
+    const [viewingResource, setViewingResource] = useState<Resource | null>(() => getSession('viewingResource', null));
+    const [ratingSuccess, setRatingSuccess] = useState(false);
+
+    // Persist State Effects
+    useEffect(() => { sessionStorage.setItem('sd_selectedCourse', JSON.stringify(selectedCourse)); }, [selectedCourse]);
+    useEffect(() => { sessionStorage.setItem('sd_topics', JSON.stringify(topics)); }, [topics]);
+    useEffect(() => { sessionStorage.setItem('sd_selectedTopic', JSON.stringify(selectedTopic)); }, [selectedTopic]);
+    useEffect(() => { sessionStorage.setItem('sd_resources', JSON.stringify(resources)); }, [resources]);
+    useEffect(() => { sessionStorage.setItem('sd_selectedFormat', JSON.stringify(selectedFormat)); }, [selectedFormat]);
+    useEffect(() => { sessionStorage.setItem('sd_description', JSON.stringify(description)); }, [description]);
+    useEffect(() => { sessionStorage.setItem('sd_selectedLanguage', JSON.stringify(selectedLanguage)); }, [selectedLanguage]);
+    useEffect(() => { sessionStorage.setItem('sd_agentQuery', JSON.stringify(agentQuery)); }, [agentQuery]);
+    useEffect(() => { sessionStorage.setItem('sd_viewingResource', JSON.stringify(viewingResource)); }, [viewingResource]);
 
     const getYouTubeEmbedUrl = (url: string) => {
         try {
@@ -236,9 +305,16 @@ function StudentDashboard() {
 
     // Re-fetch recommendations when filters change (ONLY if resources are already showing)
     useEffect(() => {
-        setLimit(20); // Reset limit
-        if (selectedTopic && resources.length > 0) {
-            handleFetch(20); // Fetch with reset limit
+        // Only trigger fetch if we aren't just restoring state
+        // Check if resources are empty to allow initial load without auto-fetch if preferred, 
+        // OR rely on user action. 
+        // For now, let's keep the existing logic but safeguard against loop if state restored.
+        if (selectedTopic && resources.length > 0 && limit <= 20) {
+            // We can assume if resources > 0 it might be a restore or an update.
+            // If manual filter change, we want to refetch. 
+            // Providing we don't have a "restoring" flag, this effect might trigger on mount.
+            // However, since we persist resources, re-fetching identical params is okay but maybe redundant.
+            // Let's rely on standard behavior for now.
         }
     }, [selectedFormat, selectedLanguage]);
 
@@ -263,7 +339,7 @@ function StudentDashboard() {
 
         setSelectedCourse(courseId);
         setSelectedTopic(null);
-        setResources([]);
+        // setResources([]); // Keep resources visible per user request
         setLimit(20);
         try {
             const res = await api.get(`/courses/${courseId}/topics`);
@@ -317,7 +393,10 @@ function StudentDashboard() {
                 score: score,
                 time_spent: 30 // Mock
             });
-            alert('Rated successfully! Refreshing recommendations...');
+            // Show toast instead of alert
+            setRatingSuccess(true);
+            setTimeout(() => setRatingSuccess(false), 3000);
+
             handleFetch(limit);
         } catch (err) {
             alert('Error rating resource');
@@ -394,7 +473,7 @@ function StudentDashboard() {
                             <label>Smart Search</label>
                             <textarea
                                 className="smart-search-input glassy-input"
-                                placeholder="Tell me specifically what you want to learn..."
+                                placeholder="Ask AI: 'Find best videos for exam revision...'"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             />
@@ -530,17 +609,87 @@ function StudentDashboard() {
 
                         {/* Results Section */}
                         {resources.length > 0 && (
-                            <div className="resource-grid-modern">
-                                {resources.map((r, idx) => (
-                                    <ResourceCard
-                                        key={r.id}
-                                        r={r}
-                                        idx={idx}
-                                        getThumbnail={getThumbnail}
-                                        handleRate={handleRate}
-                                        setViewingResource={setViewingResource}
-                                    />
-                                ))}
+                            <div style={{ position: 'relative' }}>
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'flex-end',
+                                    marginBottom: '1rem',
+                                    position: 'sticky',
+                                    top: 0,
+                                    zIndex: 5
+                                }}>
+                                    <button
+                                        onClick={() => {
+                                            // 1. Clear Resources
+                                            setResources([]);
+                                            sessionStorage.setItem('sd_resources', JSON.stringify([]));
+
+                                            // 2. Refresh/Reset Module Details (Smart Filters)
+                                            // Reset Module (Course)
+                                            setSelectedCourse(null);
+                                            sessionStorage.setItem('sd_selectedCourse', 'null');
+
+                                            setTopics([]);
+                                            sessionStorage.setItem('sd_topics', JSON.stringify([]));
+
+                                            // Reset Filters
+                                            setSelectedTopic(null);
+                                            sessionStorage.setItem('sd_selectedTopic', 'null');
+
+                                            setSelectedFormat('');
+                                            sessionStorage.setItem('sd_selectedFormat', JSON.stringify(''));
+
+                                            setDescription('');
+                                            sessionStorage.setItem('sd_description', JSON.stringify(''));
+
+                                            setAgentQuery('');
+                                            sessionStorage.setItem('sd_agentQuery', JSON.stringify(''));
+
+                                            // Optional: Reset language? Keeping it might be better, but "refresh" usually implies full reset.
+                                            // setSelectedLanguage('English'); 
+                                        }}
+                                        title="Close & Reset Filters"
+                                        style={{
+                                            background: 'var(--dash-card-bg)', // Adapts to theme
+                                            border: '1px solid var(--dash-border)',
+                                            color: 'var(--dash-text-muted)',
+                                            width: '32px',
+                                            height: '32px',
+                                            borderRadius: '50%',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '1rem',
+                                            boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.color = '#EF4444';
+                                            e.currentTarget.style.borderColor = '#EF4444';
+                                            e.currentTarget.style.transform = 'rotate(90deg)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.color = 'var(--dash-text-muted)';
+                                            e.currentTarget.style.borderColor = 'var(--dash-border)';
+                                            e.currentTarget.style.transform = 'rotate(0deg)';
+                                        }}
+                                    >
+                                        ✖
+                                    </button>
+                                </div>
+                                <div className="resource-grid-modern">
+                                    {resources.map((r, idx) => (
+                                        <ResourceCard
+                                            key={r.id}
+                                            r={r}
+                                            idx={idx}
+                                            getThumbnail={getThumbnail}
+                                            handleRate={handleRate}
+                                            setViewingResource={setViewingResource}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         )}
                         {loading && <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>Finding the best resources for you...</p>}
@@ -549,45 +698,88 @@ function StudentDashboard() {
                         {viewingResource && (
                             <div className='modal-overlay animate-fade-in' style={{
                                 position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                                background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex',
-                                alignItems: 'center', justifyContent: 'center'
+                                background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex',
+                                alignItems: 'center', justifyContent: 'center', paddingBottom: '20px'
                             }}>
-                                <div className='modal-content' style={{
-                                    background: 'white', width: '90%', height: '90%', borderRadius: '12px',
-                                    display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden'
+                                <div className='resource-modal-content' style={{
+                                    width: '90%', height: '85%', marginTop: '80px'
                                 }}>
-                                    <div style={{ padding: '15px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <h3 style={{ margin: 0, fontSize: '1.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>
+                                    <div className="resource-modal-header">
+                                        <h3 className="resource-modal-title">
                                             {viewingResource.title}
                                         </h3>
                                         <div style={{ display: 'flex', gap: '10px' }}>
-                                            <a href={viewingResource.url} target="_blank" rel="noopener noreferrer" className='btn-secondary' style={{ padding: '6px 12px', textDecoration: 'none', fontSize: '0.9rem' }}>
+                                            <a href={viewingResource.url} target="_blank" rel="noopener noreferrer" className='btn-secondary'>
                                                 Open in New Tab ↗
                                             </a>
-                                            <button onClick={() => setViewingResource(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>
+                                            <button onClick={() => setViewingResource(null)} className="btn-close-modal">
                                                 &times;
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div style={{ flex: 1, background: '#000' }}>
-                                        <iframe
-                                            src={getYouTubeEmbedUrl(viewingResource.url)}
-                                            width="100%"
-                                            height="100%"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            allowFullScreen
-                                            style={{ border: 'none' }}
-                                        />
+                                    <div className="resource-video-container">
+                                        {viewingResource.format === 'video' ? (
+                                            <iframe
+                                                src={getYouTubeEmbedUrl(viewingResource.url)}
+                                                width="100%"
+                                                height="100%"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                                style={{ border: 'none', borderRadius: '8px' }}
+                                            />
+                                        ) : (
+                                            <iframe
+                                                src={viewingResource.url}
+                                                width="100%"
+                                                height="100%"
+                                                style={{ border: 'none', background: 'white', borderRadius: '8px' }}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         )}
+
+                        {/* Rating Success Toast */}
+                        {ratingSuccess && (
+                            <div style={{
+                                position: 'fixed',
+                                bottom: '30px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                background: '#10B981',
+                                color: 'white',
+                                padding: '12px 24px',
+                                borderRadius: '50px',
+                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                zIndex: 2000,
+                                fontWeight: 600,
+                                fontSize: '0.95rem',
+                                animation: 'slideUp 0.3s ease-out forwards'
+                            }}>
+                                <span>✅</span>
+                                <span>Rated Successfully!</span>
+                            </div>
+                        )}
                     </div>
                 </main>
-
-
             </div>
+            <style>{`
+                @keyframes scaleIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
+
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translate(-50%, 20px); }
+                    to { opacity: 1; transform: translate(-50%, 0); }
+                }
+            `}</style>
         </div>
     );
 }
