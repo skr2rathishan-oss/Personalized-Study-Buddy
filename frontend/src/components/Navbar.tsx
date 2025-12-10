@@ -11,6 +11,7 @@ function Navbar() {
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const [profileImage, setProfileImage] = useState(localStorage.getItem('profile_image'));
+    const [showStreakModal, setShowStreakModal] = useState(false);
 
     useEffect(() => {
         const handleStorageChange = () => {
@@ -146,7 +147,71 @@ function Navbar() {
                     </svg>
                 </Link>
 
-                {/* Theme Toggle */}
+                {/* 5. Streak (Student Only) */}
+                {role === 'student' && (
+                    <div style={{ position: 'relative' }}>
+                        <button
+                            onClick={() => setShowStreakModal(!showStreakModal)}
+                            className="nav-icon"
+                            title="Login Streak"
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#F59E0B' // Star Color
+                            }}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                        </button>
+
+                        {/* Streak Modal */}
+                        {showStreakModal && (
+                            <div className="streak-modal-popover animate-scale-in">
+                                <h3 className="streak-title">Streak</h3>
+
+                                <div className="streak-content">
+                                    {/* Days Boxes */}
+                                    <div className="streak-week">
+                                        {[
+                                            { d: 'M', s: 'neutral' },
+                                            { d: 'T', s: 'neutral' },
+                                            { d: 'W', s: 'green' }, // Wed - Logged In
+                                            { d: 'T', s: 'red' },   // Thu - Missed
+                                            { d: 'F', s: 'green' }, // Fri - Logged In
+                                            { d: 'S', s: 'neutral' },
+                                            { d: 'S', s: 'neutral' }
+                                        ].map((day, idx) => (
+                                            <div key={idx} className={`day-box ${day.s}`}>
+                                                {day.d}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="streak-stats-row">
+                                        <div className="steak-stat-box">
+                                            <span className="stat-label">Current Streak</span>
+                                            <div className="stat-value">
+                                                <span className="lightning-bolt">⚡</span> 2 days
+                                            </div>
+                                        </div>
+                                        <div className="steak-stat-box">
+                                            <span className="stat-label">Longest Streak</span>
+                                            <div className="stat-value-fire">
+                                                <span className="fire-icon">🔥</span> 7 days
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Overlay to close when clicking outside */}
+                        {showStreakModal && <div className="modal-backdrop-transparent" onClick={() => setShowStreakModal(false)} />}
+                    </div>
+                )}
+
                 <button
                     onClick={() => setDarkMode(!darkMode)}
                     className="nav-icon"
@@ -302,6 +367,106 @@ function Navbar() {
                     .desktop-only {
                         display: none;
                     }
+                }
+                .streak-modal-popover {
+                    position: absolute;
+                    top: 50px;
+                    right: -50px;
+                    background: rgba(255, 255, 255, 0.9);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border-radius: 16px;
+                    padding: 1.5rem;
+                    width: 480px;
+                    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+                    border: 1px solid rgba(226, 232, 240, 0.6);
+                    z-index: 1000;
+                    color: #0F172A;
+                }
+                
+                body.dark-mode .streak-modal-popover {
+                    background: rgba(30, 41, 59, 0.9);
+                    border-color: rgba(51, 65, 85, 0.6);
+                    color: #F8FAFC;
+                }
+                
+                .streak-content {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2rem;
+                    align-items: flex-start;
+                }
+
+                .streak-week {
+                    display: flex;
+                    flex-direction: row;
+                    gap: 8px;
+                    width: 100%;
+                    flex-wrap: nowrap;
+                    justify-content: space-between;
+                }
+
+                .day-box {
+                    width: 42px;
+                    height: 42px;
+                    border-radius: 8px;
+                    background: #F1F5F9;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    color: #94A3B8;
+                    border: 1px solid #E2E8F0;
+                    font-size: 0.9rem;
+                }
+                
+                body.dark-mode .day-box {
+                    background: #334155;
+                    border-color: #475569;
+                    color: #CBD5E1;
+                }
+
+                .day-box.green {
+                    background: #22C55E;
+                    color: white;
+                    border-color: #16A34A;
+                    box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.2);
+                } 
+                
+                body.dark-mode .day-box.green {
+                    background: #22C55E;
+                    border-color: #16A34A;
+                    color: white;
+                }
+
+                .day-box.red {
+                    background: #EF4444;
+                    color: white;
+                    border-color: #DC2626;
+                }
+                
+                body.dark-mode .day-box.red {
+                    background: #EF4444;
+                    border-color: #DC2626;
+                    color: white;
+                }
+
+                .day-box.neutral {
+                    /* Default style */
+                }
+
+                .streak-stats-row {
+                    display: flex;
+                    justify-content: space-between;
+                    width: 100%;
+                    padding: 0 4px;
+                }
+
+                .modal-backdrop-transparent {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 999;
+                    cursor: default;
                 }
             `}</style>
         </nav >
