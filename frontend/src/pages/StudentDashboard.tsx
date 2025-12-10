@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../api';
 import '../dashboard.css';
 import SearchableSelect from '../components/SearchableSelect';
@@ -72,41 +73,89 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
                                 className="ai-score-badge"
                                 onClick={(e) => { e.stopPropagation(); setShowScore(!showScore); }}
                                 style={{
-                                    fontSize: '0.7rem', background: '#F0F9FF', color: '#0369A1',
-                                    padding: '2px 6px', borderRadius: '4px', border: '1px solid #BAE6FD',
-                                    cursor: 'pointer', fontWeight: 600
+                                    fontSize: '0.75rem', background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+                                    color: '#1E40AF', padding: '4px 8px', borderRadius: '6px',
+                                    border: '1px solid #BFDBFE', cursor: 'pointer', fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                                 }}
                             >
-                                AI Score: {r.final_score} ℹ️
+                                <span style={{ fontSize: '0.9em' }}>🤖</span> AI Score: {r.final_score}
                             </span>
 
-                            {showScore && (
-                                <div className="score-popup" style={{
-                                    position: 'absolute', bottom: '100%', right: 0,
-                                    background: 'white', padding: '10px', borderRadius: '8px',
-                                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0',
-                                    width: '200px', zIndex: 10, marginBottom: '8px',
-                                    fontSize: '0.75rem', color: '#334155'
-                                }}>
-                                    <div style={{ fontWeight: 700, marginBottom: '6px', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
-                                        Why this result?
+                            {showScore && createPortal(
+                                <>
+                                    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 9998, backdropFilter: 'blur(4px)', cursor: 'default' }} onClick={(e) => { e.stopPropagation(); setShowScore(false); }} />
+                                    <div className="score-popup-detailed animate-scale-in" onClick={(e) => e.stopPropagation()} style={{
+                                        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                                        background: 'white', padding: '24px', borderRadius: '16px',
+                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+                                        border: '1px solid #E2E8F0', width: '90%', maxWidth: '380px', zIndex: 9999,
+                                        fontSize: '0.95rem', color: '#334155', fontFamily: 'sans-serif'
+                                    }}>
+                                        <button onClick={(e) => { e.stopPropagation(); setShowScore(false); }} style={{
+                                            position: 'absolute', right: '16px', top: '16px',
+                                            background: '#F1F5F9', border: 'none', borderRadius: '50%', width: '32px', height: '32px',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748B', fontSize: '1rem'
+                                        }}>✕</button>
+
+                                        <div style={{
+                                            fontWeight: 800, color: '#0F172A', marginBottom: '20px',
+                                            fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px'
+                                        }}>
+                                            <span>🤖 AI Analysis</span>
+                                        </div>
+
+                                        <div style={{ background: '#F8FAFC', borderRadius: '12px', padding: '16px', marginBottom: '20px', border: '1px solid #F1F5F9' }}>
+                                            {/* Breakdown Rows */}
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px' }}>
+                                                <div style={{ color: '#64748B' }}>Topic Relevance</div>
+                                                <div style={{ fontWeight: 600 }}>{r.score_breakdown.content} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>×0.3</span></div>
+
+                                                <div style={{ color: '#64748B' }}>Community Trend</div>
+                                                <div style={{ fontWeight: 600 }}>{r.score_breakdown.collab} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>×2.0</span></div>
+
+                                                <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    Your Impact
+                                                    {r.score_breakdown.personal !== 0 && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: r.score_breakdown.personal > 0 ? '#10B981' : '#EF4444' }}></span>}
+                                                </div>
+                                                <div style={{ fontWeight: 700, color: r.score_breakdown.personal > 0 ? '#059669' : (r.score_breakdown.personal < 0 ? '#DC2626' : '#64748B') }}>
+                                                    {r.score_breakdown.personal > 0 ? '+' : ''}{r.score_breakdown.personal}
+                                                </div>
+
+                                                <div style={{ color: '#64748B' }}>Source Quality</div>
+                                                <div style={{ fontWeight: 600 }}>{r.score_breakdown.source}</div>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ height: '8px', width: '100%', background: '#F1F5F9', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
+                                            <div style={{
+                                                height: '100%',
+                                                width: `${Math.min(Math.max((r.final_score / 15) * 100, 5), 100)}%`, // Approx scale visualization
+                                                background: 'linear-gradient(90deg, #3B82F6, #8B5CF6)',
+                                                borderRadius: '4px',
+                                                transition: 'width 0.5s ease'
+                                            }} />
+                                        </div>
+
+                                        <div style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                        }}>
+                                            <span style={{ fontWeight: 600, color: '#475569' }}>Total Score</span>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: '#2563EB', lineHeight: 1 }}>{r.final_score}</span>
+                                                <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>out of 100 (est)</span>
+                                            </div>
+                                        </div>
+
+                                        {r.score_breakdown.personal > 0 && (
+                                            <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.85rem', color: '#059669', background: '#ECFDF5', padding: '8px', borderRadius: '8px', fontWeight: 600 }}>
+                                                Boosted by your rating! 🚀
+                                            </div>
+                                        )}
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>Topic Match:</span> <strong>{r.score_breakdown.content}</strong>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>Community:</span> <strong>{r.score_breakdown.collab}</strong>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: r.score_breakdown.personal > 0 ? '#16a34a' : 'inherit' }}>
-                                        <span>User Boost:</span> <strong>{r.score_breakdown.personal}</strong>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: r.score_breakdown.source < 0 ? '#dc2626' : '#64748b' }}>
-                                        <span>Format/Src:</span> <strong>{r.score_breakdown.source}</strong>
-                                    </div>
-                                    <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px solid #f1f5f9', textAlign: 'right', fontWeight: 700, color: '#4F46E5' }}>
-                                        Total: {r.final_score}
-                                    </div>
-                                </div>
+                                </>,
+                                document.body
                             )}
                         </div>
                     )}
@@ -394,7 +443,7 @@ function StudentDashboard() {
                             <label>Smart Search</label>
                             <textarea
                                 className="smart-search-input glassy-input"
-                                placeholder="Tell me specifically what you want to learn..."
+                                placeholder="Ask AI: 'Find best videos for exam revision...'"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             />
@@ -588,6 +637,13 @@ function StudentDashboard() {
 
 
             </div>
+            <style>{`
+                @keyframes scaleIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
+            `}</style>
         </div>
     );
 }

@@ -3,7 +3,6 @@ import sys
 import subprocess
 import time
 import webbrowser
-import threading
 import platform
 
 # Configuration
@@ -11,10 +10,9 @@ VENV_DIR = "venv"
 REQUIREMENTS_FILE = os.path.join("backend", "requirements.txt")
 BACKEND_SCRIPT = os.path.join("backend", "app.py")
 INIT_DB_SCRIPT = os.path.join("backend", "init_db.py")
-INIT_DB_SCRIPT = os.path.join("backend", "init_db.py")
 ML_TRAIN_SCRIPT = os.path.join("ml", "train.py")
 FRONTEND_DIR = "frontend"
-FRONTEND_PORT = 8000
+FRONTEND_PORT = 5173
 BACKEND_PORT = 5000
 
 def get_python_executable():
@@ -42,13 +40,48 @@ def create_venv():
     else:
         print(f"Virtual environment '{VENV_DIR}' already exists.")
 
+def kill_process_on_port(port):
+    """Finds and kills the process listening on the specified port (Windows)."""
+    if platform.system() == "Windows":
+        try:
+            # Find PID using netstat
+            cmd = f'netstat -ano | findstr :{port}'
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            output = out.decode()
+            
+            pids = set()
+            for line in output.splitlines():
+                # Check for listening state to confirm it's a server
+                if f":{port}" in line and "LISTENING" in line:
+                    parts = line.strip().split()
+                    pid = parts[-1]
+                    pids.add(pid)
+            
+            for pid in pids:
+                if pid != "0": # PID 0 is system idle
+                    print(f"Cleaning up: Killing old process {pid} on port {port}...")
+                    subprocess.call(f"taskkill /F /PID {pid}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as e:
+            print(f"Warning: Could not cleanup port {port}: {e}")
+
+def cleanup_old_instances():
+    """Aggressively cleans up old backend and frontend processes."""
+    print("--- Pipeline Cleanup: Removing old instances ---")
+    kill_process_on_port(BACKEND_PORT)
+    kill_process_on_port(FRONTEND_PORT)
+    # Also check typical alternate ports just in case
+    kill_process_on_port(5174)
+    kill_process_on_port(5175)
+    print("----------------------------------------------")
+
 def install_dependencies(python_exec):
     """Installs dependencies from requirements.txt."""
     if os.path.exists(REQUIREMENTS_FILE):
-        print("Checking and installing dependencies...")
+        print("Checking Backend dependencies...")
         try:
-            subprocess.check_call([python_exec, "-m", "pip", "install", "-r", REQUIREMENTS_FILE])
-            print("Dependencies installed.")
+            subprocess.check_call([python_exec, "-m", "pip", "install", "-r", REQUIREMENTS_FILE], stdout=subprocess.DEVNULL)
+            print("Backend dependencies installed.")
         except subprocess.CalledProcessError as e:
             print(f"Error installing dependencies: {e}")
             sys.exit(1)
@@ -65,9 +98,8 @@ def init_database(python_exec):
                 print("Database initialized.")
             except subprocess.CalledProcessError as e:
                 print(f"Error initializing database: {e}")
-                # Don't exit, maybe it's already initialized or minor error
         else:
-            print("Database already initialized.")
+            print("Database check passed (exists).")
     else:
         print(f"Warning: '{INIT_DB_SCRIPT}' not found. Skipping DB initialization.")
 
@@ -77,26 +109,23 @@ def install_frontend_dependencies():
     if not os.path.exists(node_modules_path):
         print("Installing Frontend dependencies (this may take a minute)...")
         try:
-            # Use shell=True for windows npm compatibility info
             subprocess.check_call(["npm", "install"], cwd=FRONTEND_DIR, shell=True)
             print("Frontend dependencies installed.")
         except subprocess.CalledProcessError as e:
             print(f"Error installing frontend dependencies: {e}")
             print("Please ensure Node.js is installed.")
-            # We don't exit, might try to run anyway or user handles it
     else:
-        print("Frontend dependencies already installed.")
+        print("Frontend dependencies check passed.")
 
 def train_model(python_exec):
-    """Runs the ML training script to update recommendation model."""
+    """Runs the ML training script."""
     if os.path.exists(ML_TRAIN_SCRIPT):
         print("Training ML Recommendation Model...")
         try:
             subprocess.check_call([python_exec, ML_TRAIN_SCRIPT])
-            print("ML Model trained/updated successfully.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error training ML model: {e}")
-            # Non-fatal, app can run without updated model
+            print("ML Model updated.")
+        except subprocess.CalledProcessError:
+            print("Warning: ML Training encountered an issue (non-fatal).")
     else:
         print(f"Warning: '{ML_TRAIN_SCRIPT}' not found. Skipping ML training.")
 
@@ -105,12 +134,15 @@ def run_backend(python_exec):
     print(f"Starting Backend on port {BACKEND_PORT}...")
     return subprocess.Popen([python_exec, BACKEND_SCRIPT], cwd=os.getcwd())
 
-def run_frontend(python_exec):
+def run_frontend():
     """Runs the React Frontend."""
-    print(f"Starting React Frontend in frontend/...")
-    return subprocess.Popen(["npm", "run", "dev"], cwd="frontend", shell=True)
+    print(f"Starting React Frontend...")
+    return subprocess.Popen(["npm", "run", "dev"], cwd=FRONTEND_DIR, shell=True)
 
 def main():
+    # 0. Cleanup ports first (Delete old versions)
+    cleanup_old_instances()
+
     # 1. Virtual Environment Check & Creation
     if not is_venv():
         if not os.path.exists(VENV_DIR):
@@ -129,63 +161,54 @@ def main():
         return
 
     # --- We are now running inside the virtual environment ---
-    print("Running inside virtual environment.")
+    print("Running Pipeline inside virtual environment.")
     python_exec = sys.executable
 
-    # 2. Install Dependencies
+    # 2. Pipeline Steps
     install_dependencies(python_exec)
-
-    # 3. Initialize Database
     init_database(python_exec)
-
-    # 3b. Install Frontend Dependencies
     install_frontend_dependencies()
-
-    # 3c. Train ML Model (Ensure Recommendations are fresh)
     train_model(python_exec)
 
-    # 4. Launch Services
+    # 3. Launch Services
     backend_process = None
     frontend_process = None
 
     try:
         backend_process = run_backend(python_exec)
-        frontend_process = run_frontend(python_exec)
+        # Wait for backend to start
+        time.sleep(3) 
 
-        # Wait a moment for servers to start
+        frontend_process = run_frontend()
+        # Wait for frontend to start
         time.sleep(5)
 
-        # 5. Open Browser
-        url = "http://localhost:5173"
-        print(f"Opening browser at {url}")
+        # 4. Open Browser
+        url = f"http://localhost:{FRONTEND_PORT}"
+        print(f"\n[SUCCESS] Pipeline Complete. Opening App at {url}")
+        print("Use Ctrl+C to stop servers.")
         webbrowser.open(url)
-
-        print("\nApp is running! Press Ctrl+C to stop.")
         
-        # Keep the script running to monitor processes
+        # Keep alive
         while True:
             time.sleep(1)
             if backend_process.poll() is not None:
-                print("Backend process ended unexpectedly.")
+                print("Backend process ended.")
                 break
-            # Frontend via npm shell might not expose poll() correctly heavily, but good enough
-            if frontend_process.poll() is not None:
-                print("Frontend process ended unexpectedly.")
-                break
+            # Frontend poll is unreliable on Windows with shell=True, so we rely on backend mainly
 
     except KeyboardInterrupt:
         print("\nStopping services...")
     finally:
         if backend_process:
             backend_process.terminate()
-            backend_process.wait()
-        # npm run dev spawns child processes, terminate might not kill everything but it is a start.
         if frontend_process:
-            # On windows shell=True makes it harder to kill tree
+            # Aggressive kill for Windows shell spawned npm
             subprocess.call(['taskkill', '/F', '/T', '/PID', str(frontend_process.pid)], 
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Auto cleanup on exit
+        cleanup_old_instances()
         print("Goodbye!")
-
 
 if __name__ == "__main__":
     main()

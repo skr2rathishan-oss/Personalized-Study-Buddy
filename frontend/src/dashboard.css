@@ -619,7 +619,7 @@ body.dark-mode .dashboard-footer {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     /* Softer multi-layer shadow */
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; Removed to allow AI Popup to overflow */
     animation: fadeIn 0.5s ease-out forwards;
     opacity: 0;
 
@@ -773,6 +773,7 @@ body.dark-mode .rate-dropdown {
     /* Adjust for parent padding to go full width */
     margin: -1.5rem -1.5rem 1rem -1.5rem;
     border-bottom: 1px solid var(--dash-glass-border);
+    border-radius: 16px 16px 0 0;
 
     display: flex;
     align-items: center;
