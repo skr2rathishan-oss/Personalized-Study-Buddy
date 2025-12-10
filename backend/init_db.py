@@ -73,7 +73,44 @@ def seed_data():
         db.session.add_all(resources)
         db.session.commit()
 
-        print("Database seeded successfully! Only Manager1 exists.")
+        # Create Demo Users
+        print("Creating demo users...")
+        
+        hashed_pw = bcrypt.generate_password_hash('password123').decode('utf-8')
+
+        # 1. Student User
+        student = User(
+            username='student1',
+            password_hash=hashed_pw,
+            role='student',
+            first_name='John',
+            last_name='Doe',
+            university='University of Technology',
+            university_course='BSc Computer Science',
+            phone_number='0771234567'
+        )
+        db.session.add(student)
+
+        # 2. Admin User (Lecturer)
+        admin = User(
+            username='admin1',
+            password_hash=hashed_pw,
+            role='admin',
+            first_name='Dr. Alice',
+            last_name='Lecturer',
+            university='University of Technology',
+            phone_number='0777654321'
+        )
+        db.session.add(admin)
+        
+        # 3. Manager is already created as manager1
+        
+        db.session.commit()
+        print("Database seeded successfully!")
+        print("Demo Accounts:")
+        print(" - Student: student1 / password123")
+        print(" - Admin:   admin1   / password123")
+        print(" - Manager: manager1 / password")
 
 if __name__ == "__main__":
     seed_data()

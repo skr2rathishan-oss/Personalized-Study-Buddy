@@ -4,6 +4,7 @@ import subprocess
 import time
 import webbrowser
 import platform
+import shutil
 
 # Configuration
 VENV_DIR = "venv"
@@ -134,10 +135,25 @@ def run_backend(python_exec):
     print(f"Starting Backend on port {BACKEND_PORT}...")
     return subprocess.Popen([python_exec, BACKEND_SCRIPT], cwd=os.getcwd())
 
+def ensure_node_in_path():
+    """Ensures Node.js is in the PATH for the current process."""
+    if shutil.which("npm") is None:
+        # Fallback: Check common Windows install location
+        node_path = r"C:\Program Files\nodejs"
+        if os.path.exists(node_path):
+            print(f"Adding {node_path} to PATH...")
+            os.environ["PATH"] += os.pathsep + node_path
+            return True
+    return shutil.which("npm") is not None
+
 def run_frontend():
     """Runs the React Frontend."""
     print(f"Starting React Frontend...")
+    if not ensure_node_in_path():
+        print("Error: 'npm' not found. Please install Node.js.")
+        return None
     return subprocess.Popen(["npm", "run", "dev"], cwd=FRONTEND_DIR, shell=True)
+
 
 def main():
     # 0. Cleanup ports first (Delete old versions)
@@ -165,6 +181,7 @@ def main():
     python_exec = sys.executable
 
     # 2. Pipeline Steps
+    ensure_node_in_path()
     install_dependencies(python_exec)
     init_database(python_exec)
     install_frontend_dependencies()
@@ -184,10 +201,16 @@ def main():
         time.sleep(5)
 
         # 4. Open Browser
-        url = f"http://localhost:{FRONTEND_PORT}"
-        print(f"\n[SUCCESS] Pipeline Complete. Opening App at {url}")
+        # User defined Public IP (Change if dynamic)
+        public_ip = "20.244.40.57" 
+        url = f"http://{public_ip}:{FRONTEND_PORT}"
+        print(f"\n[SUCCESS] Pipeline Complete. App accessible at {url}")
         print("Use Ctrl+C to stop servers.")
-        webbrowser.open(url)
+        
+        try:
+            webbrowser.open(url)
+        except Exception:
+            print("Could not open browser automatically (likely headless environment).")
         
         # Keep alive
         while True:
