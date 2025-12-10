@@ -34,13 +34,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'super-secret-key-change-this'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 
-# --- mSpace Configuration ---
-# Updated Endpoints as per user request
-MSPACE_OTP_REQUEST_URL = os.getenv('MSPACE_OTP_REQUEST_URL', 'https://api.mspace.lk/otp/request')
-MSPACE_OTP_VERIFY_URL = os.getenv('MSPACE_OTP_VERIFY_URL', 'https://api.mspace.lk/otp/verify')
 
-MSPACE_APP_ID = os.getenv('MSPACE_APP_ID', 'app_12345')
-MSPACE_PASSWORD = os.getenv('MSPACE_PASSWORD', 'secret')
 
 
 db.init_app(app)
@@ -68,7 +62,7 @@ if recommender_system:
 
 
 resource_fetcher = ResourceFetcher()
-otp_storage = {}
+
 
 # --- RBAC Helpers ---
 def check_role(roles):
