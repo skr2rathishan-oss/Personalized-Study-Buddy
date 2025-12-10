@@ -280,7 +280,8 @@ function AdminDashboard() {
                     </div>
                 </div>
 
-            )}
+            )
+            }
 
 
             {/* Manager Modal */}
