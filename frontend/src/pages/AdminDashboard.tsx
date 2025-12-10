@@ -283,7 +283,8 @@ function AdminDashboard() {
 
                         </div>
                     </div>
-                )
+                </div>
+            )
             }
 
             {/* Manager Modal */}
@@ -404,8 +405,7 @@ function AdminDashboard() {
                     </div>
                 </div>
             )}
-        </div>
-      <style>{`
+            <style>{`
                 /* Container & Layout */
                 .dashboard-container {
                     position: relative;
@@ -662,7 +662,7 @@ function AdminDashboard() {
                 }
                 .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
             `}</style>
-        </div>
+        </div >
 
     );
 }
