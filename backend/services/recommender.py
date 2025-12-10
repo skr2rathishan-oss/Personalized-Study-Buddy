@@ -21,13 +21,23 @@ def load_ml_libs():
     if model is None:
         try:
             from sentence_transformers import SentenceTransformer as ST
-            from sklearn.metrics.pairwise import cosine_similarity as CS
+            from sklearn.metrics.pairwise import cosine_similarity as cs
             SentenceTransformer = ST
-            cosine_similarity = CS
-            model = ST('all-MiniLM-L6-v2')
-            print("ML Semantic Model loaded successfully.")
+            cosine_similarity = cs
+            try:
+                model = ST('all-MiniLM-L6-v2')
+            except Exception as dl_err:
+                print(f"Internet/Model Download Failed: {dl_err}. Using Mock Model.")
+                class MockModel:
+                    def encode(self, texts):
+                        import numpy as np
+                        # Return random vectors of shape (len(texts), 384)
+                        return np.random.rand(len(texts), 384)
+                model = MockModel()
+
+            print("ML Semantic Model loaded successfully (or mock).")
         except Exception as e:
-            print(f"Failed to load Semantic ML model: {e}")
+            print(f"Failed to load Semantic ML libs: {e}")
             model = None
 
     if svd_model_data is None:
@@ -48,6 +58,12 @@ class HybridRecommender:
     def __init__(self, db_session):
         self.db = db_session
         self.logger = logging.getLogger(__name__)
+
+    def warmup(self):
+        """Pre-loads ML libraries in background to avoid latency on first request."""
+        print("Warming up ML models...")
+        load_ml_libs()
+        print("ML models warmed up.")
 
     def generate_embedding(self, text):
         """Generates a 384-dim vector for text."""
@@ -164,25 +180,73 @@ class HybridRecommender:
             cont_score = content_scores.get(res.id, 0)
             collab_score = self.get_collaborative_score(user_id, res)
             
-            # 3. Personalization (Did this user like similar format?)
-            # (Simple heuristic: if user rated this format highly before, boost it)
+            # 3. Personalization (Did this user like THIS resource?)
             user_boost = 0.0
-            # user_history = ... (query user's high rated resources)
-            # if res.format in user_preferred_formats: user_boost = 0.1
             
-            # 4. Source Priority (Manual > AI)
+            # Check specific user rating AND engagement for this resource
+            # We treat time_spent as an implicit rating (ML feature)
+            user_rating_val = 0
+            user_time_spent = 0
+            
+            if res.ratings:
+                for r in res.ratings:
+                    if r.user_id == user_id:
+                        user_rating_val = r.score
+                        user_time_spent = r.time_spent if r.time_spent else 0
+                        break
+            
+            # Explicit Rating Boost
+            if user_rating_val >= 4:
+                user_boost += 5.0
+            elif user_rating_val > 0 and user_rating_val <= 2:
+                user_boost += -1.0
+            
+            # Implicit Engagement Boost (Time Spent)
+            # If user spent > 60s, we assume interest even if they didn't rate it highly yet
+            # This acts as our "ML" engagement signal
+            engagement_boost = 0.0
+            if user_time_spent > 60:
+                engagement_boost = 1.0 + (min(user_time_spent, 600) / 600.0) # Scale up to +2.0 boost for 10 mins
+            elif user_time_spent > 10:
+                engagement_boost = 0.5 # Small nudge for clicked/briefly viewed
+
+            user_boost += engagement_boost
+
+            # 4. Source Priority & Format Adjustment
             source_boost = 0.0
             if res.source == 'manual' or not res.is_auto_fetched:
-                source_boost = 2.0 # Significant boost to ensure manual resources appear first
+                source_boost = 0.2 
             
+            # Format Penalty: If it's a PDF and strictly not rated high by user, push it down slightly
+            # to allow videos (often preferred) to surface if scores are close.
+            format_penalty = 0.0
+            if res.format.lower() == 'pdf' and user_rating_val < 3:
+                format_penalty = -0.5
+
             # Weighted Hybrid Formula
-            # Adjusted to prioritize Ratings (Collaborative) more for dynamic re-ordering
-            # 50% Content + 50% Quality/Rating + User Boost + Source Priority
-            final_score = (cont_score * 0.5) + (collab_score * 0.5) + (user_boost * 1.5) + source_boost
+            # 30% Content + 70% Quality/Rating + User Boost + Source Boost + Format Penalty
+            components = {
+                'content': round(cont_score * 0.3, 2),
+                'collab': round(collab_score * 2.0, 2),
+                'personal': round(user_boost, 2),
+                'source': round(source_boost + format_penalty, 2)
+            }
+            final_score = sum(components.values())
+            
+            # Attach debug info to resource instance (transient, not saved to DB)
+            res.score_breakdown = components
+            res.final_score = round(final_score, 2)
+            
+            print(f"DEBUG: Res {res.id} ({res.format}) | RatingVal: {user_rating_val} | Final: {final_score}")
             
             final_scores.append((res, final_score))
         
         # Sort by final score
         final_scores.sort(key=lambda x: x[1], reverse=True)
+        
+        print("\n--- FINAL RANKING DEBUG ---")
+        for i, (r, s) in enumerate(final_scores[:10]):
+            print(f"Rank {i+1}: [{r.format.upper()}] {r.title} (ID: {r.id}) - Score: {s:.4f}")
+        print("---------------------------\n")
         
         return [item[0] for item in final_scores[:top_k]]

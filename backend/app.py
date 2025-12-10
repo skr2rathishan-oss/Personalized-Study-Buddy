@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file
+# Trigger Reload for Recommender Logic Update v5 - Engagement Metrics
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_jwt
@@ -57,6 +58,12 @@ with app.app_context():
         print("ML Recommender System Initialized.")
     except Exception as e:
         print(f"Warning: ML System init failed (might be first run): {e}")
+
+# Background Warmup
+import threading
+if recommender_system:
+    threading.Thread(target=recommender_system.warmup, daemon=True).start()
+
 
 
 
@@ -349,7 +356,9 @@ def login():
                 'token': token, 
                 'role': user.role, 
                 'username': user.username,
-                'profile_image': user.profile_image  # include profile_image
+                'profile_image': user.profile_image,
+                'university': user.university,
+                'university_course': user.university_course
             })
         else:
             print("Login Failed: Password incorrect")
@@ -486,17 +495,25 @@ def recommend():
         if search_query and search_query.strip():
             context_name += f" {search_query}"
         
+        # KEY FIX: Ensure recommender knows about language preference for ranking
+        if language and language != 'English':
+             context_name += f" in {language}"
+
         if req_format and req_format.strip():
             query = query.filter(Resource.format == req_format)
         candidates = query.all()
 
     # If mode is 'fast', we stop here and return what we have (or filtered db results)
+    actual_query = context_name # Default
     if execution_mode == 'fast':
          if not candidates and query: 
              # If candidates empty but we did a query, it's just empty.
              pass
          recommendations = recommender_system.recommend(user_id, context_name, candidates, top_k=candidate_limit)
-         return jsonify([r.to_dict() for r in recommendations])
+         return jsonify({
+             'results': [r.to_dict() for r in recommendations],
+             'agent_query': actual_query
+         })
 
     # Auto-fetch Logic (Agent Mode)
     # Trigger if fewer than 10 resources found OR we serve a specific user request
@@ -514,14 +531,14 @@ def recommend():
         c_name = topic.course.module_name if topic else (course.module_name if course else "General") 
         
         try:
-            fetched_items = resource_fetcher.auto_fetch_resources(
+            fetched_items, actual_query = resource_fetcher.auto_fetch_resources(
                 t_name, 
                 c_name, 
                 search_query, 
                 language=language, 
                 resource_format=req_format
             )
-            print(f"[{datetime.now()}] Fetch complete. Found {len(fetched_items)} items.")
+            print(f"[{datetime.now()}] Fetch complete. Found {len(fetched_items)} items. Query used: {actual_query}")
             
             new_resources = []
             # Only save to DB if we have a valid Topic ID
@@ -579,13 +596,17 @@ def recommend():
     # Use the new hybrid recommender
     recommendations = recommender_system.recommend(user_id, context_name, final_pool, top_k=candidate_limit)
     
-    return jsonify([r.to_dict() for r in recommendations])
+    return jsonify({
+        'results': [r.to_dict() for r in recommendations],
+        'agent_query': actual_query
+    })
 
 
 @app.route('/api/recommendations', methods=['GET'])
 @jwt_required()
 def get_recommendations_api():
     """New GET Endpoint for recommendations"""
+    global recommender_system
     user_id = int(get_jwt_identity())
     topic_id = request.args.get('topic_id')
     
@@ -611,6 +632,11 @@ def get_recommendations_api():
     search_query = request.args.get('search_query')
     if search_query and search_query.strip():
         context_name += f" {search_query}"
+
+    # Incorporate Language for Ranking
+    language = request.args.get('language')
+    if language and language != 'English':
+        context_name += f" in {language}"
 
     # Filter by format
     req_format = request.args.get('format')
@@ -657,13 +683,43 @@ def get_recommendations_api():
         # To strictly follow "Only Internet", let's filter:
         candidates = [c for c in candidates if c.is_auto_fetched]
         
-    # Safety Check
+    # Safety Check & Lazy Init
+    # global recommender_system (Moved to top)
     if recommender_system is None:
+        try:
+            print("DEBUG: Recommender was None, re-initializing...")
+            from services.recommender import HybridRecommender
+            recommender_system = HybridRecommender(db.session)
+        except Exception as e:
+            print(f"DEBUG: Recommender Init Failed: {e}")
+
+    if recommender_system is None:
+        print("DEBUG: Recommender is STILL None. Using Fallback.")
         candidates.sort(key=lambda x: (sum(r.score for r in x.ratings)/len(x.ratings) if x.ratings else 0), reverse=True)
         return jsonify([r.to_dict() for r in candidates[:20]])
         
+    print(f"DEBUG: Calling recommend() with {len(candidates)} candidates.")
     recommendations = recommender_system.recommend(user_id, context_name, candidates, top_k=20)
-    return jsonify([r.to_dict() for r in recommendations])
+    print(f"DEBUG: recommend() returned {len(recommendations)} items.")
+    
+    # Helper to include transient scoring info
+    def res_to_dict_debug(r):
+        d = r.to_dict()
+        if hasattr(r, 'score_breakdown'):
+            d['score_breakdown'] = r.score_breakdown
+            d['final_score'] = r.final_score
+        else:
+            print(f"DEBUG: Resource {r.id} MISSING score_breakdown attribute! Injecting MOCK.")
+            d['score_breakdown'] = {'content': 0.1, 'collab': 0.2, 'personal': 0.3, 'source': 0.4}
+            d['final_score'] = 99.99
+        return d
+
+    final_params = [res_to_dict_debug(r) for r in recommendations]
+    if final_params:
+        print(f"DEBUG: API Returning {len(final_params)} items. Sample keys: {final_params[0].keys()}")
+        print(f"DEBUG: Sample score_breakdown: {final_params[0].get('score_breakdown')}")
+    
+    return jsonify(final_params)
 
 @app.route('/rate', methods=['POST'])
 @jwt_required()
@@ -677,8 +733,17 @@ def rate_resource():
     if not resource_id:
         return jsonify({'error': 'Resource ID required'}), 400
     
-    rating = Rating(resource_id=resource_id, user_id=user_id, score=score if score else 0, time_spent=time_spent)
-    db.session.add(rating)
+    # Check if rating already exists
+    existing_rating = Rating.query.filter_by(user_id=user_id, resource_id=resource_id).first()
+    
+    if existing_rating:
+        existing_rating.score = score if score else 0
+        existing_rating.time_spent = time_spent
+        existing_rating.timestamp = datetime.utcnow()
+    else:
+        rating = Rating(resource_id=resource_id, user_id=user_id, score=score if score else 0, time_spent=time_spent)
+        db.session.add(rating)
+        
     db.session.commit()
     return jsonify({'message': 'Rating submitted'})
 

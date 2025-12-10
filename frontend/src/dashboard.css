@@ -1,36 +1,42 @@
 /* --- New Dashboard Split Layout with Theme Support --- */
 
 :root {
-    /* DEFAULT: Light Mode (Slightly Dark #E2E8F0 as requested) */
-    --dash-bg: #E2E8F0;
-    /* Slate 200 */
+    /* DEFAULT: Light Mode - Professional Enterprise Look */
+    --dash-bg: #F3F4F6;
+    /* Gray 100 - Distinct from white */
     --dash-card-bg: #FFFFFF;
-    --dash-text-main: #1E293B;
-    /* Slate 800 */
-    --dash-text-muted: #64748B;
-    /* Slate 500 */
-    --dash-border: rgba(0, 0, 0, 0.1);
-    --dash-glass-border: rgba(0, 0, 0, 0.05);
-    --dash-hover: #F8FAFC;
-    --dash-bg-gradient-start: rgba(56, 189, 248, 0.05);
-    --dash-bg-gradient-end: rgba(139, 92, 246, 0.05);
-    --stat-card-bg: linear-gradient(145deg, #FFFFFF 0%, #F1F5F9 100%);
-    --stat-text: #1E293B;
-    --stat-subtext: #64748B;
+    --dash-text-main: #111827;
+    /* Gray 900 */
+    --dash-text-muted: #6B7280;
+    /* Gray 500 */
+    --dash-border: #E5E7EB;
+    /* Gray 200 */
+    --dash-glass-border: transparent;
+    /* No glass effect in light mode */
+    --dash-hover: #F9FAFB;
+    /* Gray 50 */
+
+    --dash-bg-gradient-start: rgba(255, 255, 255, 0);
+    /* Clean flat bg */
+    --dash-bg-gradient-end: rgba(255, 255, 255, 0);
+
+    --stat-card-bg: #FFFFFF;
+    --stat-text: #111827;
+    --stat-subtext: #6B7280;
 }
 
 body.dark-mode {
-    /* DARK MODE: Original Dark Theme */
-    --dash-bg: #0f172a;
-    --dash-card-bg: #1e293b;
-    --dash-text-main: #F8FAFC;
+    /* DARK MODE: Professional Premium Theme */
+    --dash-bg: #0B1120;
+    --dash-card-bg: linear-gradient(145deg, #1E293B 0%, #0F172A 100%);
+    --dash-text-main: #F1F5F9;
     --dash-text-muted: #94A3B8;
-    --dash-border: rgba(148, 163, 184, 0.2);
-    --dash-glass-border: rgba(255, 255, 255, 0.1);
-    --dash-hover: #253347;
-    --dash-bg-gradient-start: rgba(56, 189, 248, 0.1);
-    --dash-bg-gradient-end: rgba(139, 92, 246, 0.1);
-    --stat-card-bg: linear-gradient(145deg, #1e293b 0%, #111827 100%);
+    --dash-border: rgba(148, 163, 184, 0.1);
+    --dash-glass-border: rgba(255, 255, 255, 0.08);
+    --dash-hover: #1E293B;
+    --dash-bg-gradient-start: rgba(56, 189, 248, 0.08);
+    --dash-bg-gradient-end: rgba(139, 92, 246, 0.08);
+    --stat-card-bg: linear-gradient(145deg, #1e293b 0%, #0B1120 100%);
     --stat-text: #F8FAFC;
     --stat-subtext: #94a3b8;
 }
@@ -47,17 +53,20 @@ body.dark-mode {
     margin: 0 auto;
 
     background-color: var(--dash-bg);
+    /* Remove radial gradients for cleaner light mode */
     background-image: radial-gradient(at 0% 0%, var(--dash-bg-gradient-start) 0px, transparent 50%),
         radial-gradient(at 100% 0%, var(--dash-bg-gradient-end) 0px, transparent 50%);
 
     min-height: 100vh;
-    padding: 4rem 2rem 6rem 2rem;
+    padding: 2rem;
+    /* Reduced padding for tidiness */
     position: relative;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: grid-template-columns 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dashboard-split-layout.results-active {
-    grid-template-columns: 400px 1fr;
+    grid-template-columns: 350px 1fr;
+    /* Tighter sidebar */
 }
 
 @media (max-width: 1024px) {
@@ -66,55 +75,55 @@ body.dark-mode {
     }
 }
 
-/* Left Panel */
-/* Panels */
+/* Left Panel - Boxed Design */
 .filters-panel {
-    display: contents;
-    /* Unbox for grid alignment */
+    position: sticky;
+    top: 80px;
+    display: flex;
+    flex-direction: column;
+    align-self: start;
+    z-index: 10;
+
+    /* NEW: Card appearance */
+    background: var(--dash-card-bg);
+    border: 1px solid var(--dash-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .filters-header {
-    grid-row: 1;
-    grid-column: 1;
     display: flex;
-    /* keep flex for internal alignment */
     align-items: center;
     gap: 12px;
-    margin-bottom: 0px;
-    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--dash-border);
-    /* Border handling for column 1 */
-    border-right: 1px solid var(--dash-glass-border);
-    padding-right: 2rem;
-    position: relative;
+    /* Removed padding-right and border-right */
 }
 
 .filters-header::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 60px;
-    height: 3px;
-    background: linear-gradient(90deg, #F59E0B, transparent);
-    border-radius: 2px;
+    /* Simplified header line */
+    content: none;
 }
 
 .filters-body {
-    grid-row: 2;
-    grid-column: 1;
-    border-right: 1px solid var(--dash-glass-border);
-    padding-right: 2rem;
+    flex: 1;
+    overflow-y: visible;
+    padding-right: 0;
+    border: none;
 }
 
 .filters-header h3 {
     margin: 0;
-    font-size: 2.2rem;
+    font-size: 1.5rem;
+    /* Smaller, cleaner header */
+    font-weight: 700;
     color: var(--dash-text-main);
 }
 
 .lightning-icon {
-    font-size: 2.2rem;
+    font-size: 1.5rem;
     color: #F59E0B;
 }
 
@@ -183,8 +192,9 @@ body.dark-mode .glassy-input:focus {
 
 
 .smart-search-input {
-    min-height: 100px;
-    resize: vertical;
+    min-height: 60px;
+    height: 60px;
+    resize: none;
     line-height: 1.5;
     font-family: inherit;
 }
@@ -201,7 +211,7 @@ body.dark-mode .glassy-input:focus {
     cursor: pointer;
     box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
     transition: transform 0.2s, box-shadow 0.2s;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
 }
 
 .btn-find-resources:hover {
@@ -227,8 +237,11 @@ body.dark-mode .glassy-input:focus {
 
 /* Right Panel */
 .content-panel {
-    display: contents;
-    /* Unbox for grid alignment */
+    /* Unbox for grid alignment - Content flows naturally in 2nd column of grid */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    /* Fix for flex child scrolling */
 }
 
 .welcome-header {
@@ -556,5 +569,292 @@ body.dark-mode .dashboard-footer {
         padding: 1rem;
         bottom: 1rem;
         width: calc(100% - 2rem);
+    }
+}
+
+/* --- Modern Grid Layout --- */
+/* --- Modern Grid Layout --- */
+.resource-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    /* Responsive Grid */
+    gap: 1.5rem;
+    padding: 0.5rem;
+
+    /* SCROLLABLE CONTAINER CONFIGURATION REMOVED to allow main page scroll */
+    min-height: 200px;
+    /* allow it to grow */
+    padding-right: 0;
+}
+
+/* Custom Scrollbar for the Grid */
+.resource-grid-modern::-webkit-scrollbar {
+    width: 8px;
+}
+
+.resource-grid-modern::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.resource-grid-modern::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.5);
+    border-radius: 4px;
+}
+
+.resource-grid-modern::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.8);
+}
+
+.resource-card-modern {
+    background: var(--dash-card-bg);
+    /* Use theme variable */
+    border: 1px solid var(--dash-glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    /* Softer multi-layer shadow */
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 0.5s ease-out forwards;
+    opacity: 0;
+
+    /* Ensure enough height for header + content + footer */
+    min-height: 310px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.resource-card-modern:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: #818CF8;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--dash-text-main);
+    margin: 1rem 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    /* Standard property */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.modern-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge-video {
+    background: rgba(239, 68, 68, 0.15);
+    color: #EF4444;
+}
+
+.badge-article {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3B82F6;
+}
+
+.badge-pdf {
+    background: rgba(245, 158, 11, 0.15);
+    color: #F59E0B;
+}
+
+.badge-source {
+    background: #F1F5F9;
+    color: #64748B;
+}
+
+.badge-source.source-db {
+    background: #DBEAFE;
+    color: #1E40AF;
+}
+
+.badge-source.source-web {
+    background: #FCE7F3;
+    color: #9D174D;
+}
+
+.card-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #F59E0B;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.rating-count {
+    color: #94A3B8;
+    font-weight: 500;
+    font-size: 0.85rem;
+    margin-left: 4px;
+}
+
+
+.card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: auto;
+    padding-top: 1.5rem;
+    /* Increased spacing to move buttons down */
+    border-top: 1px solid var(--dash-glass-border);
+}
+
+.btn-open-resource {
+    background: #1E293B;
+    color: white;
+    padding: 0 16px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.btn-open-resource:hover {
+    background: #4F46E5;
+}
+
+.rate-dropdown {
+    background: transparent;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 36px;
+    font-size: 0.85rem;
+    color: #475569;
+    cursor: pointer;
+    font-family: inherit;
+    /* Ensure arrow is visible and looking good */
+}
+
+body.dark-mode .rate-dropdown {
+    border-color: #475569;
+    color: #94A3B8;
+}
+
+/* --- Visual Card Enhancements --- */
+.card-header-visual {
+    height: 160px;
+    background-color: #F1F5F9;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    /* Adjust for parent padding to go full width */
+    margin: -1.5rem -1.5rem 1rem -1.5rem;
+    border-bottom: 1px solid var(--dash-glass-border);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-header-visual[data-format="video"] {
+    background-color: #EEF2FF;
+}
+
+.card-header-visual[data-format="article"] {
+    background-color: #F0FDF4;
+}
+
+.card-header-visual[data-format="pdf"] {
+    background-color: #FFFBEB;
+}
+
+.header-icon {
+    font-size: 3rem;
+    opacity: 0.8;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.card-badges-floating {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 6px;
+    z-index: 2;
+}
+
+.card-badges-floating .modern-badge {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card-body-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* Animations for Agent Status */
+@keyframes pulse-yellow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+}
+
+.pulsing {
+    animation: pulse-yellow 2s infinite;
+}
+
+.spinner-small {
+    width: 12px;
+    height: 12px;
+    border: 2px solid #F59E0B;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
     }
 }

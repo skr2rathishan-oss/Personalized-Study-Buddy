@@ -12,7 +12,7 @@ class ResourceFetcher:
         self.GOOGLE_SEARCH_API_KEY = os.getenv('GOOGLE_SEARCH_API_KEY')
         self.SEARCH_ENGINE_ID = os.getenv('SEARCH_ENGINE_ID')
 
-    def fetch_youtube_videos(self, query, max_results=3, lang_code='en'):
+    def fetch_youtube_videos(self, query, max_results=3, lang_code='en', region_code=None):
         """
         Fetches videos from YouTube Data API v3 based on a query.
         """
@@ -29,9 +29,11 @@ class ResourceFetcher:
             'maxResults': max_results,
             'relevanceLanguage': lang_code
         }
+        if region_code:
+            params['regionCode'] = region_code
 
         try:
-            response = requests.get(search_url, params=params, timeout=10)
+            response = requests.get(search_url, params=params, timeout=5)
             response.raise_for_status()
             data = response.json()
             
@@ -72,7 +74,7 @@ class ResourceFetcher:
         }
 
         try:
-            response = requests.get(search_url, params=params, timeout=10)
+            response = requests.get(search_url, params=params, timeout=5)
             response.raise_for_status()
             data = response.json()
             
@@ -120,16 +122,25 @@ class ResourceFetcher:
         if topic_name and topic_name != "General":
             keywords.append(topic_name)
             
+        # Strongly enforce language in query
         if language != 'English':
-             keywords.append(f"in {language} language")
+             keywords.append(f"{language} tutorial")
+             # Add local region context if likely relevant
+             region_code = 'LK' 
+        else:
+             region_code = None
         
         # If user provided a specific description, we append it but keep the structural context
         if search_query and search_query.strip():
              # We use the raw user query but prepend the course context to ground it
              final_query = f"{clean_course_name} {search_query}"
-             if language != 'English': final_query += f" in {language}"
+             if language != 'English': 
+                 final_query += f" in {language}"
         else:
              final_query = " ".join(keywords)
+             # Explicitly append language if not present in keywords construction for safety
+             if language != 'English' and language.lower() not in final_query.lower():
+                 final_query += f" in {language}"
 
         self.logger.info(f"Auto-fetching with Optimized Query: {final_query} (Lang: {lang_code})")
 
@@ -139,7 +150,7 @@ class ResourceFetcher:
         # Helper wrappers for parallel execution
         def get_videos():
             if not resource_format or resource_format == 'video':
-                return self.fetch_youtube_videos(final_query, max_results=10, lang_code=lang_code)
+                return self.fetch_youtube_videos(final_query, max_results=10, lang_code=lang_code, region_code=region_code)
             return []
 
         def get_articles():
@@ -154,12 +165,12 @@ class ResourceFetcher:
             future_articles = executor.submit(get_articles)
             
             try:
-                videos = future_videos.result(timeout=10)
+                videos = future_videos.result(timeout=5)
             except Exception as e:
                 self.logger.error(f"Async Video Fetch Failed: {e}")
                 
             try:
-                articles = future_articles.result(timeout=10)
+                articles = future_articles.result(timeout=5)
             except Exception as e:
                 self.logger.error(f"Async Article Fetch Failed: {e}")
         
@@ -187,4 +198,5 @@ class ResourceFetcher:
                  pass 
         
         # If filtering was too aggressive, return original results
-        return filtered_results if filtered_results else results
+        final_results = filtered_results if filtered_results else results
+        return final_results, final_query

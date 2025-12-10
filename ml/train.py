@@ -45,7 +45,9 @@ ratings['weighted_rating'] = alpha * ratings['rating'] + beta * ratings['engagem
 popularity = ratings.groupby('resource_id')['weighted_rating'].mean().to_dict()
 
 # Pivot table for SVD
-pivot_table = ratings.pivot(index='user_id', columns='resource_id', values='weighted_rating').fillna(0)
+# Handle duplicates by averaging scores if multiple entries exist for (user, resource)
+ratings_agg = ratings.groupby(['user_id', 'resource_id'])['weighted_rating'].mean().reset_index()
+pivot_table = ratings_agg.pivot(index='user_id', columns='resource_id', values='weighted_rating').fillna(0)
 X = pivot_table.values
 user_ids = list(pivot_table.index)
 resource_ids = list(pivot_table.columns)

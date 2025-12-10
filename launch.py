@@ -11,6 +11,8 @@ VENV_DIR = "venv"
 REQUIREMENTS_FILE = os.path.join("backend", "requirements.txt")
 BACKEND_SCRIPT = os.path.join("backend", "app.py")
 INIT_DB_SCRIPT = os.path.join("backend", "init_db.py")
+INIT_DB_SCRIPT = os.path.join("backend", "init_db.py")
+ML_TRAIN_SCRIPT = os.path.join("ml", "train.py")
 FRONTEND_DIR = "frontend"
 FRONTEND_PORT = 8000
 BACKEND_PORT = 5000
@@ -85,6 +87,19 @@ def install_frontend_dependencies():
     else:
         print("Frontend dependencies already installed.")
 
+def train_model(python_exec):
+    """Runs the ML training script to update recommendation model."""
+    if os.path.exists(ML_TRAIN_SCRIPT):
+        print("Training ML Recommendation Model...")
+        try:
+            subprocess.check_call([python_exec, ML_TRAIN_SCRIPT])
+            print("ML Model trained/updated successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error training ML model: {e}")
+            # Non-fatal, app can run without updated model
+    else:
+        print(f"Warning: '{ML_TRAIN_SCRIPT}' not found. Skipping ML training.")
+
 def run_backend(python_exec):
     """Runs the Flask backend."""
     print(f"Starting Backend on port {BACKEND_PORT}...")
@@ -125,6 +140,9 @@ def main():
 
     # 3b. Install Frontend Dependencies
     install_frontend_dependencies()
+
+    # 3c. Train ML Model (Ensure Recommendations are fresh)
+    train_model(python_exec)
 
     # 4. Launch Services
     backend_process = None

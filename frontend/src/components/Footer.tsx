@@ -58,9 +58,7 @@ const Footer = () => {
                     </div>
                 </div>
 
-                <div className="footer-bottom">
-                    <p>&copy; {new Date().getFullYear()} Personalized Study Buddy. All rights reserved.</p>
-                </div>
+
             </div>
         </footer>
     );

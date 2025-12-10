@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 import '../dashboard.css';
+import SearchableSelect from '../components/SearchableSelect';
 
 interface Course {
     id: number;
@@ -21,7 +22,126 @@ interface Resource {
     average_rating: number;
     rating_count: number;
     source: string;
+    score_breakdown?: {
+        content: number;
+        collab: number;
+        personal: number;
+        source: number;
+    };
+    final_score?: number;
 }
+
+const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: any) => {
+    const [showScore, setShowScore] = useState(false);
+
+    return (
+        <div className="resource-card-modern" style={{ animationDelay: `${idx * 0.05}s` }}>
+            {/* Thumbnail / Header Color */}
+            <div
+                className="card-header-visual"
+                style={{
+                    backgroundImage: getThumbnail(r) ? `url(${getThumbnail(r)})` : 'none',
+                }}
+                data-format={r.format}
+            >
+                {!getThumbnail(r) && (
+                    <div className="header-icon">
+                        {r.format === 'video' ? '📺' : (r.format === 'article' ? '📄' : '📑')}
+                    </div>
+                )}
+
+                <div className="card-badges-floating">
+                    <span className={`modern-badge badge-${r.format}`}>{r.format}</span>
+                    <span className={`modern-badge badge-source ${r.source === 'manual' ? 'source-db' : 'source-web'}`}>
+                        {r.source === 'manual' ? 'DB' : 'WEB'}
+                    </span>
+                </div>
+            </div>
+
+            <div className="card-body-content">
+                <h4 className="card-title">{r.title}</h4>
+
+                <div className="card-rating">
+                    <span>★</span>
+                    <span>{r.average_rating}</span>
+                    <span className="rating-count">({r.rating_count} ratings)</span>
+
+                    {r.score_breakdown && (
+                        <div style={{ position: 'relative', marginLeft: 'auto' }}>
+                            <span
+                                className="ai-score-badge"
+                                onClick={(e) => { e.stopPropagation(); setShowScore(!showScore); }}
+                                style={{
+                                    fontSize: '0.7rem', background: '#F0F9FF', color: '#0369A1',
+                                    padding: '2px 6px', borderRadius: '4px', border: '1px solid #BAE6FD',
+                                    cursor: 'pointer', fontWeight: 600
+                                }}
+                            >
+                                AI Score: {r.final_score} ℹ️
+                            </span>
+
+                            {showScore && (
+                                <div className="score-popup" style={{
+                                    position: 'absolute', bottom: '100%', right: 0,
+                                    background: 'white', padding: '10px', borderRadius: '8px',
+                                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0',
+                                    width: '200px', zIndex: 10, marginBottom: '8px',
+                                    fontSize: '0.75rem', color: '#334155'
+                                }}>
+                                    <div style={{ fontWeight: 700, marginBottom: '6px', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
+                                        Why this result?
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>Topic Match:</span> <strong>{r.score_breakdown.content}</strong>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>Community:</span> <strong>{r.score_breakdown.collab}</strong>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: r.score_breakdown.personal > 0 ? '#16a34a' : 'inherit' }}>
+                                        <span>User Boost:</span> <strong>{r.score_breakdown.personal}</strong>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: r.score_breakdown.source < 0 ? '#dc2626' : '#64748b' }}>
+                                        <span>Format/Src:</span> <strong>{r.score_breakdown.source}</strong>
+                                    </div>
+                                    <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: '1px solid #f1f5f9', textAlign: 'right', fontWeight: 700, color: '#4F46E5' }}>
+                                        Total: {r.final_score}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="card-footer">
+                    <button
+                        className="btn-open-resource"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setViewingResource(r);
+                        }}
+                        style={{ textDecoration: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                        Open Resource
+                    </button>
+
+                    <select
+                        className="rate-dropdown"
+                        onChange={(e) => handleRate(r.id, Number(e.target.value))}
+                        defaultValue=""
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <option value="" disabled>Rate...</option>
+                        <option value="5">5 - Excellent</option>
+                        <option value="4">4 - Very Good</option>
+                        <option value="3">3 - Good</option>
+                        <option value="2">2 - Fair</option>
+                        <option value="1">1 - Poor</option>
+                    </select>
+                </div>
+            </div> {/* End card-body-content */}
+        </div> /* End resource-card-modern */
+    );
+};
 
 function StudentDashboard() {
     const [courses, setCourses] = useState<Course[]>([]);
@@ -35,6 +155,10 @@ function StudentDashboard() {
     const [selectedFormat, setSelectedFormat] = useState<string>('');
     const [description, setDescription] = useState('');
     const [selectedLanguage, setSelectedLanguage] = useState('English');
+    const [agentQuery, setAgentQuery] = useState("");
+
+    const [agentStatus, setAgentStatus] = useState("Idle");
+    const [isAgentDetailsExpanded, setIsAgentDetailsExpanded] = useState(false); // Collapsible state
 
     const [limit, setLimit] = useState(20);
     const [viewingResource, setViewingResource] = useState<Resource | null>(null);
@@ -45,12 +169,25 @@ function StudentDashboard() {
             if (url.includes('youtube.com/watch?v=')) {
                 videoId = url.split('v=')[1].split('&')[0];
             } else if (url.includes('youtu.be/')) {
-                videoId = url.split('youtu.be/')[1];
+                videoId = url.split('youtu.be/')[1].split('?')[0];
             }
-            return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : url;
-        } catch (e) {
+            return `https://www.youtube.com/embed/${videoId}`;
+        } catch (error) {
             return url;
         }
+    };
+
+    const getThumbnail = (r: Resource) => {
+        if (r.format === 'video' && (r.url.includes('youtube.com') || r.url.includes('youtu.be'))) {
+            try {
+                let videoId = '';
+                if (r.url.includes('v=')) videoId = r.url.split('v=')[1].split('&')[0];
+                else if (r.url.includes('youtu.be/')) videoId = r.url.split('youtu.be/')[1].split('?')[0];
+
+                if (videoId) return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+            } catch (e) { return null; }
+        }
+        return null;
     };
 
     useEffect(() => {
@@ -69,6 +206,26 @@ function StudentDashboard() {
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, [loading, resources, limit]);
+
+    // Agent Process Simulation
+    useEffect(() => {
+        if (loading) {
+            const steps = [
+                "Analyzing requirements...",
+                "Optimizing search query...",
+                "Scanning knowledge base...",
+                "Fetching from external sources...",
+                "Ranking results by relevance..."
+            ];
+            let i = 0;
+            setAgentStatus(steps[0]);
+            const interval = setInterval(() => {
+                i = (i + 1) % steps.length;
+                setAgentStatus(steps[i]);
+            }, 800);
+            return () => clearInterval(interval);
+        }
+    }, [loading]);
 
     // Fetch when limit increases (Load More)
     useEffect(() => {
@@ -97,8 +254,7 @@ function StudentDashboard() {
         }
     };
 
-    const handleCourseChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const courseId = Number(e.target.value);
+    const handleCourseChange = async (courseId: number) => {
         if (!courseId) {
             setSelectedCourse(null);
             setTopics([]);
@@ -139,7 +295,14 @@ function StudentDashboard() {
                 language: selectedLanguage,
                 limit: currentLimit
             });
-            setResources(res.data);
+            if (res.data.results) {
+                // New Format
+                setResources(res.data.results);
+                if (res.data.agent_query) setAgentQuery(res.data.agent_query);
+            } else {
+                // Fallback for old format
+                setResources(res.data);
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -154,7 +317,8 @@ function StudentDashboard() {
                 score: score,
                 time_spent: 30 // Mock
             });
-            alert('Rated successfully!');
+            alert('Rated successfully! Refreshing recommendations...');
+            handleFetch(limit);
         } catch (err) {
             alert('Error rating resource');
         }
@@ -164,247 +328,265 @@ function StudentDashboard() {
         <div className="dashboard-container" style={{ maxWidth: '1400px', padding: '2rem' }}>
             <div className={`dashboard-split-layout ${resources.length > 0 ? 'results-active' : ''}`}>
 
-            {/* LEFT PANEL: Filters */}
-            <aside className="filters-panel">
-                <div className="filters-header">
-                    <span className="lightning-icon">⚡</span>
-                    <h3>Smart Filters</h3>
-                </div>
-
-                <div className="filters-body">
-                    <div className="filter-group">
-                        <label>Course</label>
-                        <select
-                            className="form-select-modern glassy-input"
-                            value={selectedCourse || ''}
-                            onChange={handleCourseChange}
-                        >
-                            <option value="">Select a module...</option>
-                            {courses.map(c => (
-                                <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
-                            ))}
-                        </select>
+                {/* LEFT PANEL: Filters */}
+                <aside className="filters-panel">
+                    <div className="filters-header">
+                        <span className="lightning-icon">⚡</span>
+                        <h3>Smart Filters</h3>
                     </div>
 
-                    <div className="filter-group">
-                        <label>Topic</label>
-                        <select
-                            className="form-select-modern glassy-input"
-                            value={selectedTopic || ''}
-                            onChange={handleTopicChange}
-                            disabled={!selectedCourse}
-                        >
-                            <option value="">{selectedCourse ? (topics.length > 0 ? "Select a topic..." : "No topics available") : "Select module first"}</option>
-                            {topics.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="filter-row">
+                    <div className="filters-body">
                         <div className="filter-group">
-                            <label>Format</label>
+                            <label>Module</label>
+                            <SearchableSelect
+                                options={courses.map(c => ({ value: c.id, label: `${c.code} - ${c.name}` }))}
+                                value={selectedCourse}
+                                onChange={(val) => handleCourseChange(Number(val))}
+                                placeholder="Search & Select Module..."
+                                className="form-select-modern"
+                            />
+                        </div>
+
+                        <div className="filter-group">
+                            <label>Topic</label>
                             <select
                                 className="form-select-modern glassy-input"
-                                value={selectedFormat}
-                                onChange={e => setSelectedFormat(e.target.value)}
+                                value={selectedTopic || ''}
+                                onChange={handleTopicChange}
+                                disabled={!selectedCourse}
                             >
-                                <option value="">Any</option>
-                                <option value="video">Video</option>
-                                <option value="article">Article</option>
-                                <option value="pdf">PDF</option>
+                                <option value="">{selectedCourse ? (topics.length > 0 ? "Select a topic..." : "No topics available") : "Select module first"}</option>
+                                {topics.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
                             </select>
                         </div>
+
+                        <div className="filter-row">
+                            <div className="filter-group">
+                                <label>Format</label>
+                                <select
+                                    className="form-select-modern glassy-input"
+                                    value={selectedFormat}
+                                    onChange={e => setSelectedFormat(e.target.value)}
+                                >
+                                    <option value="">Any</option>
+                                    <option value="video">Video</option>
+                                    <option value="article">Article</option>
+                                    <option value="pdf">PDF</option>
+                                </select>
+                            </div>
+                            <div className="filter-group">
+                                <label>Language</label>
+                                <select
+                                    className="form-select-modern glassy-input"
+                                    value={selectedLanguage}
+                                    onChange={e => setSelectedLanguage(e.target.value)}
+                                >
+                                    <option value="English">English</option>
+                                    <option value="Tamil">Tamil</option>
+                                    <option value="Sinhala">Sinhala</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div className="filter-group">
-                            <label>Lang</label>
-                            <select
-                                className="form-select-modern glassy-input"
-                                value={selectedLanguage}
-                                onChange={e => setSelectedLanguage(e.target.value)}
-                            >
-                                <option value="English">EN</option>
-                                <option value="Tamil">TA</option>
-                                <option value="Sinhala">SI</option>
-                            </select>
+                            <label>Smart Search</label>
+                            <textarea
+                                className="smart-search-input glassy-input"
+                                placeholder="Tell me specifically what you want to learn..."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
                         </div>
+
+                        {/* Agent Process / Context Display */}
+                        {/* Agent Process / Context Display - Collapsible & Fixed */}
+                        {(loading || selectedCourse || agentQuery) && (
+                            <div style={{ marginBottom: '0.25rem', marginTop: '-0.5rem' }}>
+                                <div
+                                    onClick={() => setIsAgentDetailsExpanded(!isAgentDetailsExpanded)}
+                                    style={{
+                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
+                                        marginBottom: '6px'
+                                    }}
+                                >
+                                    <label style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+                                        {loading ? "Agent Process:" : (agentQuery ? "Agent Action:" : "Agent Interpretation:")}
+                                    </label>
+                                    <span style={{ fontSize: '0.7rem', color: '#cbd5e1' }}>{isAgentDetailsExpanded ? '▼' : '▶'}</span>
+                                </div>
+
+                                <div className={`chip ${loading ? 'pulsing' : ''}`} style={{
+                                    fontSize: '0.85rem',
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    background: loading ? '#FEF3C7' : (agentQuery ? '#F0F9FF' : '#F8FAFC'),
+                                    color: loading ? '#D97706' : (agentQuery ? '#0369A1' : '#334155'),
+                                    borderColor: loading ? '#FDE68A' : (agentQuery ? '#E0F2FE' : '#E2E8F0'),
+                                    borderWidth: '1px', borderStyle: 'solid',
+                                    display: 'flex', flexDirection: 'column', gap: '4px',
+                                    transition: 'all 0.3s ease',
+                                    overflow: 'hidden',
+                                    maxHeight: isAgentDetailsExpanded ? '200px' : '48px', // Collapsible Logic
+                                    cursor: 'pointer'
+                                }} onClick={() => setIsAgentDetailsExpanded(!isAgentDetailsExpanded)}>
+
+                                    {/* HEADER LINE (Always Visible) */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '24px' }}>
+                                        {loading ? (
+                                            <>
+                                                <span className="spinner-small"></span>
+                                                <span style={{ fontWeight: 600 }}>{agentStatus}</span>
+                                            </>
+                                        ) : (
+                                            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                                                {agentQuery ? "Search Executed ✅" : "Ready to Search ✨"}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* DETAILS (Hidden when collapsed) */}
+                                    <div style={{ opacity: isAgentDetailsExpanded ? 1 : 0, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        {!loading && agentQuery && (
+                                            <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: 'rgba(255,255,255,0.5)', padding: '4px', borderRadius: '4px', marginTop: '4px' }}>
+                                                "{agentQuery}"
+                                            </div>
+                                        )}
+
+                                        {!loading && !agentQuery && selectedCourse && (
+                                            <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>
+                                                {(() => {
+                                                    const c = courses.find(c => c.id === selectedCourse);
+                                                    const t = topics.find(t => t.id === selectedTopic);
+                                                    const lang = `in ${selectedLanguage}`;
+                                                    const smart = description ? `+ "${description}"` : '';
+                                                    return `Targeting: 📚 ${c?.code} ${t ? `> ${t.name}` : ''} ${smart} ${lang}`;
+                                                })()}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <button className="btn-find-resources" onClick={() => handleFetch(20)}>
+                            {loading ? 'Searching...' : 'Find Resources 🚀'}
+                        </button>
+                    </div>
+                </aside>
+
+                {/* RIGHT PANEL: Content */}
+                <main className="content-panel">
+                    <div className="welcome-header">
+                        <h1 className="gradient-text">Welcome back, {localStorage.getItem('username') || 'Student'}!</h1>
+                        <div className="user-details-subtitle" style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                            {[localStorage.getItem('university'), localStorage.getItem('university_course')].filter(Boolean).join(' • ')}
+                        </div>
+                        <p className="subtitle">Ready to learn something new today?</p>
                     </div>
 
-                    <div className="filter-group">
-                        <label>Smart Search</label>
-                        <textarea
-                            className="smart-search-input glassy-input"
-                            placeholder="Tell me specifically what you want to learn..."
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                        />
-                    </div>
-
-                    <button className="btn-find-resources" onClick={() => handleFetch(20)}>
-                        {loading ? 'Searching...' : 'Find Resources 🚀'}
-                    </button>
-
-                    {selectedCourse && (
-                        <div style={{ marginTop: '1.5rem' }}>
-                            <label style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 }}>Try searching for:</label>
-                            <div className="chip" onClick={() => {
-                                const c = courses.find(c => c.id === selectedCourse);
-                                if (c) setDescription(c.name);
-                            }}>
-                                {courses.find(c => c.id === selectedCourse)?.name}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </aside>
-
-            {/* RIGHT PANEL: Content */}
-            <main className="content-panel">
-                <div className="welcome-header">
-                    <h1 className="gradient-text">Welcome back, {localStorage.getItem('username') || 'Student'}!</h1>
-                    <p className="subtitle">Ready to learn something new today?</p>
-                </div>
-
-                <div className="content-body">
-                    {resources.length === 0 && (
-                        <div className="stats-stack">
-                            <div className="stat-card-wide">
-                                <div className="stat-icon-wrapper" style={{ background: 'white', color: '#4F46E5' }}>
-                                    <img src="https://cdn-icons-png.flaticon.com/512/2232/2232688.png" alt="Courses" width="24" />
-                                </div>
-                                <div className="stat-info">
-                                    <h3>4 Courses</h3>
-                                    <span>Enrolled</span>
-                                </div>
-                            </div>
-                            <div className="stat-card-wide">
-                                <div className="stat-icon-wrapper" style={{ background: 'white', color: '#EC4899' }}>
-                                    ⏱️
-                                </div>
-                                <div className="stat-info">
-                                    <h3>12.5 Hrs</h3>
-                                    <span>Study Time</span>
-                                </div>
-                            </div>
-                            <div className="stat-card-wide">
-                                <div className="stat-icon-wrapper" style={{ background: 'white', color: '#F59E0B' }}>
-                                    🔥
-                                </div>
-                                <div className="stat-info">
-                                    <h3>3 Day</h3>
-                                    <span>Streak</span>
-                                </div>
-                            </div>
-                            <div className="stat-card-wide">
-                                <div className="stat-icon-wrapper" style={{ background: 'white', color: '#10B981' }}>
-                                    ⭐
-                                </div>
-                                <div className="stat-info">
-                                    <h3>150 pts</h3>
-                                    <span>Learner Score</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Results Section */}
-                    {resources.length > 0 && (
-                        <div className="resource-grid-modern">
-                            {resources.map((r, idx) => (
-                                <div key={r.id} className="resource-card-modern" style={{ animationDelay: `${idx * 0.05}s` }}>
-                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                                        <span className={`modern-badge badge-${r.format}`}>{r.format}</span>
-                                        <span className={`modern-badge badge-source ${r.source === 'manual' ? 'source-db' : 'source-web'}`}>
-                                            {r.source === 'manual' ? 'database' : 'internet'}
-                                        </span>
+                    <div className="content-body">
+                        {resources.length === 0 && (
+                            <div className="stats-stack">
+                                <div className="stat-card-wide">
+                                    <div className="stat-icon-wrapper" style={{ background: 'white', color: '#4F46E5' }}>
+                                        <img src="https://cdn-icons-png.flaticon.com/512/2232/2232688.png" alt="Modules" width="24" />
                                     </div>
-                                    <h4 className="card-title">{r.title}</h4>
-
-                                    <div className="card-rating">
-                                        <span>★</span>
-                                        <span>{r.average_rating}</span>
-                                        <span className="rating-count">({r.rating_count} ratings)</span>
-                                    </div>
-
-                                    <div className="card-footer">
-                                        <button
-                                            className="btn-open-resource"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                setViewingResource(r);
-                                            }}
-                                            style={{ textDecoration: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-                                        >
-                                            Open Resource
-                                        </button>
-
-                                        <select
-                                            className="rate-dropdown"
-                                            onChange={(e) => handleRate(r.id, Number(e.target.value))}
-                                            defaultValue=""
-                                        >
-                                            <option value="" disabled>Rate...</option>
-                                            <option value="5">5 - Excellent</option>
-                                            <option value="4">4 - Very Good</option>
-                                            <option value="3">3 - Good</option>
-                                            <option value="2">2 - Fair</option>
-                                            <option value="1">1 - Poor</option>
-                                        </select>
+                                    <div className="stat-info">
+                                        <h3>4 Modules</h3>
+                                        <span>Enrolled</span>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                    {loading && <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>Finding the best resources for you...</p>}
-
-                    {/* Resource Modal */}
-                    {viewingResource && (
-                        <div className='modal-overlay animate-fade-in' style={{
-                            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                            background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex',
-                            alignItems: 'center', justifyContent: 'center'
-                        }}>
-                            <div className='modal-content' style={{
-                                background: 'white', width: '90%', height: '90%', borderRadius: '12px',
-                                display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden'
-                            }}>
-                                <div style={{ padding: '15px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <h3 style={{ margin: 0, fontSize: '1.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>
-                                        {viewingResource.title}
-                                    </h3>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <a href={viewingResource.url} target="_blank" rel="noopener noreferrer" className='btn-secondary' style={{ padding: '6px 12px', textDecoration: 'none', fontSize: '0.9rem' }}>
-                                            Open in New Tab ↗
-                                        </a>
-                                        <button onClick={() => setViewingResource(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>
-                                            &times;
-                                        </button>
+                                <div className="stat-card-wide">
+                                    <div className="stat-icon-wrapper" style={{ background: 'white', color: '#EC4899' }}>
+                                        ⏱️
+                                    </div>
+                                    <div className="stat-info">
+                                        <h3>12.5 Hrs</h3>
+                                        <span>Study Time</span>
                                     </div>
                                 </div>
+                                <div className="stat-card-wide">
+                                    <div className="stat-icon-wrapper" style={{ background: 'white', color: '#F59E0B' }}>
+                                        🔥
+                                    </div>
+                                    <div className="stat-info">
+                                        <h3>3 Day</h3>
+                                        <span>Streak</span>
+                                    </div>
+                                </div>
+                                <div className="stat-card-wide">
+                                    <div className="stat-icon-wrapper" style={{ background: 'white', color: '#10B981' }}>
+                                        ⭐
+                                    </div>
+                                    <div className="stat-info">
+                                        <h3>150 pts</h3>
+                                        <span>Learner Score</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                                <div style={{ flex: 1, background: '#000' }}>
-                                    <iframe
-                                        src={getYouTubeEmbedUrl(viewingResource.url)}
-                                        width="100%"
-                                        height="100%"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                        style={{ border: 'none' }}
+                        {/* Results Section */}
+                        {resources.length > 0 && (
+                            <div className="resource-grid-modern">
+                                {resources.map((r, idx) => (
+                                    <ResourceCard
+                                        key={r.id}
+                                        r={r}
+                                        idx={idx}
+                                        getThumbnail={getThumbnail}
+                                        handleRate={handleRate}
+                                        setViewingResource={setViewingResource}
                                     />
+                                ))}
+                            </div>
+                        )}
+                        {loading && <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>Finding the best resources for you...</p>}
+
+                        {/* Resource Modal */}
+                        {viewingResource && (
+                            <div className='modal-overlay animate-fade-in' style={{
+                                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                                background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex',
+                                alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <div className='modal-content' style={{
+                                    background: 'white', width: '90%', height: '90%', borderRadius: '12px',
+                                    display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden'
+                                }}>
+                                    <div style={{ padding: '15px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <h3 style={{ margin: 0, fontSize: '1.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>
+                                            {viewingResource.title}
+                                        </h3>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <a href={viewingResource.url} target="_blank" rel="noopener noreferrer" className='btn-secondary' style={{ padding: '6px 12px', textDecoration: 'none', fontSize: '0.9rem' }}>
+                                                Open in New Tab ↗
+                                            </a>
+                                            <button onClick={() => setViewingResource(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>
+                                                &times;
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ flex: 1, background: '#000' }}>
+                                        <iframe
+                                            src={getYouTubeEmbedUrl(viewingResource.url)}
+                                            width="100%"
+                                            height="100%"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                            style={{ border: 'none' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
-            </main>
+                        )}
+                    </div>
+                </main>
 
-            <footer className="dashboard-footer">
-                <span>© 2025 Personalized Study Buddy. All rights reserved.</span>
-                <div className="footer-links">
-                    <a href="#" className="footer-link">help@studybuddy.com</a>
-                    <a href="#" className="footer-link">@studybuddy_app</a>
-                    <a href="#" className="footer-link">Privacy & Terms</a>
-                </div>
-            </footer>
+
             </div>
         </div>
     );

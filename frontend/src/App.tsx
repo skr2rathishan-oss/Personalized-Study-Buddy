@@ -43,8 +43,8 @@ const AdminRoute = () => {
 
 function AppContent() {
     const location = useLocation();
-    // Hide footer on auth pages
-    const hideFooter = ['/login', '/register', '/forgot-password'].includes(location.pathname);
+    // Hide footer on auth pages and main dashboard (as requested)
+    const hideFooter = ['/login', '/register', '/forgot-password', '/'].includes(location.pathname);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
