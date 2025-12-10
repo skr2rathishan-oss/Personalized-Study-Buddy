@@ -45,7 +45,6 @@ def kill_process_on_port(port):
     """Finds and kills the process listening on the specified port (Windows)."""
     if platform.system() == "Windows":
         try:
-            # Find PID using netstat
             cmd = f'netstat -ano | findstr :{port}'
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
@@ -53,25 +52,23 @@ def kill_process_on_port(port):
             
             pids = set()
             for line in output.splitlines():
-                # Check for listening state to confirm it's a server
                 if f":{port}" in line and "LISTENING" in line:
                     parts = line.strip().split()
                     pid = parts[-1]
                     pids.add(pid)
             
             for pid in pids:
-                if pid != "0": # PID 0 is system idle
+                if pid != "0": 
                     print(f"Cleaning up: Killing old process {pid} on port {port}...")
                     subprocess.call(f"taskkill /F /PID {pid}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as e:
-            print(f"Warning: Could not cleanup port {port}: {e}")
+            pass
 
 def cleanup_old_instances():
     """Aggressively cleans up old backend and frontend processes."""
     print("--- Pipeline Cleanup: Removing old instances ---")
     kill_process_on_port(BACKEND_PORT)
     kill_process_on_port(FRONTEND_PORT)
-    # Also check typical alternate ports just in case
     kill_process_on_port(5174)
     kill_process_on_port(5175)
     print("----------------------------------------------")
@@ -135,31 +132,16 @@ def run_backend(python_exec):
     print(f"Starting Backend on port {BACKEND_PORT}...")
     return subprocess.Popen([python_exec, BACKEND_SCRIPT], cwd=os.getcwd())
 
-def ensure_node_in_path():
-    """Ensures Node.js is in the PATH for the current process."""
-    if shutil.which("npm") is None:
-        # Fallback: Check common Windows install location
-        node_path = r"C:\Program Files\nodejs"
-        if os.path.exists(node_path):
-            print(f"Adding {node_path} to PATH...")
-            os.environ["PATH"] += os.pathsep + node_path
-            return True
-    return shutil.which("npm") is not None
-
 def run_frontend():
     """Runs the React Frontend."""
     print(f"Starting React Frontend...")
-    if not ensure_node_in_path():
-        print("Error: 'npm' not found. Please install Node.js.")
-        return None
     return subprocess.Popen(["npm", "run", "dev"], cwd=FRONTEND_DIR, shell=True)
 
-
 def main():
-    # 0. Cleanup ports first (Delete old versions)
+    # 0. Cleanup first
     cleanup_old_instances()
 
-    # 1. Virtual Environment Check & Creation
+    # 1. Virtual Environment Setup
     if not is_venv():
         if not os.path.exists(VENV_DIR):
             create_venv()
@@ -176,12 +158,9 @@ def main():
             pass
         return
 
-    # --- We are now running inside the virtual environment ---
-    print("Running Pipeline inside virtual environment.")
     python_exec = sys.executable
 
     # 2. Pipeline Steps
-    ensure_node_in_path()
     install_dependencies(python_exec)
     init_database(python_exec)
     install_frontend_dependencies()
@@ -192,19 +171,17 @@ def main():
     frontend_process = None
 
     try:
-        backend_process = run_backend(python_exec)
-        # Wait for backend to start
-        time.sleep(3) 
+        print(f"Starting Backend on port {BACKEND_PORT}...")
+        backend_process = subprocess.Popen([python_exec, BACKEND_SCRIPT], cwd=os.getcwd())
+        time.sleep(2) 
 
-        frontend_process = run_frontend()
-        # Wait for frontend to start
-        time.sleep(5)
+        print(f"Starting Frontend...")
+        frontend_process = subprocess.Popen(["npm", "run", "dev"], cwd=FRONTEND_DIR, shell=True)
+        time.sleep(4)
 
         # 4. Open Browser
-        # User defined Public IP (Change if dynamic)
-        public_ip = "20.244.40.57" 
-        url = f"http://{public_ip}:{FRONTEND_PORT}"
-        print(f"\n[SUCCESS] Pipeline Complete. App accessible at {url}")
+        url = f"http://localhost:{FRONTEND_PORT}"
+        print(f"\n[SUCCESS] Pipeline Complete. Opening App at {url}")
         print("Use Ctrl+C to stop servers.")
         
         try:
@@ -212,24 +189,19 @@ def main():
         except Exception:
             print("Could not open browser automatically (likely headless environment).")
         
-        # Keep alive
         while True:
             time.sleep(1)
             if backend_process.poll() is not None:
                 print("Backend process ended.")
                 break
-            # Frontend poll is unreliable on Windows with shell=True, so we rely on backend mainly
 
     except KeyboardInterrupt:
         print("\nStopping services...")
     finally:
-        if backend_process:
-            backend_process.terminate()
-        if frontend_process:
-            # Aggressive kill for Windows shell spawned npm
+        if backend_process: backend_process.terminate()
+        if frontend_process: 
             subprocess.call(['taskkill', '/F', '/T', '/PID', str(frontend_process.pid)], 
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        # Auto cleanup on exit
         cleanup_old_instances()
         print("Goodbye!")
 
