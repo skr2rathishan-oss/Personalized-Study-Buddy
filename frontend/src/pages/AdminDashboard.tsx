@@ -663,7 +663,7 @@ function AdminDashboard() {
                 .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
             `}</style>
         </div>
->>>>>>> 74ebd1a (Resolve merge conflicts and refine UI for Calendar and Admin Dashboard)
+
     );
 }
 
