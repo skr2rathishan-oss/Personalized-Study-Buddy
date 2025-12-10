@@ -255,13 +255,7 @@ function AdminDashboard() {
                                 <span className="card-id">#{course.module_id || course.code || course.id}</span>
                             </div>
                             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                <h3 style={{
-                                    fontSize: '1.35rem',
-                                    fontWeight: 700,
-                                    color: '#1E293B',
-                                    marginBottom: 'auto',
-                                    lineHeight: 1.3
-                                }}>{course.name}</h3>
+                                <h3 className="course-card-title">{course.name}</h3>
                                 <div style={{ marginTop: '1.5rem' }}>
                                     <button onClick={() => openManageModal(course)} className="btn-manage">Manage Content ⚙️</button>
                                 </div>
@@ -285,8 +279,9 @@ function AdminDashboard() {
                         </div>
                     </div>
                 </div>
-            )
-            }
+
+            )}
+
 
             {/* Manager Modal */}
             {isManageModalOpen && activeCourse && (
@@ -531,12 +526,19 @@ function AdminDashboard() {
                     display: flex; 
                     flex-direction: column;
                 }
+                .course-card-title {
+                    font-size: 1.35rem;
+                    font-weight: 700;
+                    color: #1E293B;
+                    margin-bottom: auto;
+                    line-height: 1.3;
+                }
                 .course-card-premium:hover {
                     transform: translateY(-5px);
                     box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
                 }
                 .card-header-gradient {
-                    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+                    background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
                     padding: 1.5rem;
                     display: flex;
                     justify-content: space-between;
@@ -625,6 +627,31 @@ function AdminDashboard() {
                     border-color: #334155;
                     color: #94a3b8;
                 }
+                body.dark-mode .btn-manage {
+                    background: #0f172a;
+                    color: #e2e8f0;
+                    border-color: #334155;
+                }
+                body.dark-mode .btn-manage:hover {
+                    background: #334155;
+                    color: white;
+                }
+                body.dark-mode .btn-secondary {
+                    background: #0f172a;
+                    color: #e2e8f0;
+                    border-color: #334155;
+                }
+                body.dark-mode .btn-secondary:hover {
+                    background: #334155;
+                    color: white;
+                }
+                body.dark-mode .course-card-premium {
+                    background: #1e293b; /* Smart Filters Color */
+                    border-color: #334155;
+                }
+                body.dark-mode .course-card-title {
+                    color: #f8fafc;
+                }
                 body.dark-mode h2, body.dark-mode h3 { color: #f8fafc !important; }
 
                 .modal-header {
@@ -669,7 +696,7 @@ function AdminDashboard() {
                 }
                 .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
             `}</style>
-        </div>
+        </div >
 
     );
 }
