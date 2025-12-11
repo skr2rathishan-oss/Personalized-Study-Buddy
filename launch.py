@@ -19,7 +19,7 @@ OTP_SCRIPT = os.path.join(OTP_DIR, "server.js")
 FRONTEND_PORT = 5173
 BACKEND_PORT = 5000
 OTP_PORT = 3000
-PUBLIC_IP = "20.244.40.57"
+PUBLIC_IP = "192.168.43.26"
 
 def get_python_executable():
     """Returns the path to the Python executable in the virtual environment."""
@@ -237,8 +237,8 @@ def main():
         print(f"\n=======================================================")
         print(f" [SUCCESS] PROJECT LAUNCHED SUCCESSFULLY")
         print(f" -------------------------------------------------------")
-        print(f" 🏠 Main App   : {app_url}  (Register here)")
-        print(f" 📡 Dashboard  : {dashboard_url}  (View Subscriptions)")
+        print(f" > Main App    : {app_url}  (Register here)")
+        print(f" > Dashboard   : {dashboard_url}  (View Subscriptions)")
         print(f"=======================================================\n")
         print("Use Ctrl+C to stop all servers.")
         

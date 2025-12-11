@@ -45,10 +45,12 @@ function AppContent() {
     const location = useLocation();
     // Hide footer on auth pages and main dashboard (as requested)
     const hideFooter = ['/login', '/register', '/forgot-password', '/'].includes(location.pathname);
+    // Hide navbar on auth pages
+    const hideNavbar = ['/login', '/register', '/forgot-password'].includes(location.pathname);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-            <Navbar />
+            {!hideNavbar && <Navbar />}
             <div style={{ flex: 1 }}>
                 <Routes>
                     <Route path="/login" element={<Login />} />

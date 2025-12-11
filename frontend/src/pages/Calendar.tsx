@@ -61,39 +61,38 @@ function Calendar() {
     };
 
     const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newYear = parseInt(e.target.value);
-        if (!isNaN(newYear) && newYear > 1900 && newYear < 2100) {
-            setCurrentDate(new Date(newYear, month, 1));
+        const value = e.target.value;
+        if (value.length > 4) return; // Enforce 4 digit limit
+
+        const newYear = parseInt(value);
+        if (!isNaN(newYear)) {
+            // Only update if it's a valid year range or allow typing to continue until valid
+            // Ideally we accept typing but only trigger date change if valid
+            if (value.length === 4 && newYear > 1900 && newYear < 2100) {
+                setCurrentDate(new Date(newYear, month, 1));
+            }
         }
     };
 
+    const handleDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.value) {
+            setCurrentDate(new Date(e.target.value));
+        }
+    };
+
+
+
+
     return (
-        <div className="dashboard-container animate-fade-in" style={{
-            marginTop: '2rem',
-            maxWidth: '750px',
-            margin: '2rem auto',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center'
-        }}>
+        <div className="dashboard-container animate-fade-in calendar-page-container">
 
             {/* Control Bar: Jump to Date */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '1rem',
-                background: 'var(--surface-color)',
-                padding: '0.75rem',
-                borderRadius: '12px',
-                border: '1px solid var(--border-light)',
-                width: '100%'
-            }}>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div className="calendar-controls">
+                <div className="control-group">
                     <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>Calendar</h2>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div className="control-group jump-controls">
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>JUMP TO:</span>
                     <select
                         value={month}
@@ -107,10 +106,16 @@ function Calendar() {
                     </select>
                     <input
                         type="number"
-                        value={year}
+                        placeholder="Year"
                         onChange={handleYearChange}
+                        onBlur={(e) => {
+                            // Reset to current year if invalid on blur
+                            if (e.target.value.length !== 4) e.target.value = year.toString();
+                        }}
+                        defaultValue={year}
+                        key={year} // Force re-render on year change to sync default value
                         className="input-modern"
-                        style={{ width: '70px', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '0.9rem' }}
+                        style={{ width: '80px', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '0.9rem' }}
                     />
                 </div>
             </div>
@@ -165,143 +170,328 @@ function Calendar() {
                 </div>
             </div>
 
-            {/* Modal Logic Remains Same */}
-            {/* Removed Modal JSX */}
+
+
+            {/* Mobile Agenda View (Visible only on mobile) */}
+            <div className="mobile-agenda-view">
+                <div className="mobile-week-strip">
+                    <div className="agenda-month-title">{monthName} {year}</div>
+
+                    {/* Native Date Picker Trigger */}
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ fontSize: '1.5rem' }}>📅</span>
+                        <input
+                            type="date"
+                            onChange={handleDateSelect}
+                            style={{
+                                position: 'absolute',
+                                top: 0, left: 0, width: '100%', height: '100%',
+                                opacity: 0, cursor: 'pointer', zIndex: 10
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div className="agenda-list">
+                    {currentMonthEvents.length > 0 && (
+                        // Sort events by date
+                        currentMonthEvents
+                            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                            .map(evt => {
+                                const d = new Date(evt.date);
+                                const dateNum = d.getDate();
+                                const dayName = d.toLocaleString('default', { weekday: 'short' });
+                                return (
+                                    <div key={evt.id} className={`agenda-item evt-${evt.type}-border`}>
+                                        <div className="agenda-date is-today">
+                                            <span className="agenda-day-name">{dayName}</span>
+                                            <span className="agenda-day-num">{dateNum}</span>
+                                        </div>
+                                        <div className="agenda-details">
+                                            <div className="agenda-title">{evt.title}</div>
+                                            <div className="agenda-type-badge">{evt.type.replace('_', ' ')}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                    )}
+                </div>
+            </div>
 
             <style>{`
+                .calendar-page-container {
+                    margin-top: 80px; /* Push down below navbar */
+                    width: 100%;
+                    max-width: 900px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    padding-bottom: 2rem; /* Add breathing room at bottom */
+                    min-height: calc(100vh - 80px); /* Ensure it fills screen but allows scroll */
+                    background: var(--bg-color);
+                    padding: 1rem;
+                }
+
+                /* Desktop Grid Styles */
                 .calendar-box {
                     border: 1px solid var(--calendar-border);
-                    border-radius: 8px;
+                    border-radius: 12px;
                     overflow: hidden;
                     box-shadow: var(--shadow-md);
                     background: var(--calendar-cell-bg);
+                    width: 100%;
                 }
-
-                .calendar-header-bar {
-                    background: var(--calendar-primary);
-                    color: var(--calendar-header-text);
-                    padding: 1rem;
+                
+                .calendar-controls {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
+                    margin-bottom: 1.5rem;
+                    width: 100%;
                 }
 
-                .nav-btn {
-                    background: rgba(255, 255, 255, 0.2);
-                    border: none;
-                    color: white;
-                    width: 32px; 
-                    height: 32px;
-                    border-radius: 50%;
-                    cursor: pointer;
-                    font-size: 1.1rem;
+                .control-group {
                     display: flex;
+                    gap: 0.5rem;
                     align-items: center;
-                    justify-content: center;
+                }
+                
+                /* ... (Keep existing desktop specific styles if needed) ... */
+                /* I will inline the essential desktop styles here to ensure they aren't lost, 
+                   but heavily optimized for the "Agenda" switch */
+
+                .calendar-header-bar {
+                    background: var(--surface-color);
+                    color: var(--text-main);
+                    padding: 1.5rem;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border-bottom: 1px solid var(--border-light);
+                }
+                .calendar-header-bar h2 { font-weight: 800; }
+
+                .nav-btn {
+                    background: var(--bg-color);
+                    color: var(--text-main);
+                    width: 36px; height: 36px;
+                    border-radius: 50%;
+                    border: 1px solid var(--border-light);
+                    cursor: pointer;
+                    display: flex; align-items: center; justify-content: center;
                     transition: all 0.2s;
                 }
-                .nav-btn:hover { background: rgba(255, 255, 255, 0.4); }
+                .nav-btn:hover { background: var(--border-light); }
 
                 .calendar-grid-header {
                     display: grid;
                     grid-template-columns: repeat(7, 1fr);
-                    background: var(--calendar-primary);
-                    padding-bottom: 0.5rem;
+                    background: var(--bg-color);
+                    padding: 0.75rem 0;
+                    border-bottom: 1px solid var(--border-light);
                 }
 
                 .day-name {
                     text-align: center;
-                    color: rgba(255, 255, 255, 0.9);
+                    color: var(--text-secondary);
                     font-weight: 600;
-                    padding: 0.5rem;
-                    font-size: 0.85rem;
+                    font-size: 0.9rem;
+                    text-transform: uppercase;
                 }
 
                 .calendar-grid-body {
                     display: grid;
                     grid-template-columns: repeat(7, 1fr);
-                    border-top: 1px solid var(--calendar-border);
+                    background: var(--surface-color);
                 }
 
                 .calendar-cell {
-                    min-height: 70px;
-                    background: var(--calendar-cell-bg);
-                    border-right: 1px solid var(--calendar-border);
-                    border-bottom: 1px solid var(--calendar-border);
-                    padding: 0.25rem;
+                    min-height: 120px;
+                    border-right: 1px solid var(--border-light);
+                    border-bottom: 1px solid var(--border-light);
+                    padding: 0.75rem;
                     position: relative;
                     transition: background 0.2s;
                 }
+                .calendar-cell:nth-child(7n) { border-right: none; }
+                .calendar-cell.empty { background: var(--calendar-empty-bg, #F9FAFB); }
                 
-                .calendar-cell:nth-child(7n) {
-                    border-right: none;
-                }
-
-                .calendar-cell.empty {
-                    background: var(--bg-color);
-                    opacity: 0.5;
-                }
-
                 .calendar-cell.today {
-                    background: var(--calendar-today-bg);
-                    color: var(--calendar-today-text);
-                    border-color: rgba(0,0,0,0.1);
+                    background: var(--calendar-today-bg, #eff6ff);
                 }
                 .calendar-cell.today .cell-number {
+                    color: var(--calendar-today-text, var(--primary));
                     font-weight: 800;
-                    font-size: 1.1rem;
                 }
 
                 .cell-number {
-                    display: block;
                     font-weight: 600;
-                    margin-bottom: 0.25rem;
-                    text-align: right;
-                    font-size: 0.9rem;
-                    padding-right: 4px;
+                    margin-bottom: 0.5rem;
+                    display: block;
+                    color: var(--text-secondary);
                 }
 
                 .cell-events {
                     display: flex;
                     flex-direction: column;
-                    gap: 2px;
+                    gap: 6px;
                 }
 
                 .evt-dot {
-                    font-size: 0.7rem;
-                    padding: 2px 4px;
-                    border-radius: 3px;
+                    font-size: 0.75rem;
+                    padding: 4px 8px;
+                    border-radius: 4px;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     cursor: pointer;
+                    font-weight: 500;
+                    border-left-width: 3px;
+                    border-left-style: solid;
                 }
-                
-                /* Event Types Styles */
-                .evt-deadline { background: #fee2e2; color: #991b1b; border-left: 3px solid #b91c1c; }
-                .evt-exam { background: #fef3c7; color: #92400e; border-left: 3px solid #b45309; }
-                .evt-meeting { background: #e0e7ff; color: #3730a3; border-left: 3px solid #4338ca; }
-                
-                /* Student Specific */
-                .evt-study_goal { background: #d1fae5; color: #065f46; border-left: 3px solid #059669; }
-                .evt-resource_plan { background: #fae8ff; color: #86198f; border-left: 3px solid #c026d3; }
 
-                /* Admin Specific */
-                .evt-resource_release { background: #cffafe; color: #155e75; border-left: 3px solid #0891b2; font-weight: 600; }
-                .evt-important_date { background: #ffedd5; color: #9a3412; border-left: 3px solid #ea580c; border: 1px solid #ea580c; }
+                /* Mobile Agenda Styles */
+                .mobile-agenda-view { display: none; }
 
+                /* Event Colors (Shared) */
+                .evt-deadline { background: #fee2e2; color: #991b1b; border-left-color: #b91c1c; }
+                .evt-exam { background: #fef3c7; color: #92400e; border-left-color: #b45309; }
+                .evt-meeting { background: #e0e7ff; color: #3730a3; border-left-color: #4338ca; }
+                .evt-study_goal { background: #d1fae5; color: #065f46; border-left-color: #059669; }
+                .evt-resource_plan { background: #fae8ff; color: #86198f; border-left-color: #c026d3; }
+                .evt-resource_release { background: #cffafe; color: #155e75; border-left-color: #0891b2; }
+                .evt-important_date { background: #ffedd5; color: #9a3412; border-left-color: #ea580c; }
 
-                /* Dark mode adjustments */
-                body.dark-mode .evt-deadline { background: #7f1d1d; color: #fecaca; border-left-color: #f87171; }
-                body.dark-mode .evt-exam { background: #78350f; color: #fde68a; border-left-color: #fbbf24; }
-                body.dark-mode .evt-meeting { background: #312e81; color: #e0e7ff; border-left-color: #818cf8; }
-                
-                body.dark-mode .evt-study_goal { background: #064e3b; color: #a7f3d0; border-left-color: #34d399; }
-                body.dark-mode .evt-resource_plan { background: #701a75; color: #f0abfc; border-left-color: #e879f9; }
-                
-                body.dark-mode .evt-resource_release { background: #164e63; color: #a5f3fc; border-left-color: #22d3ee; }
-                body.dark-mode .evt-important_date { background: #7c2d12; color: #fdba74; border-left-color: #fb923c; }
+                /* Agenda Border Colors */
+                .evt-deadline-border { border-left: 4px solid #ef4444; }
+                .evt-exam-border { border-left: 4px solid #f59e0b; }
+                .evt-meeting-border { border-left: 4px solid #6366f1; }
+                .evt-study_goal-border { border-left: 4px solid #10b981; }
 
+                @media (max-width: 900px) {
+                     /* Show Desktop Grid on Mobile but optimized */
+                    .calendar-box { 
+                        display: block; 
+                        margin-bottom: 1rem;
+                    }
+                    
+                    .calendar-controls { 
+                        display: flex; 
+                        flex-direction: column;
+                        gap: 1rem;
+                        margin-bottom: 1rem;
+                        align-items: flex-start;
+                    } 
+                    
+                    /* Compact Grid for Mobile */
+                    .calendar-cell {
+                        min-height: 60px; /* Reduced height */
+                        padding: 4px;
+                    }
+                    
+                    .cell-number {
+                        font-size: 0.85rem;
+                        margin-bottom: 2px;
+                    }
+                    
+                    .evt-dot {
+                        font-size: 0.65rem;
+                        padding: 2px 4px;
+                        margin-bottom: 2px;
+                    }
+                    
+                    /* Hide Day Names on very small screens if needed, or abbreviate - likely fine as Sun/Mon... */
+                    .day-name {
+                        font-size: 0.75rem;
+                        padding: 0.5rem 0;
+                    }
+
+                    /* Hide the simplified week strip we added earlier since we now show full cal */
+                    .mobile-week-strip { display: none; }
+                    
+                    /* Agenda view below remains */
+                    .mobile-agenda-view {
+                        display: flex;
+                        flex-direction: column;
+                        width: 100%;
+                        gap: 1.5rem;
+                    }
+
+                    .agenda-month-title {
+                        font-size: 1.25rem;
+                        font-weight: 800;
+                        color: var(--text-main);
+                        /* Hide duplicate title if calendar header is shown */
+                        display: none; 
+                    }
+
+                    .agenda-list {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1rem;
+                    }
+
+                    /* ... keep agenda styling ... */
+                    .agenda-item {
+                        display: flex;
+                        background: var(--surface-color);
+                        padding: 1rem;
+                        border-radius: 12px;
+                        box-shadow: var(--shadow-sm);
+                        border: 1px solid var(--border-light);
+                    }
+                    
+                    .agenda-date {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        padding-right: 1rem;
+                        border-right: 1px solid var(--border-light);
+                        min-width: 60px;
+                        color: var(--text-secondary);
+                    }
+                    .agenda-day-name { font-size: 0.8rem; text-transform: uppercase; font-weight: 600; }
+                    .agenda-day-num { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+                    
+                    .agenda-details {
+                        padding-left: 1rem;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        gap: 0.25rem;
+                    }
+                    .agenda-title {
+                        font-weight: 600;
+                        font-size: 1rem;
+                        color: var(--text-main);
+                    }
+                    .agenda-type-badge {
+                        font-size: 0.75rem;
+                        color: var(--text-secondary);
+                        text-transform: capitalize;
+                        background: var(--bg-color);
+                        align-self: flex-start;
+                        padding: 2px 8px;
+                        border-radius: 4px;
+                    }
+
+                    .no-events-placeholder {
+                        text-align: center;
+                        padding: 4rem 2rem;
+                        color: var(--text-secondary);
+                        background: var(--surface-color);
+                        border-radius: 16px;
+                        border: 2px dashed var(--border-light);
+                    }
+                    .placeholder-icon {
+                        font-size: 3rem;
+                        margin-bottom: 1rem;
+                        opacity: 0.5;
+                    }
+                }
             `}</style>
         </div>
     );

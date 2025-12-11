@@ -233,7 +233,7 @@ function AdminDashboard() {
             }} />
 
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+            <div className="dashboard-header-flex">
                 <div>
                     <h1 style={{
                         fontSize: '2.5rem',
@@ -251,7 +251,7 @@ function AdminDashboard() {
                     </div>
                     <p style={{ color: '#94A3B8', marginTop: '0.25rem', fontSize: '1rem' }}>Manage your curriculum and content efficiently.</p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div className="header-actions">
                     <button onClick={handleExport} className="btn-secondary">Export Excel 📥</button>
                     <button onClick={handleImportClick} className="btn-secondary">Import Sync 📤</button>
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept=".xlsx" />
@@ -275,7 +275,7 @@ function AdminDashboard() {
                     <button onClick={() => setIsCreateModalOpen(true)} className="btn-primary-glow">Create Module</button>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '2rem' }}>
                     {courses.map(course => (
                         <div key={course.id} className="course-card-premium">
                             <div className="card-header-gradient">
@@ -566,7 +566,7 @@ function AdminDashboard() {
                     cursor: pointer; 
                     font-weight: 600; 
                 }
-                .btn-success {
+                .btn-success{
                      padding: 0 24px; 
                      background: #10B981; 
                      color: white; 
@@ -897,6 +897,60 @@ function AdminDashboard() {
                     to { opacity: 1; transform: scale(1); }
                 }
                 .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
+
+                @media (max-width: 768px) {
+                    .dashboard-container {
+                        padding: 1rem !important;
+                        margin-top: 80px !important;
+                        overflow-x: hidden;
+                    }
+                    .manager-modal {
+                        width: 95% !important;
+                        height: 90vh !important;
+                    }
+                    /* Make modal content stack vertically */
+                    .manager-modal > div:nth-child(2) {
+                        flex-direction: column;
+                    }
+                    .settings-sidebar {
+                        width: 100% !important;
+                        height: auto;
+                        border-right: none;
+                        border-bottom: 1px solid #E2E8F0;
+                        padding: 1rem;
+                    }
+                    .modal-content {
+                        width: 90% !important;
+                    }
+                    .dashboard-header-flex {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 1.5rem;
+                    }
+                    .header-actions {
+                        width: 100%;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 10px;
+                    }
+                    .header-actions button {
+                        width: 100%;
+                    }
+                    .header-actions button:last-child {
+                        grid-column: span 2;
+                    }
+                }
+
+                .dashboard-header-flex {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 3rem;
+                }
+                .header-actions {
+                    display: flex;
+                    gap: 10px;
+                }
             `}</style>
         </div >
 

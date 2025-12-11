@@ -143,7 +143,8 @@ function Register() {
 
     return (
         <div className="login-page-wrapper">
-            <div className="auth-hero-section">
+            {/* Hero Section - Hidden on Mobile naturally via CSS */}
+            <div className="auth-hero-section register-hero">
                 <div className="hero-content">
                     <h1 className="hero-title">Join<br />Study Buddy</h1>
                     <p className="hero-subtitle">
@@ -154,142 +155,426 @@ function Register() {
                 </div>
             </div>
 
-            <div className="auth-form-section">
-                <div className="register-card animate-slide-up">
-                    <div className="auth-progress">
-                        <div className={`step-dot ${step >= 1 ? 'active' : ''}`} title="Details"></div>
-                        <div className={`step-dot ${step >= 2 ? 'active' : ''}`} title="Verification"></div>
+            <div className="auth-form-section register-form-section">
+                <div className="register-card-wizard animate-slide-up">
+
+                    {/* Mobile Only Header */}
+                    <div className="mobile-wizard-header">
+                        <span className="brand-gradient">StudyBuddy</span>
+                        <p>Create Account</p>
                     </div>
 
-                    <div className="mobile-brand-header">
-                        <span className="brand-gradient" style={{ fontSize: '2rem', fontWeight: 800 }}>StudyBuddy</span>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Join the Future of Learning</p>
+                    {/* Progress Steps */}
+                    <div className="wizard-progress">
+                        <div className={`wizard-step ${step >= 1 ? 'active' : ''}`}>
+                            <div className="step-icon">1</div>
+                            <span>Details</span>
+                        </div>
+                        <div className="wizard-line"></div>
+                        <div className={`wizard-step ${step >= 2 ? 'active' : ''}`}>
+                            <div className="step-icon">2</div>
+                            <span>Verify</span>
+                        </div>
                     </div>
-                    <div className="login-header">
-                        <h2>{step === 1 ? 'Create Account' : 'Verify Phone'}</h2>
-                        <p>{step === 1 ? 'Please fill in your details below' : `We sent a code to ${phoneNumber}`}</p>
-                    </div>
 
-                    {step === 1 && (
-                        <form onSubmit={handleSaveDetails}>
-                            <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Personal Info</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1fr) 1fr', gap: '20px' }}>
-                                <div className="form-group-clean">
-                                    <label>First Name</label>
-                                    <input type="text" required value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" />
-                                </div>
-                                <div className="form-group-clean">
-                                    <label>Last Name</label>
-                                    <input type="text" required value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Doe" />
-                                </div>
-                            </div>
+                    <div className="wizard-content">
+                        <div className="login-header desktop-only-header">
+                            <h2>{step === 1 ? 'Create Account' : 'Verify Phone'}</h2>
+                            <p>{step === 1 ? 'Please fill in your details below' : `We sent a code to ${phoneNumber}`}</p>
+                        </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                <div className="form-group-clean">
-                                    <label>NIC No.</label>
-                                    <input type="text" required value={nic} onChange={e => setNic(e.target.value)} />
-                                </div>
-                                <div className="form-group-clean">
-                                    <label>Phone Number</label>
-                                    <input type="text" required value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="+94..." />
-                                </div>
-                            </div>
+                        {step === 1 && (
+                            <form onSubmit={handleSaveDetails} className="wizard-form">
+                                <div className="scrollable-inputs">
+                                    <h4 className="form-section-title">Personal Info</h4>
+                                    <div className="register-row">
+                                        <div className="form-group-clean">
+                                            <label>First Name</label>
+                                            <input type="text" required value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jane" />
+                                        </div>
+                                        <div className="form-group-clean">
+                                            <label>Last Name</label>
+                                            <input type="text" required value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Doe" />
+                                        </div>
+                                    </div>
 
-                            <h4 style={{ marginTop: '1.5rem', marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Academic Details</h4>
-                            <div className="form-group-clean">
-                                <label>University</label>
-                                <select
-                                    required
-                                    value={university}
-                                    onChange={e => setUniversity(e.target.value)}
-                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }}
-                                >
-                                    <option value="">Select your university...</option>
-                                    {sriLankaUniversities.map((uni, idx) => (
-                                        <option key={idx} value={uni}>{uni}</option>
-                                    ))}
-                                </select>
-                            </div>
+                                    <div className="register-row">
+                                        <div className="form-group-clean">
+                                            <label>NIC No.</label>
+                                            <input type="text" required value={nic} onChange={e => setNic(e.target.value)} />
+                                        </div>
+                                        <div className="form-group-clean">
+                                            <label>Phone Number</label>
+                                            <input type="text" required value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="+94..." />
+                                        </div>
+                                    </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-                                <div className="form-group-clean">
-                                    <label>Course / Major</label>
-                                    {!isCustomCourse ? (
+                                    <h4 className="form-section-title">Academic Details</h4>
+                                    <div className="form-group-clean">
+                                        <label>University</label>
                                         <select
                                             required
-                                            disabled={!university}
-                                            value={course}
-                                            onChange={e => {
-                                                if (e.target.value === 'Other') {
-                                                    setIsCustomCourse(true);
-                                                    setCourse('');
-                                                } else {
-                                                    setCourse(e.target.value);
-                                                }
-                                            }}
-                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', background: !university ? '#F3F4F6' : 'white' }}
+                                            value={university}
+                                            onChange={e => setUniversity(e.target.value)}
+                                            className="form-select-register"
                                         >
-                                            <option value="">{university ? "Select Course..." : "Select University First"}</option>
-                                            {availableCourses.map((c, i) => <option key={i} value={c}>{c}</option>)}
-                                            <option value="Other">Other / Not Listed</option>
+                                            <option value="">Select your university...</option>
+                                            {sriLankaUniversities.map((uni, idx) => (
+                                                <option key={idx} value={uni}>{uni}</option>
+                                            ))}
                                         </select>
-                                    ) : (
-                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={course}
-                                                onChange={e => setCourse(e.target.value)}
-                                                placeholder="Enter Course name manually..."
-                                                style={{ flex: 1 }}
-                                                autoFocus
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => { setIsCustomCourse(false); setCourse(''); }}
-                                                style={{ background: '#FECACA', color: '#DC2626', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}
-                                                title="Back to list"
-                                            >
-                                                ✕
-                                            </button>
+                                    </div>
+
+                                    <div className="register-row course-row">
+                                        <div className="form-group-clean" style={{ flex: 2 }}>
+                                            <label>Course / Major</label>
+                                            {!isCustomCourse ? (
+                                                <select
+                                                    required
+                                                    disabled={!university}
+                                                    value={course}
+                                                    onChange={e => {
+                                                        if (e.target.value === 'Other') {
+                                                            setIsCustomCourse(true);
+                                                            setCourse('');
+                                                        } else {
+                                                            setCourse(e.target.value);
+                                                        }
+                                                    }}
+                                                    className="form-select-register"
+                                                    style={{ background: !university ? '#F3F4F6' : 'white' }}
+                                                >
+                                                    <option value="">{university ? "Select Course..." : "Select University First"}</option>
+                                                    {availableCourses.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                                                    <option value="Other">Other / Not Listed</option>
+                                                </select>
+                                            ) : (
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={course}
+                                                        onChange={e => setCourse(e.target.value)}
+                                                        placeholder="Enter Course name..."
+                                                        style={{ flex: 1 }}
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setIsCustomCourse(false); setCourse(''); }}
+                                                        className="btn-reset-course"
+                                                        title="Back to list"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                        <div className="form-group-clean" style={{ flex: 1 }}>
+                                            <label>Student ID</label>
+                                            <input type="text" required value={studentId} onChange={e => setStudentId(e.target.value)} />
+                                        </div>
+                                    </div>
+
+                                    <h4 className="form-section-title">Security</h4>
+                                    <div className="form-group-clean">
+                                        <label>Email</label>
+                                        <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@example.com" />
+                                    </div>
+                                    <div className="form-group-clean">
+                                        <label>Password</label>
+                                        <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" minLength={6} />
+                                    </div>
                                 </div>
-                                <div className="form-group-clean">
-                                    <label>Student ID</label>
-                                    <input type="text" required value={studentId} onChange={e => setStudentId(e.target.value)} />
+
+                                <div className="wizard-actions">
+                                    <button type="button" onClick={() => navigate('/login')} className="btn-cancel">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="btn-modern-primary btn-register-next" disabled={loading}>
+                                        {loading ? 'Processing...' : 'Next Step →'}
+                                    </button>
                                 </div>
-                            </div>
+                            </form>
+                        )}
 
-                            <h4 style={{ marginTop: '1.5rem', marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Account Security</h4>
-                            <div className="form-group-clean">
-                                <label>Email Address</label>
-                                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="jane@example.com" />
-                            </div>
-                            <div className="form-group-clean">
-                                <label>Password</label>
-                                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" minLength={6} />
-                            </div>
-
-                            <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', alignItems: 'center' }}>
-                                <button type="button" onClick={() => navigate('/login')} style={{ border: 'none', background: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 600 }}>
-                                    Cancel
-                                </button>
-                                <button type="submit" className="btn-modern-primary" disabled={loading} style={{ width: 'auto', paddingLeft: '2rem', paddingRight: '2rem' }}>
-                                    {loading ? 'Processing...' : 'Next Step →'}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-
-                    {step === 2 && (
-                        <OtpVerification
-                            phoneNumber={phoneNumber}
-                            onBack={() => setStep(1)}
-                            onSuccess={(otpCode) => handleVerifyAndRegister(otpCode)}
-                        />
-                    )}
+                        {step === 2 && (
+                            <OtpVerification
+                                phoneNumber={phoneNumber}
+                                onBack={() => setStep(1)}
+                                onSuccess={(otpCode) => handleVerifyAndRegister(otpCode)}
+                            />
+                        )}
+                    </div>
                 </div>
+
+                <style>{`
+                /* --- Desktop & Shared Styles --- */
+                .register-card-wizard {
+                    width: 100%;
+                    max-width: 600px;
+                    background: white;
+                    border-radius: 20px;
+                    padding: 2.5rem;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                    display: flex;
+                    flex-direction: column;
+                    height: auto;
+                    max-height: 90vh;
+                }
+
+                .scrollable-inputs {
+                    overflow-y: auto;
+                    padding-right: 5px;
+                    max-height: 60vh; /* Prevent overly tall forms on desktop */
+                }
+
+                .register-row {
+                    display: flex;
+                    gap: 1.5rem;
+                    margin-bottom: 0.5rem;
+                }
+                
+                .register-row .form-group-clean {
+                    flex: 1;
+                }
+
+                .form-section-title {
+                    margin: 1.5rem 0 1rem 0;
+                    color: var(--primary);
+                    font-size: 0.85rem;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    font-weight: 700;
+                    border-bottom: 2px solid #F3F4F6;
+                    padding-bottom: 0.5rem;
+                }
+                .form-section-title:first-child { margin-top: 0; }
+
+                .form-select-register {
+                    width: 100%;
+                    padding: 14px;
+                    border-radius: 12px;
+                    border: 1px solid var(--border-light);
+                    background-color: #F9FAFB;
+                    font-size: 1rem;
+                    font-family: inherit;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .form-select-register:focus {
+                    border-color: var(--primary);
+                    background-color: white;
+                    outline: none;
+                }
+
+                .wizard-actions {
+                    margin-top: 2rem;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border-top: 1px solid var(--border-light);
+                    padding-top: 1.5rem;
+                }
+
+                .btn-cancel {
+                    background: none;
+                    border: none;
+                    color: var(--text-secondary);
+                    font-weight: 600;
+                    cursor: pointer;
+                    font-size: 1rem;
+                }
+
+                .btn-register-next {
+                    width: auto;
+                    padding: 0.8rem 2rem;
+                    font-size: 1rem;
+                }
+
+                .btn-reset-course {
+                    background: #FECACA;
+                    color: #DC2626;
+                    border: none;
+                    border-radius: 50%;
+                    width: 30px;
+                    height: 30px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                /* Wizard Progress Interface */
+                .wizard-progress {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 2rem;
+                }
+                .wizard-step {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: var(--text-secondary);
+                    font-size: 0.85rem;
+                    font-weight: 500;
+                }
+                .wizard-step.active {
+                    color: var(--primary);
+                    font-weight: 700;
+                }
+                .wizard-step .step-icon {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    background: #F3F4F6;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    transition: all 0.3s;
+                }
+                .wizard-step.active .step-icon {
+                    background: var(--primary);
+                    color: white;
+                    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+                }
+                .wizard-line {
+                    height: 2px;
+                    width: 60px;
+                    background: #E5E7EB;
+                    margin: 0 1rem;
+                    margin-bottom: 1.2rem; /* Align with icon center roughly */
+                }
+
+                .mobile-wizard-header { display: none; }
+                .desktop-only-header { display: block; }
+
+                /* --- Mobile Optimization (Premium Wizard) --- */
+                @media (max-width: 768px) {
+                    .login-page-wrapper {
+                        background: var(--surface-color); /* No split background */
+                    }
+                    
+                    /* Hide Hero completely */
+                    .register-hero { display: none !important; }
+
+                    /* Full-screen Form Section */
+                    .register-form-section {
+                        padding: 0;
+                        align-items: flex-start;
+                        background: white;
+                    }
+
+                    .register-card-wizard {
+                        box-shadow: none;
+                        max-width: 100%;
+                        height: 100vh;
+                        border-radius: 0;
+                        display: flex;
+                        flex-direction: column;
+                        padding: 0;
+                    }
+
+                    /* Custom Mobile Header */
+                    .mobile-wizard-header {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        padding: 1.5rem 1rem 0 1rem;
+                        background: white;
+                    }
+                    .mobile-wizard-header .brand-gradient {
+                        font-size: 1.5rem;
+                        font-weight: 800;
+                    }
+                    .mobile-wizard-header p {
+                        font-size: 0.9rem;
+                        color: var(--text-secondary);
+                        margin: 0;
+                    }
+                    
+                    .desktop-only-header { display: none; }
+
+                    .wizard-progress {
+                        margin: 1rem 0;
+                        padding-bottom: 1rem;
+                        border-bottom: 1px solid #F3F4F6;
+                    }
+
+                    .wizard-content {
+                        flex: 1;
+                        padding: 0 1.5rem;
+                        overflow-y: hidden; /* Scroll handled by scrollable-inputs */
+                        display: flex;
+                        flex-direction: column;
+                    }
+
+                    .wizard-form {
+                        display: flex;
+                        flex-direction: column;
+                        height: 100%;
+                    }
+
+                    .scrollable-inputs {
+                        flex: 1;
+                        padding-bottom: 80px; /* Space for fixed bottom bar */
+                        overflow-y: auto;
+                    }
+
+                    /* Stack grids */
+                    .register-row {
+                        flex-direction: column;
+                        gap: 0;
+                    }
+                    
+                    .register-row .form-group-clean {
+                        margin-bottom: 1.25rem;
+                    }
+
+                    /* Large Inputs for Touch */
+                    .form-group-clean input,
+                    .form-select-register {
+                        padding: 1rem;
+                        font-size: 1rem;
+                        background-color: #F8FAFC;
+                        border: 1px solid #E2E8F0;
+                    }
+                    .form-group-clean label {
+                        font-size: 0.85rem;
+                        margin-bottom: 0.4rem;
+                    }
+
+                    /* Fixed Bottom Actions Bar */
+                    .wizard-actions {
+                        position: fixed;
+                        bottom: 0;
+                        left: 0;
+                        width: 100%;
+                        background: white;
+                        border-top: 1px solid #E5E7EB;
+                        padding: 1rem 1.5rem;
+                        /* Safe area for iPhone home bar handled by padding-bottom on container usually, 
+                           but fixed elements need env() */
+                        padding-bottom: env(safe-area-inset-bottom, 1rem); 
+                        z-index: 50;
+                        justify-content: space-between;
+                        gap: 1rem;
+                    }
+
+                    .btn-register-next {
+                        flex: 1;
+                        border-radius: 50px; /* Pill shape */
+                        padding: 1rem;
+                    }
+                    
+                    .btn-cancel {
+                        padding: 1rem;
+                    }
+                }
+                `}</style>
             </div>
         </div>
     );

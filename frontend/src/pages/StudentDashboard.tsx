@@ -536,7 +536,7 @@ function StudentDashboard() {
     };
 
     return (
-        <div className="dashboard-container" style={{ maxWidth: '1400px', padding: '2rem', marginTop: '1rem' }}>
+        <div className="dashboard-container dashboard-page-container">
             <ChatWidget
                 isOpen={chatOpen}
                 onClose={() => setChatOpen(false)}

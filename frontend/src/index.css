@@ -39,7 +39,7 @@
   /* Soft Blue */
   --calendar-today-text: #1e40af;
   /* Dark Blue Text */
-
+  --calendar-empty-bg: #F9FAFB;
 }
 
 body.dark-mode {
@@ -59,7 +59,7 @@ body.dark-mode {
   /* Deep Blue */
   --calendar-today-text: #bfdbfe;
   /* Light Blue Text */
-
+  --calendar-empty-bg: #111827;
 }
 
 .navbar {
@@ -126,6 +126,51 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+/* --- Mobile Core Utilities --- */
+
+/* Safe Area Padding for iPhone Home Bar */
+.mobile-safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+/* Base class for mobile page containers */
+.mobile-page-container {
+  padding: 1rem;
+  padding-bottom: 80px;
+  /* Space for bottom nav */
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Mobile Typography Adjustments */
+@media (max-width: 768px) {
+  html {
+    font-size: 16px;
+    /* Base size */
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  /* Buttons min-height for touch targets */
+  button,
+  .btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}
+
 
 /* --- Layout: Login Split Screen --- */
 .login-page-wrapper {
@@ -196,6 +241,44 @@ body {
   padding: 2rem;
 }
 
+/* Options Row */
+.form-options {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.checkbox-container input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
+.forgot-password {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+  color: var(--primary-dark);
+}
+
 /* Mobile Brand Header (Default hidden) */
 @media (min-width: 901px) {
   .mobile-brand-header {
@@ -205,78 +288,96 @@ body {
 
 @media (max-width: 768px) {
 
-  /* Mobile Layout: Card on Split Background */
+  /* Hide Hero Section on Mobile (New Requirement) */
   .login-page-wrapper {
     flex-direction: column;
-    height: 100dvh;
-    /* Dynamic viewport height */
+    height: 100vh;
     width: 100vw;
-    background: #F8FAFC;
-    overflow: hidden;
-    /* STRICTLY NO SCROLLING */
-    position: fixed;
-    /* Force fix to screen */
-    top: 0;
-    left: 0;
+    background: var(--surface-color);
+    /* Was gradient, now white/surface for clean look */
   }
 
-  /* The Big Background Box (Half Page) */
-  .login-page-wrapper::before {
-    content: '';
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 55vh;
-    /* Taller to eliminate gap */
-    background:
-      radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
-      radial-gradient(circle at 0% 100%, rgba(255, 255, 255, 0.1) 0%, transparent 40%),
-      linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-    border-radius: 30px 30px 0 0;
-    z-index: 1;
-  }
-
-  /* Hide Desktop Elements */
-  .login-hero-section,
-  .mobile-brand-header,
-  .login-header {
+  .login-hero-section {
     display: none !important;
   }
 
-  /* Wrapper for the Card */
   .login-form-section {
-    width: 100%;
-    height: 100dvh;
-    padding: 1rem;
-    padding-bottom: 0 !important;
-    /* Force touch bottom */
-    background: transparent;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    /* Align bottom to connect with background */
     position: relative;
-    z-index: 2;
+    height: 100%;
+    width: 100%;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
   }
 
-  /* The "One Box" Card */
-  .login-card-clean {
-    background: white;
-    width: 100%;
-    max-width: 360px;
-    border-radius: 20px 20px 0 0;
-    /* Flat bottom for docking */
-    padding: 2.5rem 2rem;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  .hero-content {
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
 
+  .hero-title {
+    line-height: 1;
+    margin-bottom: 0;
+  }
+
+  .hero-welcome {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-bottom: 0;
+  }
+
+  .hero-brand {
+    display: block;
+    font-size: 3.4rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-top: -4px;
+    /* Pull tighter */
+  }
+
+  .hero-subtitle {
+    display: none !important;
+  }
+
+  /* Hide Desktop-specific headers in form */
+  /* Show Header on Mobile */
+  /* Header Adjustments */
+  .login-header {
+    display: block !important;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .mobile-brand-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+
+
+
+
+  /* The "One Box" Card - Reset for Mobile */
+  .login-card-clean {
+    background: transparent;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+    padding: 0;
+    /* Remove internal card padding */
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     margin: 0;
-    /* Remove margins */
-    margin-bottom: 0 !important;
-    /* Dock to very bottom */
   }
 
   /* Welcome Header INSIDE the Card */
@@ -337,44 +438,28 @@ body {
     box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
   }
 
-  /* Options Row */
-  .form-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    font-size: 0.85rem;
+
+
+  /* Hide Demo Credentials on Mobile */
+  .demo-credentials-clean {
+    display: none !important;
   }
 
-  .checkbox-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-  }
-
-  .checkbox-container input {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--primary);
-  }
-
-  .forgot-password {
-    color: var(--primary);
-    font-weight: 600;
-    text-decoration: none;
-  }
-
-  /* Buttons */
+  /* Buttons - Smaller for Mobile */
   .btn-modern-primary {
     background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-    width: 100%;
-    padding: 1rem;
+    width: 80%;
+    /* Reduced from 100% */
+    padding: 0.8rem;
+    /* Reduced padding */
     border-radius: 50px;
-    font-size: 1rem;
+    font-size: 0.9rem;
+    /* Smaller text */
     font-weight: 700;
     margin-top: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
     color: white;
     box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
   }
@@ -382,6 +467,16 @@ body {
   /* Ensure tight spacing on mobile form */
   .login-form-section form {
     margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Center the buttons */
+    width: 100%;
+  }
+
+  .form-group-clean {
+    width: 100%;
+    /* Inputs still full width */
   }
 
   .register-callout {
@@ -389,39 +484,31 @@ body {
     padding: 0 !important;
     text-align: center;
     border: none;
+    width: 100%;
   }
 
-  .register-callout p {
-    display: inline-block;
-    color: var(--text-secondary);
-    margin: 0 !important;
-    /* Remove paragraph default margin */
-    margin-right: 5px !important;
-    font-size: 0.9rem;
-  }
-
-  .btn-modern-outline {
-    border: none;
+  .create-account-link {
     background: none;
+    border: none;
     color: var(--primary);
-    font-weight: 700;
-    padding: 0;
-    margin: 0;
-    display: inline-block;
-    width: auto;
+    font-weight: 600;
     font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 0;
+    margin-top: 0.5rem;
+    display: inline-block;
   }
 
-  .demo-credentials-clean {
-    display: none;
+  .create-account-link:hover {
+    text-decoration: underline;
   }
 }
 
 /* Fix for desktop to ignore mobile elements */
 @media (min-width: 769px) {
 
-  .mobile-welcome-header,
-  .form-options {
+  .mobile-welcome-header {
     display: none;
   }
 }
@@ -539,6 +626,36 @@ body {
   box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
+/* Password Input Wrapper */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  padding-right: 40px;
+  /* Space for eye icon */
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  color: var(--primary);
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -564,50 +681,7 @@ body {
   align-items: center;
   justify-content: center;
   color: white;
-  padding: 4rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.hero-content {
-  z-index: 2;
-  max-width: 500px;
-}
-
-.hero-title {
-  font-size: 3.5rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  line-height: 1.1;
-}
-
-.hero-subtitle {
-  font-size: 1.25rem;
-  opacity: 0.9;
-  line-height: 1.6;
-}
-
-/* Abstract shapes */
-.hero-shapes::before {
-  content: '';
-  position: absolute;
-  top: -10%;
-  right: -10%;
-  width: 400px;
-  height: 400px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-}
-
-.hero-shapes::after {
-  content: '';
-  position: absolute;
-  bottom: -5%;
-  left: -5%;
-  width: 300px;
-  height: 300px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
+  justify-content: center;
 }
 
 .login-form-section {
@@ -779,11 +853,11 @@ body {
 }
 
 .register-callout {
-  margin-top: 3rem;
+  margin-top: 1rem;
   text-align: center;
   border-top: none;
   /* Removed horizontal line */
-  padding-top: 2rem;
+  padding-top: 0rem;
 }
 
 .btn-modern-outline {
@@ -1640,6 +1714,214 @@ body.dark-mode .sidebar .search-group label {
   .main-content {
     margin-left: 0;
     padding: 1.5rem;
+    /* Ensure consistent padding */
+    padding-right: 1.5rem;
+    /* Explicitly enforce right padding */
+    padding-left: 1.5rem;
+    /* Explicitly enforce left padding */
+    width: 100%;
+    box-sizing: border-box;
+    /* Prevent overflow */
+  }
+
+  .mobile-page-container {
+    padding: 1.5rem;
+    /* Increased from 1rem */
+    padding-bottom: 80px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .site-footer {
+    margin-left: 0;
+    height: auto;
+    padding: 1.5rem;
+  }
+}
+
+/* Restored Login Header Styles */
+.login-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+.login-header p {
+  color: var(--text-secondary);
+  margin-bottom: 2.5rem;
+}
+
+
+.footer-bottom {
+  border-top: none;
+  padding-top: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Source Badges */
+.badge-source {
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.source-db {
+  background-color: #dbeafe;
+  /* Light Blue */
+  color: #1e40af;
+  /* Dark Blue */
+  border: 1px solid #bfdbfe;
+}
+
+.source-web {
+  background-color: #fae8ff;
+  /* Light Fuchsia */
+  color: #86198f;
+  /* Dark Fuchsia */
+  border: 1px solid #f5d0fe;
+}
+
+/* --- Professional Dashboard Grid Layout --- */
+
+/* 1. Header (Fixed Top) */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  z-index: 1001;
+  /* Highest priority */
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+}
+
+/* 2. Sidebar (Fixed Left, Below Header) */
+/* 2. Sidebar (Fixed Left, Below Header) */
+.sidebar {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background-color: white;
+  border-right: 1px solid var(--border-light);
+  padding: 1.5rem;
+  overflow-y: auto;
+  z-index: 1000;
+  /* Remove floating card styles */
+  box-shadow: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 3. Layout Wrapper for Main Content */
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-top: 64px;
+  /* Clear Header */
+  background-color: var(--bg-color);
+}
+
+/* Sidebar Dimensions ("Big Size") */
+.sidebar .search-group {
+  margin-bottom: 0;
+}
+
+.sidebar .search-group label {
+  font-size: 0.85rem;
+  /* Increased legibility */
+  color: var(--text-main);
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.sidebar .form-input,
+.sidebar .form-select {
+  padding: 0.875rem;
+  /* Larger touch target */
+  font-size: 1rem;
+  width: 100%;
+  /* Ensure they fill the expanded sidebar */
+}
+
+/* Big Notepad Search */
+.sidebar textarea.form-input {
+  min-height: 160px;
+  resize: vertical;
+}
+
+.sidebar .btn-search {
+  width: 100%;
+}
+
+/* Dark Mode Sidebar Text Overrides */
+body.dark-mode .sidebar-title {
+  color: #E5E7EB;
+  /* Light gray for title */
+}
+
+body.dark-mode .sidebar .search-group label {
+  color: #D1D5DB;
+  /* Slightly darker gray for labels */
+}
+
+/* 4. Main Content Area (Pushed by Sidebar) */
+.main-content {
+  margin-left: 280px;
+  /* Exact width of sidebar */
+  padding: 2rem;
+  flex-grow: 1;
+  /* Pushes footer down */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* Prevention flex overflow */
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 1000px) {
+  .sidebar {
+    position: fixed;
+    /* Keep fixed or change to overlay? Let's keep distinct for now or hide */
+    transform: translateX(-100%);
+    /* Hide off-screen by default on mobile? */
+    transition: transform 0.3s;
+    /* For simple fix: Static */
+    position: static;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+    transform: none;
+    z-index: 1;
+  }
+
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+
+  .main-content {
+    margin-left: 0;
+    padding: 1.5rem;
   }
 
   .site-footer {
@@ -1666,5 +1948,73 @@ body.dark-mode .sidebar .search-group label {
 @media (max-width: 900px) {
   .desktop-only {
     display: none !important;
+  }
+}
+
+/* Password Toggle Styles */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: var(--primary);
+}
+
+/* --- Desktop/Mobile Visibility Utilities --- */
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none !important;
+  }
+
+  /* Desktop Secondary Button */
+  .btn-modern-secondary {
+    display: block;
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    background: white;
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-modern-secondary:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-2px);
+    background: var(--bg-hover, #f8fafc);
+  }
+
+  .auth-switch-text {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
   }
 }

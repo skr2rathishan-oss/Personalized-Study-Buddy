@@ -69,11 +69,12 @@ function UserManagement() {
     if (loading) return <div className="loading-spinner">Loading Users...</div>;
 
     return (
-        <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem' }}>
+        <div className="dashboard-container dashboard-page-container animate-fade-in">
             <h1 className="section-title">User Management</h1>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>View and manage registered users.</p>
 
-            <div className="users-table-container">
+            {/* Desktop Table View */}
+            <div className="users-table-container desktop-view">
                 <table className="users-table">
                     <thead>
                         <tr>
@@ -129,6 +130,63 @@ function UserManagement() {
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card List View */}
+            <div className="mobile-view mobile-card-list">
+                {users.map(user => (
+                    <div key={user.id} className="mobile-user-card">
+                        <div className="mobile-card-header">
+                            <div className="user-info">
+                                <h3>{user.first_name || user.username} {user.last_name}</h3>
+                                <span className="user-email">{user.username}</span>
+                            </div>
+                            <span className={`badge badge-${user.role}`}>{user.role}</span>
+                        </div>
+
+                        <div className="mobile-card-details">
+                            <div className="detail-row">
+                                <span className="label">ID:</span>
+                                <span className="value">#{user.id}</span>
+                            </div>
+                            {user.student_id && (
+                                <div className="detail-row">
+                                    <span className="label">Student ID:</span>
+                                    <span className="value">{user.student_id}</span>
+                                </div>
+                            )}
+                            <div className="detail-row">
+                                <span className="label">University:</span>
+                                <span className="value">{user.university || '-'}</span>
+                            </div>
+                            <div className="detail-row">
+                                <span className="label">Course:</span>
+                                <span className="value">{user.course || '-'}</span>
+                            </div>
+                        </div>
+
+                        <div className="mobile-card-actions">
+                            {user.role === 'student' && (
+                                <button
+                                    className="btn-promote mobile-btn"
+                                    onClick={() => handlePromote(user.id)}
+                                    disabled={actionLoading === user.id}
+                                >
+                                    {actionLoading === user.id ? '...' : 'Promote'}
+                                </button>
+                            )}
+                            {user.role === 'admin' && (
+                                <button
+                                    className="btn-demote mobile-btn"
+                                    onClick={() => handleDemote(user.id)}
+                                    disabled={actionLoading === user.id}
+                                >
+                                    {actionLoading === user.id ? '...' : 'Demote'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ))}
             </div>
 
             <style>{`
@@ -187,13 +245,8 @@ function UserManagement() {
                 width: 140px;
                 text-align: center;
             }
-            .btn-promote:hover {
-                background: #059669;
-            }
-            .btn-promote:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-            }
+            .btn-promote:hover { background: #059669; }
+            .btn-promote:disabled { opacity: 0.5; cursor: not-allowed; }
 
             .btn-demote {
                 background: #EF4444;
@@ -208,18 +261,72 @@ function UserManagement() {
                 width: 140px;
                 text-align: center;
             }
-            .btn-demote:hover {
-                background: #DC2626;
-            }
-            .btn-demote:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-            }
+            .btn-demote:hover { background: #DC2626; }
+            .btn-demote:disabled { opacity: 0.5; cursor: not-allowed; }
 
             /* Dark Mode Badge Overrides */
             :global(body.dark-mode) .badge-student { background: rgba(67, 56, 202, 0.2); color: #818cf8; border: 1px solid rgba(67, 56, 202, 0.3); }
             :global(body.dark-mode) .badge-admin { background: rgba(185, 28, 28, 0.2); color: #f87171; border: 1px solid rgba(185, 28, 28, 0.3); }
             :global(body.dark-mode) .badge-management { background: rgba(180, 83, 9, 0.2); color: #fbbf24; border: 1px solid rgba(180, 83, 9, 0.3); }
+
+            /* Responsive Views */
+            .mobile-view { display: none; }
+            .desktop-view { display: block; }
+
+            @media (max-width: 768px) {
+                .desktop-view { display: none; }
+                .mobile-view { display: flex; flex-direction: column; gap: 1rem; }
+                
+                .mobile-user-card {
+                    background: var(--surface-color);
+                    border-radius: 12px;
+                    padding: 1rem;
+                    border: 1px solid var(--border-light);
+                    box-shadow: var(--shadow-sm);
+                }
+
+                .mobile-card-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 0.75rem;
+                    padding-bottom: 0.75rem;
+                    border-bottom: 1px solid var(--border-light);
+                }
+
+                .user-info h3 {
+                    margin: 0;
+                    font-size: 1rem;
+                    color: var(--text-main);
+                }
+                .user-email {
+                    font-size: 0.8rem;
+                    color: var(--text-secondary);
+                }
+
+                .mobile-card-details {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 0.5rem;
+                    font-size: 0.85rem;
+                    margin-bottom: 1rem;
+                }
+                .detail-row {
+                    display: flex;
+                    flex-direction: column;
+                }
+                .label { font-size: 0.75rem; color: var(--text-secondary); }
+                .value { color: var(--text-main); font-weight: 500; }
+
+                .mobile-card-actions {
+                    display: flex;
+                    justify-content: flex-end;
+                }
+                .mobile-btn {
+                    width: 100%;
+                    padding: 8px;
+                }
+            }
             `}</style>
         </div>
     );

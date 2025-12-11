@@ -1,7 +1,9 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
 const api = axios.create({
+
     baseURL: `http://${window.location.hostname}:5000`,
+
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {

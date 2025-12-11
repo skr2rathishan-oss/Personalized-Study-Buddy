@@ -1,6 +1,6 @@
 function PersonalTracking() {
     return (
-        <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem' }}>
+        <div className="dashboard-container dashboard-page-container animate-fade-in">
             <h1 className="section-title">Personal Tracking</h1>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Track your learning progress and goals.</p>
 
@@ -70,6 +70,8 @@ function PersonalTracking() {
             </div>
 
             <style>{`
+                /* Global container override handled by dashboard-page-container */
+                
                 .tracking-grid {
                     display: grid;
                     grid-template-columns: repeat(2, 1fr);
@@ -121,6 +123,29 @@ function PersonalTracking() {
                 .goals-list { list-style: none; padding: 0; }
                 .goals-list li { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border-light); }
                 .goals-list li:last-child { border-bottom: none; }
+
+                @media (max-width: 768px) {
+                    .dashboard-page-container {
+                        margin-top: 80px;
+                        padding-top: 1rem;
+                    }
+                    .tracking-grid {
+                        grid-template-columns: 1fr;
+                        gap: 1rem;
+                    }
+                    .full-width {
+                        grid-column: auto;
+                    }
+                    .tracking-card {
+                        padding: 1rem;
+                    }
+                    .chart-placeholder {
+                        gap: 4px; /* Tighter bars */
+                    }
+                    .day-label {
+                        font-size: 0.7rem;
+                    }
+                }
             `}</style>
         </div>
     );
