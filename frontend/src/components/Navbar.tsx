@@ -59,9 +59,21 @@ function Navbar() {
 
     // Theme State Removed
 
-    const handleLogout = () => {
+    const handleLogout = (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+        }
+        setShowMenu(false); // Ensure menu closes
         localStorage.clear();
         navigate('/login');
+    };
+
+    const handleLinkClick = (path: string, e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+        }
+        setShowMenu(false);
+        navigate(path);
     };
 
     // Close menu when clicking outside
@@ -270,27 +282,27 @@ function Navbar() {
 
                             {/* Mobile Only Menu Items */}
                             <div className="mobile-only-menu">
-                                <div className="menu-item" onClick={() => navigate('/')}>🏠 Home</div>
-                                <div className="menu-item" onClick={() => navigate('/calendar')}>📅 Calendar</div>
-                                {role === 'student' && <div className="menu-item" onClick={() => navigate('/tracking')}>📈 Progress</div>}
-                                <div className="menu-item" onClick={() => navigate('/history')}>🕒 History</div>
-                                <div className="menu-item" onClick={() => setDarkMode(!darkMode)}>
+                                <div className="menu-item" onClick={(e) => handleLinkClick('/', e)}>🏠 Home</div>
+                                <div className="menu-item" onClick={(e) => handleLinkClick('/calendar', e)}>📅 Calendar</div>
+                                {role === 'student' && <div className="menu-item" onClick={(e) => handleLinkClick('/tracking', e)}>📈 Progress</div>}
+                                <div className="menu-item" onClick={(e) => handleLinkClick('/history', e)}>🕒 History</div>
+                                <div className="menu-item" onClick={() => { setShowMenu(false); setDarkMode(!darkMode); }}>
                                     {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
                                 </div>
                                 <div style={{ height: '1px', background: '#f1f5f9', margin: '0.5rem 0' }}></div>
                             </div>
 
-                            <div className="menu-item" onClick={() => navigate('/profile')}>
+                            <div className="menu-item" onClick={(e) => handleLinkClick('/profile', e)}>
                                 <span style={{ marginRight: '8px' }}>👤</span> Profile
                             </div>
-                            <div className="menu-item" onClick={() => navigate('/settings')}>
+                            <div className="menu-item" onClick={(e) => handleLinkClick('/settings', e)}>
                                 <span style={{ marginRight: '8px' }}>⚙️</span> Settings
                             </div>
 
                             {(role === 'admin' || role === 'management') && (
                                 <>
                                     <div style={{ height: '1px', background: '#f1f5f9', margin: '0.5rem 0' }}></div>
-                                    <div className="menu-item" onClick={() => navigate('/admin')}>
+                                    <div className="menu-item" onClick={(e) => handleLinkClick('/admin', e)}>
                                         {role === 'management' ? 'Management Dashboard' : 'Admin Dashboard'}
                                     </div>
                                 </>
@@ -322,35 +334,8 @@ function Navbar() {
                 </div>
             </div>
 
-            {/* Mobile Bottom Navigation Bar - Enhanced */}
-            <div className="mobile-bottom-nav">
-                <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
-                    <div className="icon">🏠</div>
-                    <span>Home</span>
-                </Link>
-                <Link to="/calendar" className={`mobile-nav-item ${location.pathname === '/calendar' ? 'active' : ''}`}>
-                    <div className="icon">📅</div>
-                    <span>Calendar</span>
-                </Link>
-                {role === 'student' && (
-                    <Link to="/tracking" className={`mobile-nav-item ${location.pathname === '/tracking' ? 'active' : ''}`}>
-                        <div className="icon">📈</div>
-                        <span>Track</span>
-                    </Link>
-                )}
-                <div className="mobile-nav-item" onClick={() => setShowMenu(!showMenu)}>
-                    <div className="icon">
-                        <div style={{
-                            width: '24px', height: '24px', borderRadius: '50%',
-                            background: profileImage ? `url(${profileImage}) no-repeat center/cover` : 'linear-gradient(135deg, #6366f1, #ec4899)',
-                            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem'
-                        }}>
-                            {!profileImage && (username ? username[0].toUpperCase() : 'U')}
-                        </div>
-                    </div>
-                    <span>Menu</span>
-                </div>
-            </div>
+
+
 
             <style>{`
                 .nav-icons-desktop {
@@ -359,28 +344,7 @@ function Navbar() {
                     gap: 1.2rem;
                 }
 
-                .mobile-bottom-nav {
-                    display: none;
-                    position: fixed;
-                    bottom: 0;
-                    left: 0;
-                    width: 100%;
-                    background: rgba(255, 255, 255, 0.9); /* Glassmorphism base */
-                    backdrop-filter: blur(10px);
-                    -webkit-backdrop-filter: blur(10px);
-                    border-top: 1px solid rgba(226, 232, 240, 0.8);
-                    padding: 0.5rem 1rem;
-                    padding-bottom: env(safe-area-inset-bottom, 1rem); /* Safe area */
-                    justify-content: space-around;
-                    align-items: center;
-                    z-index: 1000;
-                    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-                }
-                
-                body.dark-mode .mobile-bottom-nav {
-                    background: rgba(31, 41, 55, 0.9);
-                    border-top: 1px solid rgba(55, 65, 81, 0.8);
-                }
+
 
                 .mobile-nav-item {
                     display: flex;
@@ -444,13 +408,7 @@ function Navbar() {
                     .nav-icons-desktop {
                         display: none;
                     }
-                    .mobile-bottom-nav {
-                        display: flex;
-                    }
-                    /* Ensure main content doesn't get hidden behind bottom nav */
-                    body {
-                        padding-bottom: 70px; 
-                    }
+
                     .mobile-only-menu {
                         display: block;
                     }

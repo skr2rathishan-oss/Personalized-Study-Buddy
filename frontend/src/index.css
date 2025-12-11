@@ -39,7 +39,7 @@
   /* Soft Blue */
   --calendar-today-text: #1e40af;
   /* Dark Blue Text */
-
+  --calendar-empty-bg: #F9FAFB;
 }
 
 body.dark-mode {
@@ -59,7 +59,7 @@ body.dark-mode {
   /* Deep Blue */
   --calendar-today-text: #bfdbfe;
   /* Light Blue Text */
-
+  --calendar-empty-bg: #111827;
 }
 
 .navbar {

@@ -75,7 +75,7 @@ function History() {
                                 </div>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                                    className="btn-delete-card mobile-hidden" /* Hidden here on mobile, moved to end */
+                                    className="btn-delete-card desktop-only"
                                     title="Remove"
                                 >
                                     ✕
@@ -97,7 +97,6 @@ function History() {
                                 onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
                                 className="btn-delete-card mobile-only-delete"
                                 title="Remove"
-                                style={{ display: 'none' }} /* Handle via CSS media query if possible or inline style replacement */
                             >
                                 ✕
                             </button>
@@ -185,6 +184,8 @@ function History() {
                     opacity: 0.6;
                 }
                 .btn-delete-card:hover { opacity: 1; background: #fee2e2; color: #ef4444; }
+                
+                .mobile-only-delete { display: none; }
 
                 .card-content-block {
                     margin-top: 1rem;
@@ -234,8 +235,12 @@ function History() {
                 }
                 .btn-view:hover { background: var(--primary); color: white; border-color: var(--primary); }
 
-                /* Mobile Compact List View */
                 @media (max-width: 768px) {
+                    .history-container {
+                         margin-top: 80px;
+                         padding-top: 1rem;
+                    }
+                    .desktop-only { display: none; }
                     .history-header {
                         flex-direction: column;
                         align-items: flex-start;
@@ -287,6 +292,12 @@ function History() {
                     .btn-delete-card {
                         position: static;
                         margin-left: auto;
+                    }
+                    
+                    .mobile-only-delete {
+                        display: block;
+                        font-size: 1.2rem;
+                        padding: 8px;
                     }
                 }
             `}</style>

@@ -22,11 +22,7 @@ function Login() {
             if (res.data.university) localStorage.setItem('university', res.data.university);
             if (res.data.university_course) localStorage.setItem('university_course', res.data.university_course);
 
-            if (res.data.role === 'admin' || res.data.role === 'management') {
-                navigate('/admin');
-            } else {
-                navigate('/');
-            }
+            navigate('/', { replace: true });
         } catch (err: any) {
             alert('Login failed: ' + (err.response?.data?.error || err.message));
         }

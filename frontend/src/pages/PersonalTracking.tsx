@@ -125,6 +125,10 @@ function PersonalTracking() {
                 .goals-list li:last-child { border-bottom: none; }
 
                 @media (max-width: 768px) {
+                    .dashboard-page-container {
+                        margin-top: 80px;
+                        padding-top: 1rem;
+                    }
                     .tracking-grid {
                         grid-template-columns: 1fr;
                         gap: 1rem;

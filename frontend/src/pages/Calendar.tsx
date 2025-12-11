@@ -61,11 +61,27 @@ function Calendar() {
     };
 
     const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newYear = parseInt(e.target.value);
-        if (!isNaN(newYear) && newYear > 1900 && newYear < 2100) {
-            setCurrentDate(new Date(newYear, month, 1));
+        const value = e.target.value;
+        if (value.length > 4) return; // Enforce 4 digit limit
+
+        const newYear = parseInt(value);
+        if (!isNaN(newYear)) {
+            // Only update if it's a valid year range or allow typing to continue until valid
+            // Ideally we accept typing but only trigger date change if valid
+            if (value.length === 4 && newYear > 1900 && newYear < 2100) {
+                setCurrentDate(new Date(newYear, month, 1));
+            }
         }
     };
+
+    const handleDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.value) {
+            setCurrentDate(new Date(e.target.value));
+        }
+    };
+
+
+
 
     return (
         <div className="dashboard-container animate-fade-in calendar-page-container">
@@ -90,10 +106,16 @@ function Calendar() {
                     </select>
                     <input
                         type="number"
-                        value={year}
+                        placeholder="Year"
                         onChange={handleYearChange}
+                        onBlur={(e) => {
+                            // Reset to current year if invalid on blur
+                            if (e.target.value.length !== 4) e.target.value = year.toString();
+                        }}
+                        defaultValue={year}
+                        key={year} // Force re-render on year change to sync default value
                         className="input-modern"
-                        style={{ width: '70px', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '0.9rem' }}
+                        style={{ width: '80px', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-light)', background: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '0.9rem' }}
                     />
                 </div>
             </div>
@@ -148,30 +170,30 @@ function Calendar() {
                 </div>
             </div>
 
-            {/* Modal Logic Remains Same */}
-            {/* Removed Modal JSX */}
+
 
             {/* Mobile Agenda View (Visible only on mobile) */}
             <div className="mobile-agenda-view">
-                {/* Week Strip (simplified) */}
                 <div className="mobile-week-strip">
-                    {Array.from({ length: 7 }).map(() => {
-                        // Logic to show a rolling week or just the first week of month?
-                        // Let's just show the first 7 days of the selected month or today's week?
-                        // Simpler: Just show "Today" if in current month, else just dates.
-                        // Let's show a horizontal scrollable strip of the whole month.
-                        return null; // Implemented in body below
-                    })}
                     <div className="agenda-month-title">{monthName} {year}</div>
+
+                    {/* Native Date Picker Trigger */}
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ fontSize: '1.5rem' }}>📅</span>
+                        <input
+                            type="date"
+                            onChange={handleDateSelect}
+                            style={{
+                                position: 'absolute',
+                                top: 0, left: 0, width: '100%', height: '100%',
+                                opacity: 0, cursor: 'pointer', zIndex: 10
+                            }}
+                        />
+                    </div>
                 </div>
 
                 <div className="agenda-list">
-                    {currentMonthEvents.length === 0 ? (
-                        <div className="no-events-placeholder">
-                            <div className="placeholder-icon">📅</div>
-                            <p>No events for this month</p>
-                        </div>
-                    ) : (
+                    {currentMonthEvents.length > 0 && (
                         // Sort events by date
                         currentMonthEvents
                             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -198,13 +220,18 @@ function Calendar() {
 
             <style>{`
                 .calendar-page-container {
-                    margin-top: 2rem;
-                    max-width: 900px; /* Wider for desktop */
-                    margin: 2rem auto;
+                    margin-top: 80px; /* Push down below navbar */
+                    width: 100%;
+                    max-width: 900px;
+                    margin-left: auto;
+                    margin-right: auto;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    padding-bottom: 80px; /* Safe space */
+                    padding-bottom: 2rem; /* Add breathing room at bottom */
+                    min-height: calc(100vh - 80px); /* Ensure it fills screen but allows scroll */
+                    background: var(--bg-color);
+                    padding: 1rem;
                 }
 
                 /* Desktop Grid Styles */
@@ -289,13 +316,13 @@ function Calendar() {
                     transition: background 0.2s;
                 }
                 .calendar-cell:nth-child(7n) { border-right: none; }
-                .calendar-cell.empty { background: #F9FAFB; }
+                .calendar-cell.empty { background: var(--calendar-empty-bg, #F9FAFB); }
                 
                 .calendar-cell.today {
-                    background: #eff6ff;
+                    background: var(--calendar-today-bg, #eff6ff);
                 }
                 .calendar-cell.today .cell-number {
-                    color: var(--primary);
+                    color: var(--calendar-today-text, var(--primary));
                     font-weight: 800;
                 }
 
@@ -344,11 +371,47 @@ function Calendar() {
                 .evt-study_goal-border { border-left: 4px solid #10b981; }
 
                 @media (max-width: 900px) {
-                     /* Hide Desktop Grid */
-                    .calendar-box { display: none; }
-                    .calendar-controls { display: none; } /* Hide complex controls */
+                     /* Show Desktop Grid on Mobile but optimized */
+                    .calendar-box { 
+                        display: block; 
+                        margin-bottom: 1rem;
+                    }
                     
-                    /* Show Agenda */
+                    .calendar-controls { 
+                        display: flex; 
+                        flex-direction: column;
+                        gap: 1rem;
+                        margin-bottom: 1rem;
+                        align-items: flex-start;
+                    } 
+                    
+                    /* Compact Grid for Mobile */
+                    .calendar-cell {
+                        min-height: 60px; /* Reduced height */
+                        padding: 4px;
+                    }
+                    
+                    .cell-number {
+                        font-size: 0.85rem;
+                        margin-bottom: 2px;
+                    }
+                    
+                    .evt-dot {
+                        font-size: 0.65rem;
+                        padding: 2px 4px;
+                        margin-bottom: 2px;
+                    }
+                    
+                    /* Hide Day Names on very small screens if needed, or abbreviate - likely fine as Sun/Mon... */
+                    .day-name {
+                        font-size: 0.75rem;
+                        padding: 0.5rem 0;
+                    }
+
+                    /* Hide the simplified week strip we added earlier since we now show full cal */
+                    .mobile-week-strip { display: none; }
+                    
+                    /* Agenda view below remains */
                     .mobile-agenda-view {
                         display: flex;
                         flex-direction: column;
@@ -356,20 +419,12 @@ function Calendar() {
                         gap: 1.5rem;
                     }
 
-                    .mobile-week-strip {
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        background: var(--surface-color);
-                        padding: 1rem;
-                        border-radius: 12px;
-                        border: 1px solid var(--border-light);
-                        box-shadow: var(--shadow-sm);
-                    }
                     .agenda-month-title {
                         font-size: 1.25rem;
                         font-weight: 800;
                         color: var(--text-main);
+                        /* Hide duplicate title if calendar header is shown */
+                        display: none; 
                     }
 
                     .agenda-list {
@@ -378,6 +433,7 @@ function Calendar() {
                         gap: 1rem;
                     }
 
+                    /* ... keep agenda styling ... */
                     .agenda-item {
                         display: flex;
                         background: var(--surface-color);
@@ -385,7 +441,6 @@ function Calendar() {
                         border-radius: 12px;
                         box-shadow: var(--shadow-sm);
                         border: 1px solid var(--border-light);
-                        /* Left border set by class */
                     }
                     
                     .agenda-date {

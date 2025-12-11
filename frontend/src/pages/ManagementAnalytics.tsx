@@ -473,6 +473,7 @@ function ManagementAnalytics() {
                 @media (max-width: 900px) {
                     .management-layout {
                         flex-direction: column;
+                        margin-top: 80px;
                     }
 
                     .management-sidebar {
