@@ -406,7 +406,7 @@ function StudentDashboard() {
     };
 
     return (
-        <div className="dashboard-container" style={{ maxWidth: '1400px', padding: '2rem' }}>
+        <div className="dashboard-container" style={{ maxWidth: '1400px', padding: '2rem', marginTop: '4rem' }}>
             <div className={`dashboard-split-layout ${resources.length > 0 ? 'results-active' : ''}`}>
 
                 {/* LEFT PANEL: Filters */}

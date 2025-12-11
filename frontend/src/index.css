@@ -633,6 +633,7 @@ body {
   .register-card {
     box-shadow: none;
     padding: 1rem;
+
   }
 }
 
@@ -770,7 +771,7 @@ body {
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition: all 0.2s, transform 0.1s;
 }
 
 .btn-modern-primary:hover {
