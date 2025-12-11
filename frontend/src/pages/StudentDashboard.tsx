@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import api from '../api';
 import '../dashboard.css';
@@ -30,10 +30,48 @@ interface Resource {
         source: number;
     };
     final_score?: number;
+    user_has_rated?: boolean;
+    user_rating?: number;
 }
 
 const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: any) => {
     const [showScore, setShowScore] = useState(false);
+
+    // Draggable Logic
+    const [position, setPosition] = useState({ x: 0, y: 0 }); // Relative offset
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartRef = useRef({ x: 0, y: 0 });
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        dragStartRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+        if (!isDragging) return;
+        setPosition({
+            x: e.clientX - dragStartRef.current.x,
+            y: e.clientY - dragStartRef.current.y
+        });
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    useEffect(() => {
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        } else {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging]);
 
     return (
         <div className="resource-card-modern" style={{ animationDelay: `${idx * 0.05}s` }}>
@@ -86,12 +124,16 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
                             {showScore && createPortal(
                                 <>
                                     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 9998, backdropFilter: 'blur(4px)', cursor: 'default' }} onClick={(e) => { e.stopPropagation(); setShowScore(false); }} />
-                                    <div className="score-popup-detailed animate-scale-in" onClick={(e) => e.stopPropagation()} style={{
-                                        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                                    <div className="score-popup-detailed animate-scale-in" onMouseDown={handleMouseDown} onClick={(e) => e.stopPropagation()} style={{
+                                        position: 'fixed',
+                                        top: `calc(50% + ${position.y}px)`,
+                                        left: `calc(50% + ${position.x}px)`,
+                                        transform: 'translate(-50%, -50%)',
                                         background: 'white', padding: '24px', borderRadius: '16px',
                                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
                                         border: '1px solid #E2E8F0', width: '90%', maxWidth: '380px', zIndex: 9999,
-                                        fontSize: '0.95rem', color: '#334155', fontFamily: 'sans-serif'
+                                        fontSize: '0.95rem', color: '#334155', fontFamily: 'sans-serif',
+                                        cursor: isDragging ? 'grabbing' : 'grab'
                                     }}>
                                         <button onClick={(e) => { e.stopPropagation(); setShowScore(false); }} style={{
                                             position: 'absolute', right: '16px', top: '16px',
@@ -109,21 +151,31 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
                                         <div style={{ background: '#F8FAFC', borderRadius: '12px', padding: '16px', marginBottom: '20px', border: '1px solid #F1F5F9' }}>
                                             {/* Breakdown Rows */}
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px' }}>
-                                                <div style={{ color: '#64748B' }}>Topic Relevance</div>
+                                                {/* Topic Relevance - Tooltip */}
+                                                <div title="Matches course syllabus & keywords" style={{ color: '#64748B', cursor: 'help', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    Topic Relevance <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
+                                                </div>
                                                 <div style={{ fontWeight: 600 }}>{r.score_breakdown.content} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>×0.3</span></div>
 
-                                                <div style={{ color: '#64748B' }}>Community Trend</div>
+                                                {/* Community Trend - Tooltip */}
+                                                <div title="Popularity & ratings from peers" style={{ color: '#64748B', cursor: 'help', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    Community Trend <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
+                                                </div>
                                                 <div style={{ fontWeight: 600 }}>{r.score_breakdown.collab} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>×2.0</span></div>
 
-                                                <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    Your Impact
+                                                {/* Your Impact - Tooltip */}
+                                                <div title="Personalized boost from your history" style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'help' }}>
+                                                    Your Impact <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
                                                     {r.score_breakdown.personal !== 0 && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: r.score_breakdown.personal > 0 ? '#10B981' : '#EF4444' }}></span>}
                                                 </div>
                                                 <div style={{ fontWeight: 700, color: r.score_breakdown.personal > 0 ? '#059669' : (r.score_breakdown.personal < 0 ? '#DC2626' : '#64748B') }}>
                                                     {r.score_breakdown.personal > 0 ? '+' : ''}{r.score_breakdown.personal}
                                                 </div>
 
-                                                <div style={{ color: '#64748B' }}>Source Quality</div>
+                                                {/* Source Quality - Tooltip */}
+                                                <div title="Credibility of the resource origin" style={{ color: '#64748B', cursor: 'help', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    Source Quality <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
+                                                </div>
                                                 <div style={{ fontWeight: 600 }}>{r.score_breakdown.source}</div>
                                             </div>
                                         </div>
@@ -136,6 +188,52 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
                                                 borderRadius: '4px',
                                                 transition: 'width 0.5s ease'
                                             }} />
+                                        </div>
+
+                                        {/* Visualization Toggle */}
+                                        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // Toggle logic view (using local state would be better, but for now we can inline toggle or just append)
+                                                    const logicEl = document.getElementById(`logic-${r.id}`);
+                                                    if (logicEl) logicEl.style.display = logicEl.style.display === 'none' ? 'block' : 'none';
+                                                }}
+                                                style={{
+                                                    background: 'none', border: '1px dashed #CBD5E1', padding: '6px 12px',
+                                                    borderRadius: '20px', color: '#64748B', fontSize: '0.85rem', cursor: 'pointer'
+                                                }}
+                                            >
+                                                🧠 See Calculation Logic
+                                            </button>
+                                        </div>
+
+                                        {/* Hidden Logic View */}
+                                        <div id={`logic-${r.id}`} style={{ display: 'none', background: '#F0F9FF', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.85rem' }}>
+                                            <p style={{ fontWeight: 700, color: '#0369A1', marginBottom: '8px' }}>Scoring Formula:</p>
+                                            <code style={{ display: 'block', background: 'rgba(255,255,255,0.5)', padding: '8px', borderRadius: '4px', marginBottom: '12px', color: '#0C4A6E' }}>
+                                                Score = (Topic × 0.3) + (Trend × 2.0) + Impact + Quality
+                                            </code>
+
+                                            <div style={{ marginTop: '8px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                    <span>⏱️ Time Spent Impact:</span>
+                                                    <span style={{ fontWeight: 600, color: r.score_breakdown.personal > 1 ? '#10B981' : '#64748B' }}>
+                                                        {r.score_breakdown.personal > 1 ? 'High Engagement' : 'Normal'}
+                                                    </span>
+                                                </div>
+                                                <div style={{ height: '6px', background: '#E2E8F0', borderRadius: '3px', overflow: 'hidden' }}>
+                                                    <div style={{
+                                                        height: '100%',
+                                                        width: `${Math.min((r.score_breakdown.personal / 5) * 100, 100)}%`,
+                                                        background: '#10B981',
+                                                        transition: 'width 0.5s'
+                                                    }}></div>
+                                                </div>
+                                                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '4px' }}>
+                                                    *Longer watch time boosts this score automatically even without a rating.
+                                                </p>
+                                            </div>
                                         </div>
 
                                         <div style={{
@@ -173,19 +271,25 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
                         Open Resource
                     </button>
 
-                    <select
-                        className="rate-dropdown"
-                        onChange={(e) => handleRate(r.id, Number(e.target.value))}
-                        defaultValue=""
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <option value="" disabled>Rate...</option>
-                        <option value="5">5 - Excellent</option>
-                        <option value="4">4 - Very Good</option>
-                        <option value="3">3 - Good</option>
-                        <option value="2">2 - Fair</option>
-                        <option value="1">1 - Poor</option>
-                    </select>
+                    {r.user_has_rated && r.user_rating > 0 ? (
+                        <div style={{ fontSize: '0.85rem', color: '#10B981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span>✓ Rated: {r.user_rating}★</span>
+                        </div>
+                    ) : (
+                        <select
+                            className="rate-dropdown"
+                            onChange={(e) => handleRate(r.id, Number(e.target.value))}
+                            defaultValue=""
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <option value="" disabled>Rate...</option>
+                            <option value="5">5 - Excellent</option>
+                            <option value="4">4 - Very Good</option>
+                            <option value="3">3 - Good</option>
+                            <option value="2">2 - Fair</option>
+                            <option value="1">1 - Poor</option>
+                        </select>
+                    )}
                 </div>
             </div> {/* End card-body-content */}
         </div> /* End resource-card-modern */
@@ -222,6 +326,30 @@ function StudentDashboard() {
 
     const [ratingSuccess, setRatingSuccess] = useState(false);
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false); // Mobile Filter State
+    const startTimeRef = useRef<number>(0);
+
+    const handleOpenResource = (r: Resource) => {
+        setViewingResource(r);
+        startTimeRef.current = Date.now();
+    };
+
+    const handleCloseResource = async () => {
+        if (!viewingResource) return;
+        const duration = (Date.now() - startTimeRef.current) / 1000;
+
+        // Log interaction
+        try {
+            await api.post('/api/log-interaction', {
+                resource_id: viewingResource.id,
+                type: 'view',
+                meta: { duration: duration }
+            });
+        } catch (e) {
+            console.error("Failed to log interaction", e);
+        }
+
+        setViewingResource(null);
+    };
 
     // Persist State Effects
     useEffect(() => { sessionStorage.setItem('sd_selectedCourse', JSON.stringify(selectedCourse)); }, [selectedCourse]);
@@ -393,7 +521,7 @@ function StudentDashboard() {
             await api.post('/rate', {
                 resource_id: resourceId,
                 score: score,
-                time_spent: 30 // Mock
+                time_spent: Math.max((Date.now() - startTimeRef.current) / 1000, 10) // Use actual time
             });
             // Show toast instead of alert
             setRatingSuccess(true);
@@ -699,7 +827,7 @@ function StudentDashboard() {
                                             idx={idx}
                                             getThumbnail={getThumbnail}
                                             handleRate={handleRate}
-                                            setViewingResource={setViewingResource}
+                                            setViewingResource={handleOpenResource}
                                         />
                                     ))}
                                 </div>
@@ -713,10 +841,10 @@ function StudentDashboard() {
                                 position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
                                 background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex',
                                 alignItems: 'center', justifyContent: 'center', paddingBottom: '20px'
-                            }}>
+                            }} onClick={handleCloseResource}>
                                 <div className='resource-modal-content' style={{
                                     width: '90%', height: '85%', marginTop: '80px'
-                                }}>
+                                }} onClick={(e) => e.stopPropagation()}>
                                     <div className="resource-modal-header">
                                         <h3 className="resource-modal-title">
                                             {viewingResource.title}
@@ -725,7 +853,7 @@ function StudentDashboard() {
                                             <a href={viewingResource.url} target="_blank" rel="noopener noreferrer" className='btn-secondary'>
                                                 Open in New Tab ↗
                                             </a>
-                                            <button onClick={() => setViewingResource(null)} className="btn-close-modal">
+                                            <button onClick={handleCloseResource} className="btn-close-modal">
                                                 &times;
                                             </button>
                                         </div>

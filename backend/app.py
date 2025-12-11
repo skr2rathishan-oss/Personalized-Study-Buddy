@@ -702,6 +702,12 @@ def get_recommendations_api():
             print(f"DEBUG: Resource {r.id} MISSING score_breakdown attribute! Injecting MOCK.")
             d['score_breakdown'] = {'content': 0.1, 'collab': 0.2, 'personal': 0.3, 'source': 0.4}
             d['final_score'] = 99.99
+            
+        # Check if user has rated
+        user_rating_obj = next((rate for rate in r.ratings if rate.user_id == user_id), None)
+        d['user_has_rated'] = (user_rating_obj is not None) and (user_rating_obj.score > 0)
+        d['user_rating'] = user_rating_obj.score if user_rating_obj else 0
+        
         return d
 
     final_params = [res_to_dict_debug(r) for r in recommendations]
@@ -727,8 +733,14 @@ def rate_resource():
     existing_rating = Rating.query.filter_by(user_id=user_id, resource_id=resource_id).first()
     
     if existing_rating:
-        existing_rating.score = score if score else 0
-        existing_rating.time_spent = time_spent
+        if existing_rating.score > 0 and score > 0:
+             return jsonify({'error': 'You have already rated this resource'}), 400
+        
+        # Allow update if previous score was 0 (implicit/view only) or if this is just a time update
+        if score: existing_rating.score = score
+        # Always update time spent if provided
+        if time_spent > existing_rating.time_spent:
+             existing_rating.time_spent = time_spent
         existing_rating.timestamp = datetime.utcnow()
     else:
         rating = Rating(resource_id=resource_id, user_id=user_id, score=score if score else 0, time_spent=time_spent)

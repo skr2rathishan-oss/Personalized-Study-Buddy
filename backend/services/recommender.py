@@ -202,11 +202,23 @@ class HybridRecommender:
                 user_boost += -1.0
             
             # Implicit Engagement Boost (Time Spent)
-            # If user spent > 60s, we assume interest even if they didn't rate it highly yet
-            # This acts as our "ML" engagement signal
+            # 1. Start with what we found in ratings
+            # 2. If zero, try querying InteractionLogs for this user & resource
+            if user_time_spent == 0:
+                # Quick check if logs are loaded/available (simple query)
+                log_entry = InteractionLog.query.filter_by(user_id=user_id, resource_id=res.id, interaction_type='view').order_by(InteractionLog.timestamp.desc()).first()
+                if log_entry and log_entry.meta_data:
+                    try:
+                        meta = json.loads(log_entry.meta_data)
+                        user_time_spent = meta.get('duration', 0)
+                    except:
+                        pass
+
             engagement_boost = 0.0
             if user_time_spent > 60:
-                engagement_boost = 1.0 + (min(user_time_spent, 600) / 600.0) # Scale up to +2.0 boost for 10 mins
+                # Significant engagement (watched > 1 min)
+                # Boost logic: +1.0 baseline, scaling up to +2.5 for 10 mins
+                engagement_boost = 1.0 + (min(user_time_spent, 600) / 600.0) * 1.5
             elif user_time_spent > 10:
                 engagement_boost = 0.5 # Small nudge for clicked/briefly viewed
 
