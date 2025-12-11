@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
     plugins: [react()],
     server: {
-        allowedHosts: true
+        host: true,
+        allowedHosts: ['all', '20.244.40.57']
     }
 })

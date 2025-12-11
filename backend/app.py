@@ -73,155 +73,132 @@ def check_role(roles):
 
 # --- Auth Routes ---
 
+# --- OTP Storage (Global) ---
+otp_storage = {}
+
+# mSpace Credentials (Live)
+MSPACE_APP_ID = "APP_009667"
+MSPACE_PASSWORD = "683bfb85322ddf8469dbaa544f82ace7"
+MSPACE_OTP_REQUEST_URL = "https://api.mspace.lk/otp/request"
+MSPACE_OTP_VERIFY_URL = "https://api.mspace.lk/otp/verify"
+
 @app.route('/auth/otp/send', methods=['POST'])
 def send_otp():
     """
     Step 1: Receive Identifier (Email or Phone).
-    If for registration, just send OTP to phone.
-    If for password reset, check if user exists first.
+    Sends OTP via mSpace.
     """
     data = request.json
-    phone_number = data.get('phone_number') # Used in registration with phone
-    email = data.get('email') # Used in forgot password usually
+    phone_number = data.get('phone_number') 
     
-    # Simple logic: If email provided, look up user to find phone (or just mock send to email)
-    target_identity = None
+    if not phone_number:
+         return jsonify({'error': 'Phone number is required'}), 400
 
-    if phone_number:
-        target_identity = phone_number
-    elif email:
-        user = User.query.filter_by(username=email).first()
-        if not user:
-             # Security best practice: Don't reveal if user exists, but for this demo simplify
-             return jsonify({'error': 'No user found with that email'}), 404
-        target_identity = user.phone_number if user.phone_number else email
+    target_identity = phone_number
     
-    if not target_identity:
-        return jsonify({'error': 'Email or Phone is required'}), 400
-
-    # =================================================================================
-    #  MSPACE: REQUEST OTP
-    # =================================================================================
     try:
         # 1. format phone number to mSpace standard (e.g. tel:9477xxxxxxx)
         formatted_id = f"tel:{target_identity}" if not str(target_identity).startswith("tel:") else target_identity
-        reference_no = None
-
-        # Check if we have real credentials
-        if MSPACE_APP_ID != 'app_12345': 
-             # 2. Construct Payload
-             payload = {
-                 "applicationId": MSPACE_APP_ID,
-                 "password": MSPACE_PASSWORD,
-                 "subscriberId": formatted_id,
-                 "applicationMetaData": {
-                     "client": "WEB", 
-                     "device": "Browser", 
-                     "os": "Web",
-                     "appCode": "https://studybuddy.lk"
-                 }
-             }
-             
-             print(f"[mSpace] Requesting OTP for {formatted_id}...")
-             response = requests.post(MSPACE_OTP_REQUEST_URL, json=payload)
-             response_data = response.json()
-             
-             if response.status_code == 200 and response_data.get('statusCode') == 'S1000':
-                 reference_no = response_data.get('referenceNo')
-                 print(f"[mSpace] OTP Sent. Ref: {reference_no}")
-             else:
-                 # === FALLBACK FOR PRESENTATION ===
-                 print(f"[mSpace] API Request Failed: {response.text}")
-                 print(f"[mSpace] !! ACTIVATING FAIL-SAFE SIMULATION !!")
-                 reference_no = f"REF-SIM-{int(time.time())}"
-        else:
-             # Simulation Mode (No Credentials)
-             reference_no = f"REF-{int(time.time())}"
-             print(f"[mSpace] Credentials missing. Simulation Mode. Generated Ref: {reference_no}")
         
-        # Store Reference No & Fallback OTP
-        if reference_no:
-            otp_storage[str(target_identity)] = {
-                'otp': "123456", 
-                'referenceNo': reference_no
+        # 2. Construct Payload (Updated for v2.0)
+        payload = {
+            "applicationId": MSPACE_APP_ID,
+            "password": MSPACE_PASSWORD,
+            "subscriberId": formatted_id,
+            "applicationHash": "abcdefgh", # Explicitly requested
+            "applicationMetaData": {
+                "client": "MOBILEAPP",
+                "device": "Samsung S10",
+                "os": "android 8",
+                "appCode": "https://play.google.com/store/apps/details?id=lk"
             }
-            # Always print help in console
-            print(f" [OTP SERVICE] USE CODE: 123456")
+        }
+        
+        print(f"[mSpace] Requesting OTP for {formatted_id}...")
+        response = requests.post(MSPACE_OTP_REQUEST_URL, json=payload)
+        response_data = response.json()
+        
+        # Check Success codes S1000 or general success
+        if response.status_code == 200 and (response_data.get('statusCode') == 'S1000' or response_data.get('status') == 'Success'):
+            reference_no = response_data.get('referenceNo')
+            print(f"[mSpace] OTP Sent. Ref: {reference_no}")
             
+            # Store for verification
+            otp_storage[str(target_identity)] = {
+                'referenceNo': reference_no,
+                'timestamp': datetime.utcnow() # Optional: could add expiry check
+            }
             return jsonify({'message': 'OTP sent successfully', 'referenceNo': reference_no})
+        
+        else:
+            print(f"[mSpace] API Request Failed: {response.text}")
+            return jsonify({'error': f"mSpace Error: {response_data.get('statusDetail', 'Unknown')}"}), 400
 
     except Exception as e:
         print(f"[mSpace] Critical Error: {e}")
-        # Even on crash, try to survive? passing generic error for now
         return jsonify({'error': str(e)}), 500
-
-    return jsonify({'error': 'Failed to initiate OTP (Unknown Error)'}), 500
 
 
 @app.route('/auth/otp/verify', methods=['POST'])
 def verify_otp():
     """
-    Step 2: Verify OTP code.
+    Step 2: Verify OTP code via mSpace
     """
     data = request.json
-    identifier = data.get('identifier') # Email or Phone
+    identifier = data.get('identifier') # Phone
     otp = data.get('otp')
-
-    # Resolve identifier
-    target_identity = identifier
-    if identifier and '@' in identifier:
-         user = User.query.filter_by(username=identifier).first()
-         if user and user.phone_number:
-             target_identity = user.phone_number
-         elif user:
-             target_identity = user.username
-
-    # =================================================================================
-    #  MSPACE: VERIFY OTP
-    # =================================================================================
-    is_mspace_verified = False
     
-    # Retrieve Request Context
-    stored_data = otp_storage.get(str(target_identity)) or otp_storage.get(str(identifier))
-    reference_no = stored_data.get('referenceNo') if isinstance(stored_data, dict) else None
+    if not identifier or not otp:
+        return jsonify({'error': 'Identifier and OTP required'}), 400
+
+    target_identity = identifier
+    stored_data = otp_storage.get(str(target_identity))
+    
+    if not stored_data or not stored_data.get('referenceNo'):
+        return jsonify({'error': 'No pending OTP request found. Please request again.'}), 400
+        
+    reference_no = stored_data.get('referenceNo')
     
     try:
-        if MSPACE_APP_ID and MSPACE_PASSWORD and MSPACE_APP_ID != 'app_12345' and reference_no:
-            print(f"[mSpace] Verifying Ref {reference_no}...")
-            
-            verify_payload = {
-                "applicationId": MSPACE_APP_ID,
-                "password": MSPACE_PASSWORD,
-                "referenceNo": reference_no,
-                "otp": otp
-            }
-            
-            # Execute Verification
-            response = requests.post(MSPACE_OTP_VERIFY_URL, json=verify_payload)
-            resp_json = response.json()
-            
-            if response.status_code == 200 and (resp_json.get('statusCode') == 'S1000' or resp_json.get('status') == 'Success'):
-               is_mspace_verified = True
-               print("[mSpace] Verification Successful! User charged.")
-            else:
-               print(f"[mSpace] Verification Failed: {resp_json}")
+        print(f"[mSpace] Verifying Ref {reference_no} with OTP {otp}...")
+        
+        verify_payload = {
+            "applicationId": MSPACE_APP_ID,
+            "password": MSPACE_PASSWORD,
+            "referenceNo": reference_no,
+            "otp": otp
+        }
+        
+        # Execute Verification
+        response = requests.post(MSPACE_OTP_VERIFY_URL, json=verify_payload)
+        resp_json = response.json()
+        
+        if response.status_code == 200 and (resp_json.get('statusCode') == 'S1000' or resp_json.get('status') == 'Success'):
+           print("[mSpace] Verification Successful!")
+           # Mark as verified in storage so registration can proceed
+           otp_storage[str(target_identity)]['verified'] = True
+           otp_storage[str(target_identity)]['otp'] = otp # Store for double check if needed
+           
+           # === FORWARD TO DASHBOARD (Port 3000) ===
+           try:
+               requests.post("http://127.0.0.1:3000/subscription-notification", json={
+                   "msisdn": target_identity,
+                   "status": "REGISTERED",
+                   "message": "User verified successfully via App",
+                   "referenceNo": reference_no,
+                   "timestamp": datetime.utcnow().isoformat()
+               }, timeout=0.5)
+           except Exception as dh_err:
+               print(f"[Dashboard] Could not forward event: {dh_err}")
+               
+           return jsonify({'message': 'OTP Verified', 'status': 'success'})
+        else:
+           print(f"[mSpace] Verification Failed: {resp_json}")
+           return jsonify({'error': f"Invalid Code: {resp_json.get('statusDetail', 'Failed')}"}), 400
             
     except Exception as e:
          print(f"[mSpace] Verification Error: {e}")
-
-    # --- VERIFICATION CHECK ---
-    # 1. mSpace said YES
-    # 2. OR Local Simulation matches (for testing)
-    val = stored_data
-    stored_otp = val.get('otp') if isinstance(val, dict) else val
-    
-    if is_mspace_verified or (stored_otp and stored_otp == otp):
-        # Clean up
-        if str(target_identity) in otp_storage: del otp_storage[str(target_identity)]
-        if str(identifier) in otp_storage: del otp_storage[str(identifier)]
-        return jsonify({'message': 'OTP Verified'})
-
-    return jsonify({'error': 'Invalid OTP Verified'}), 400
+         return jsonify({'error': 'Verification failed due to network error'}), 500
 
 @app.route('/api/mspace/callback', methods=['POST'])
 def mspace_callback():
@@ -301,9 +278,16 @@ def register():
     if not phone_number or not otp:
          return jsonify({'error': 'Phone number and OTP are required'}), 400
 
-    stored_otp = otp_storage.get(phone_number)
-    if not stored_otp or stored_otp != otp:
-        return jsonify({'error': 'Invalid or expired OTP'}), 400
+    stored_data = otp_storage.get(phone_number)
+    
+    # Check if verified
+    is_verified = stored_data and isinstance(stored_data, dict) and stored_data.get('verified') is True
+    
+    # Double check OTP match just in case
+    stored_otp_code = stored_data.get('otp') if isinstance(stored_data, dict) else None
+    
+    if not is_verified or (otp and stored_otp_code and str(otp) != str(stored_otp_code)):
+        return jsonify({'error': 'Phone number not verified or OTP expired'}), 400
 
     if User.query.filter_by(username=username).first():
         return jsonify({'error': 'User already exists'}), 400

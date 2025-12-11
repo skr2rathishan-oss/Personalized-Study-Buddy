@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Dashboard</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --bg: #f3f4f6;
+            --text: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #111;
+        }
+
+        p {
+            color: #6b7280;
+            margin: 0.5rem 0 0 0;
+            font-size: 0.9rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f9fafb;
+            text-align: left;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.125rem 0.625rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: #9ca3af;
+        }
+
+        .refresh-btn {
+            background: white;
+            border: 1px solid #d1d5db;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .refresh-btn:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .timestamp {
+            color: #6b7280;
+            font-size: 0.75rem;
+            font-family: monospace;
+        }
+
+        .json-data {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #6b7280;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Live Subscriptions</h1>
+                <p>Real-time feed of users who successfully subscribed (mSpace Callbacks).</p>
+            </div>
+            <button onclick="fetchNotifications()" class="refresh-btn">⟳ Refresh Data</button>
+        </div>
+
+        <div class="card">
+            <table id="notifGroup">
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">Subscriber (Phone)</th>
+                        <th style="width: 15%;">Status</th>
+                        <th style="width: 25%;">Reference / ID</th>
+                        <th style="width: 20%;">Details</th>
+                        <th style="width: 20%;">Time Received</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Data goes here -->
+                </tbody>
+            </table>
+            <div id="emptyMsg" class="empty-state">
+                <h3 style="margin-bottom: 0.5rem; color: #374151;">No Subscriptions Yet</h3>
+                <p>Waiting for mSpace to trigger the webhook...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchNotifications() {
+            try {
+                const res = await fetch('/notifications');
+                const data = await res.json();
+
+                const tbody = document.getElementById('tableBody');
+                const empty = document.getElementById('emptyMsg');
+                const table = document.getElementById('notifGroup');
+
+                if (data.length === 0) {
+                    empty.style.display = 'block';
+                    table.style.display = 'none';
+                } else {
+                    empty.style.display = 'none';
+                    table.style.display = 'table';
+
+                    tbody.innerHTML = ''; // Clear old rows
+
+                    data.forEach(item => {
+                        const tr = document.createElement('tr');
+
+                        // Normalize Fields from mSpace payload
+                        // mSpace often sends: sourceAddress, message, requestId, or status, statusDetail
+
+                        const phone = item.sourceAddress || item.msisdn || item.subscriberId || 'Unknown';
+                        const rawStatus = (item.status || item.message || '').toUpperCase();
+                        let statusClass = 'status-info';
+
+                        if (rawStatus.includes('SUCCESS') || rawStatus.includes('CHARGED') || rawStatus.includes('REGISTERED')) {
+                            statusClass = 'status-active';
+                        } else if (rawStatus.includes('FAIL') || rawStatus.includes('ERROR')) {
+                            statusClass = 'status-inactive';
+                        }
+
+                        const refId = item.requestId || item.subscription_id || item.referenceNo || '-';
+                        const details = item.statusDetail || item.description || JSON.stringify(item).substring(0, 30) + '...';
+
+                        tr.innerHTML = `
+                        <td style="font-weight: 600; color: #111;">${phone}</td>
+                        <td><span class="status-badge ${statusClass}">${rawStatus || 'INFO'}</span></td>
+                        <td style="font-family: monospace; color: #4b5563;">${refId}</td>
+                        <td class="json-data" title="${JSON.stringify(item, null, 2)}">${details}</td>
+                        <td class="timestamp">${new Date(item.receivedAt).toLocaleTimeString()}</td>
+                    `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                console.error("Failed to fetch notifications:", e);
+            }
+        }
+
+        // Poll every 3 seconds
+        fetchNotifications();
+        setInterval(fetchNotifications, 3000);
+    </script>
+
+</body>
+
+</html>

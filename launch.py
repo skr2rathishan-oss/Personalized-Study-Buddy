@@ -13,8 +13,13 @@ BACKEND_SCRIPT = os.path.join("backend", "app.py")
 INIT_DB_SCRIPT = os.path.join("backend", "init_db.py")
 ML_TRAIN_SCRIPT = os.path.join("ml", "train.py")
 FRONTEND_DIR = "frontend"
+OTP_DIR = "otp_sandbox"
+OTP_SCRIPT = os.path.join(OTP_DIR, "server.js")
+
 FRONTEND_PORT = 5173
 BACKEND_PORT = 5000
+OTP_PORT = 3000
+PUBLIC_IP = "20.244.40.57"
 
 def get_python_executable():
     """Returns the path to the Python executable in the virtual environment."""
@@ -65,12 +70,12 @@ def kill_process_on_port(port):
             pass
 
 def cleanup_old_instances():
-    """Aggressively cleans up old backend and frontend processes."""
+    """Aggressively cleans up old backend, frontend, and OTP listener processes."""
     print("--- Pipeline Cleanup: Removing old instances ---")
     kill_process_on_port(BACKEND_PORT)
     kill_process_on_port(FRONTEND_PORT)
-    kill_process_on_port(5174)
-    kill_process_on_port(5175)
+    kill_process_on_port(5174) # Vite fallback
+    kill_process_on_port(OTP_PORT)
     print("----------------------------------------------")
 
 def install_dependencies(python_exec):
@@ -137,9 +142,37 @@ def run_frontend():
     print(f"Starting React Frontend...")
     return subprocess.Popen(["npm", "run", "dev"], cwd=FRONTEND_DIR, shell=True)
 
+def run_otp_listener():
+    """Runs the OTP Notification Listener (Node.js)."""
+    if os.path.exists(OTP_SCRIPT):
+        print(f"Starting Notification Dashboard on port {OTP_PORT}...")
+        # Ensure node modules exist for OTP sandbox
+        if not os.path.exists(os.path.join(OTP_DIR, 'node_modules')):
+             print("Installing OTP Sandbox dependencies...")
+             subprocess.call(["npm", "install"], cwd=OTP_DIR, shell=True, stdout=subprocess.DEVNULL)
+        
+        return subprocess.Popen(["node", "server.js"], cwd=OTP_DIR, shell=True)
+    else:
+         print(f"Warning: {OTP_SCRIPT} not found. Skipping Notification Dashboard.")
+         return None
+
+def ensure_node_in_path():
+    """Ensures Node.js is in the PATH for the current process."""
+    if shutil.which("npm") is None:
+        # Fallback: Check common Windows install location
+        node_path = r"C:\Program Files\nodejs"
+        if os.path.exists(node_path):
+            print(f"Adding {node_path} to PATH...")
+            os.environ["PATH"] += os.pathsep + node_path
+            return True
+    return shutil.which("npm") is not None
+
 def main():
     # 0. Cleanup first
     cleanup_old_instances()
+    
+    # Ensure Node is found
+    ensure_node_in_path()
 
     # 1. Virtual Environment Setup
     if not is_venv():
@@ -169,25 +202,35 @@ def main():
     # 3. Launch Services
     backend_process = None
     frontend_process = None
+    otp_process = None
 
     try:
-        print(f"Starting Backend on port {BACKEND_PORT}...")
-        backend_process = subprocess.Popen([python_exec, BACKEND_SCRIPT], cwd=os.getcwd())
+        backend_process = run_backend(python_exec)
         time.sleep(2) 
+        
+        otp_process = run_otp_listener()
+        time.sleep(1)
 
-        print(f"Starting Frontend...")
-        frontend_process = subprocess.Popen(["npm", "run", "dev"], cwd=FRONTEND_DIR, shell=True)
+        frontend_process = run_frontend()
         time.sleep(4)
 
         # 4. Open Browser
-        url = f"http://localhost:{FRONTEND_PORT}"
-        print(f"\n[SUCCESS] Pipeline Complete. Opening App at {url}")
-        print("Use Ctrl+C to stop servers.")
+        app_url = f"http://{PUBLIC_IP}:{FRONTEND_PORT}"
+        dashboard_url = f"http://{PUBLIC_IP}:{OTP_PORT}"
+        
+        print(f"\n=======================================================")
+        print(f" [SUCCESS] PROJECT LAUNCHED SUCCESSFULLY")
+        print(f" -------------------------------------------------------")
+        print(f" 🏠 Main App   : {app_url}  (Register here)")
+        print(f" 📡 Dashboard  : {dashboard_url}  (View Subscriptions)")
+        print(f"=======================================================\n")
+        print("Use Ctrl+C to stop all servers.")
         
         try:
-            webbrowser.open(url)
+            webbrowser.open(app_url)
+            webbrowser.open(dashboard_url)
         except Exception:
-            print("Could not open browser automatically (likely headless environment).")
+            pass
         
         while True:
             time.sleep(1)
@@ -199,6 +242,9 @@ def main():
         print("\nStopping services...")
     finally:
         if backend_process: backend_process.terminate()
+        if otp_process: 
+             subprocess.call(['taskkill', '/F', '/T', '/PID', str(otp_process.pid)], 
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if frontend_process: 
             subprocess.call(['taskkill', '/F', '/T', '/PID', str(frontend_process.pid)], 
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
