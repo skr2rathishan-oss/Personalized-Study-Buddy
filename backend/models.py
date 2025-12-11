@@ -1,4 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+import json
 
 db = SQLAlchemy()
 
@@ -12,15 +14,21 @@ class User(db.Model):
     first_name = db.Column(db.String(50), nullable=True)
     last_name = db.Column(db.String(50), nullable=True)
     nic = db.Column(db.String(20), nullable=True)
-    university = db.Column(db.String(100), nullable=True)
-    university_course = db.Column(db.String(100), nullable=True)
-    university_id = db.Column(db.String(50), nullable=True)
+    
+    # Normalized Fields
+    university_id = db.Column(db.Integer, db.ForeignKey('university.id'), nullable=True)
+    degree_id = db.Column(db.Integer, db.ForeignKey('degree.id'), nullable=True)
+    
+    student_index_number = db.Column(db.String(50), nullable=True) 
+    
     phone_number = db.Column(db.String(20), nullable=True)
     profile_image = db.Column(db.Text, nullable=True) # Base64 string
     
     enrollments = db.relationship('Enrollment', backref='user', lazy=True)
     
-    # Removed conflicting university_id FK. university_id line 17 handles the Student ID string.
+    # Relationships for easy access
+    university_rel = db.relationship('University', backref='enrolled_students', foreign_keys=[university_id])
+    degree_rel = db.relationship('Degree', backref='enrolled_students', foreign_keys=[degree_id])
 
 
 class University(db.Model):
@@ -28,26 +36,20 @@ class University(db.Model):
     name = db.Column(db.String(150), unique=True, nullable=False)
 
 
-
 class Degree(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(150), nullable=False) # e.g. "BSc Engineering"
+    name = db.Column(db.String(150), nullable=False)
     university = db.Column(db.String(150), nullable=False)
-    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Admin responsible for this Degree
-    # Relationship defined in Course via backref
+    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
-class Course(db.Model): # Represents a 'Module' (e.g. Web Dev, AI Basics)
+
+class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     module_name = db.Column(db.String(100), nullable=False)
-    module_id = db.Column(db.String(20), nullable=False) # e.g. CS101. Removed unique constraint to allow same code in diff degrees if needed
+    module_id = db.Column(db.String(20), nullable=False)
     
-    # Linked to Degree (The main Course)
-    # Linked to Degree (The main Course)
-    # Linked to Degree (The main Course)
     degree_id = db.Column(db.Integer, db.ForeignKey('degree.id'), nullable=True)
 
-    
-    
     topics = db.relationship('Topic', backref='course', lazy=True)
 
 
@@ -57,8 +59,6 @@ class Topic(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
     resources = db.relationship('Resource', backref='topic', lazy=True)
 
-from datetime import datetime
-import json
 
 class Resource(db.Model):
     id = db.Column(db.Integer, primary_key=True)

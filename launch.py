@@ -91,20 +91,35 @@ def install_dependencies(python_exec):
     else:
         print(f"Warning: '{REQUIREMENTS_FILE}' not found. Skipping dependency installation.")
 
-def init_database(python_exec):
-    """Initializes the database."""
-    if os.path.exists(INIT_DB_SCRIPT):
-        if not os.path.exists(os.path.join("backend", "db.sqlite3")):
-            print("Initializing database...")
-            try:
-                subprocess.check_call([python_exec, INIT_DB_SCRIPT])
-                print("Database initialized.")
-            except subprocess.CalledProcessError as e:
-                print(f"Error initializing database: {e}")
-        else:
-            print("Database check passed (exists).")
+def verify_integrity():
+    """Verifies that all critical files vary exist and are connected."""
+    print("--- Verifying Project Integrity ---")
+    critical_files = [
+        BACKEND_SCRIPT,
+        REQUIREMENTS_FILE,
+        os.path.join(FRONTEND_DIR, "package.json"),
+        os.path.join("backend", "models.py"),
+        os.path.join("backend", "app.py")
+    ]
+    
+    missing = [f for f in critical_files if not os.path.exists(f)]
+    if missing:
+        print("CRITICAL ERROR: The following required files are missing:")
+        for f in missing:
+            print(f" - {f}")
+        print("Cannot start application.")
+        sys.exit(1)
+    
+    # Check Database specifically
+    db_path = os.path.join("backend", "data", "db.sqlite3")
+    if not os.path.exists(db_path):
+        print("\n[WARNING] Database file (db.sqlite3) is NOT found.")
+        print(f"Expected at: {db_path}")
+        print("If this is a fresh install, please ask for setup instructions.")
     else:
-        print(f"Warning: '{INIT_DB_SCRIPT}' not found. Skipping DB initialization.")
+        print("Database file found.")
+    
+    print("Integrity Check Passed.\n")
 
 def install_frontend_dependencies():
     """Installs frontend dependencies (npm install) if node_modules is missing."""
@@ -194,8 +209,9 @@ def main():
     python_exec = sys.executable
 
     # 2. Pipeline Steps
+    verify_integrity()
     install_dependencies(python_exec)
-    init_database(python_exec)
+    # init_database(python_exec) - Removed
     install_frontend_dependencies()
     train_model(python_exec)
 

@@ -1,23 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '../api';
+
+interface HistoryItem {
+    id: number;
+    title: string;
+    date: string;
+    type: string;
+    category: string;
+    url: string;
+}
 
 function History() {
-    // Mock History Data
-    const [historyItems, setHistoryItems] = useState([
-        { id: 1, title: 'Python For Loops Guide', date: 'Oct 24, 2023 10:30 AM', type: 'article', category: 'Programming' },
-        { id: 2, title: 'Introduction to React', date: 'Oct 23, 2023 2:15 PM', type: 'video', category: 'Frontend' },
-        { id: 3, title: 'Linear Algebra Notes', date: 'Oct 22, 2023 9:00 AM', type: 'pdf', category: 'Math' },
-        { id: 4, title: 'CSS Flexbox Cheatsheet', date: 'Oct 20, 2023 4:45 PM', type: 'article', category: 'Design' },
-        { id: 5, title: 'Machine Learning Basics', date: 'Oct 18, 2023 11:20 AM', type: 'video', category: 'AI' },
-        { id: 6, title: 'Database Optimization', date: 'Oct 15, 2023 3:20 PM', type: 'pdf', category: 'Backend' },
-    ]);
+    const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                const res = await api.get('/api/history');
+                setHistoryItems(res.data);
+            } catch (err) {
+                console.error("Failed to fetch history", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchHistory();
+    }, []);
 
     const handleDelete = (id: number) => {
+        // Optimistic update - in real app would call API to delete log
         setHistoryItems(historyItems.filter(item => item.id !== id));
     };
 
     const handleClearAll = () => {
         if (window.confirm("Are you sure you want to clear your entire history?")) {
             setHistoryItems([]);
+            // TODO: Call API to clear history
         }
     };
 
@@ -29,6 +48,14 @@ function History() {
             default: return '📝';
         }
     };
+
+    const handleView = (url: string) => {
+        window.open(url, '_blank');
+    };
+
+    if (loading) {
+        return <div style={{ textAlign: 'center', padding: '4rem' }}>Loading history...</div>;
+    }
 
     return (
         <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem' }}>
@@ -75,18 +102,11 @@ function History() {
             ) : (
                 <div className="history-grid">
                     {historyItems.map(item => (
-                        <div key={item.id} className="history-card">
+                        <div key={item.id} className="history-card" onClick={() => handleView(item.url)} style={{ cursor: 'pointer' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div className={`card-icon type-${item.type}`}>
                                     {getTypeIcon(item.type)}
                                 </div>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                                    className="btn-delete-card"
-                                    title="Remove"
-                                >
-                                    ✕
-                                </button>
                             </div>
 
                             <div style={{ marginTop: '1rem' }}>
@@ -96,7 +116,10 @@ function History() {
                             </div>
 
                             <div className="card-actions">
-                                <button className="btn-view">Resume</button>
+                                <button className="btn-view" onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleView(item.url);
+                                }}>Resume</button>
                             </div>
                         </div>
                     ))}
@@ -155,23 +178,6 @@ function History() {
                 .type-video { background: #e0e7ff; color: #4338ca; }
                 .type-article { background: #dcfce7; color: #166534; }
                 .type-pdf { background: #fee2e2; color: #991b1b; }
-
-                .btn-delete-card {
-                    background: transparent;
-                    border: none;
-                    color: var(--text-secondary);
-                    cursor: pointer;
-                    font-size: 1rem;
-                    padding: 4px;
-                    border-radius: 50%;
-                    transition: all 0.2s;
-                    opacity: 0.6;
-                }
-                .btn-delete-card:hover {
-                    background: #fee2e2;
-                    color: #ef4444;
-                    opacity: 1;
-                }
 
                 .card-category {
                     font-size: 0.75rem;

@@ -13,7 +13,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 # 1. Load Ratings from Database
 # -----------------------------
 base_dir = os.path.dirname(os.path.abspath(__file__))
-db_path = os.path.join(base_dir, '../backend/db.sqlite3')
+db_path = os.path.join(base_dir, '../backend/data/db.sqlite3')
 
 conn = sqlite3.connect(db_path)
 ratings = pd.read_sql_query("""

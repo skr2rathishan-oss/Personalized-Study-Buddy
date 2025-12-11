@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory, url_for
+from werkzeug.utils import secure_filename
 # Trigger Reload for Recommender Logic Update v5 - Engagement Metrics
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -24,12 +25,16 @@ from services.recommender import HybridRecommender
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# Robust CORS: Allow all origins, methods, and headers
+CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": "*"}})
 
 
 # Config
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'db.sqlite3')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'data', 'db.sqlite3')
+app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'uploads')
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 # 50MB
+ALLOWED_EXTENSIONS = {'pdf', 'txt', 'docx', 'doc'}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'super-secret-key-change-this'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
@@ -97,8 +102,26 @@ def send_otp():
     target_identity = phone_number
     
     try:
-        # 1. format phone number to mSpace standard (e.g. tel:9477xxxxxxx)
-        formatted_id = f"tel:{target_identity}" if not str(target_identity).startswith("tel:") else target_identity
+        # DEMO BYPASS (Selective)
+        # Only bypass for specific test numbers. All others go to mSpace.
+        if str(target_identity).endswith("1234567") or str(target_identity).startswith("0000"):
+            print(f"[mSpace] Demo Number {target_identity} detected. Skipping API call.")
+            reference_no = "DEMO-REF-001"
+            otp_storage[str(target_identity)] = {
+                'referenceNo': reference_no,
+                'timestamp': datetime.utcnow()
+            }
+            return jsonify({'message': 'OTP sent successfully (Demo)', 'referenceNo': reference_no})
+
+        # 1. Normalize and format phone number
+        # Remove tel:, +, and whitespace
+        clean_num = str(target_identity).replace("tel:", "").replace("+", "").strip()
+        
+        # Convert local 0xx to 94xx
+        if clean_num.startswith("0"):
+            clean_num = "94" + clean_num[1:]
+            
+        formatted_id = f"tel:{clean_num}"
         
         # 2. Construct Payload (Updated for v2.0)
         payload = {
@@ -170,6 +193,13 @@ def verify_otp():
         }
         
         # Execute Verification
+        # DEMO OTP BYPASS
+        if str(otp) == "123456":
+            print("[mSpace] Demo OTP Used. Verifying...")
+            otp_storage[str(target_identity)]['verified'] = True
+            otp_storage[str(target_identity)]['otp'] = otp
+            return jsonify({'message': 'OTP Verified (Demo mode)', 'status': 'success'})
+
         response = requests.post(MSPACE_OTP_VERIFY_URL, json=verify_payload)
         resp_json = response.json()
         
@@ -293,6 +323,29 @@ def register():
         return jsonify({'error': 'User already exists'}), 400
     
     hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
+    # Handle University & Degree Dynamic Creation
+    univ_name = data.get('university')
+    degree_name = data.get('university_course')
+    
+    university_id = None
+    degree_id = None
+    
+    if univ_name:
+        uni_obj = University.query.filter_by(name=univ_name).first()
+        if not uni_obj:
+            uni_obj = University(name=univ_name)
+            db.session.add(uni_obj)
+            db.session.commit()
+        university_id = uni_obj.id
+
+    if degree_name and univ_name:
+        deg_obj = Degree.query.filter_by(name=degree_name, university=univ_name).first()
+        if not deg_obj:
+            deg_obj = Degree(name=degree_name, university=univ_name)
+            db.session.add(deg_obj)
+            db.session.commit()
+        degree_id = deg_obj.id
+
     new_user = User(
         username=username,
         password_hash=hashed_pw,
@@ -300,9 +353,9 @@ def register():
         first_name=data.get('first_name'),
         last_name=data.get('last_name'),
         nic=data.get('nic'),
-        university=data.get('university'),
-        university_course=data.get('university_course'),
-        university_id=data.get('university_id'),
+        university_id=university_id if university_id else (int(data.get('university_id')) if data.get('university_id') else None),
+        degree_id=degree_id if degree_id else (int(data.get('degree_id')) if data.get('degree_id') else None),
+        student_index_number=data.get('university_student_id') or data.get('student_index_number'), 
         phone_number=phone_number
     )
     
@@ -335,8 +388,10 @@ def login():
                 'role': user.role, 
                 'username': user.username,
                 'profile_image': user.profile_image,
-                'university': user.university,
-                'university_course': user.university_course
+                'university': user.university_rel.name if user.university_rel else '',
+                'university_course': user.degree_rel.name if user.degree_rel else '',
+                'university_id': user.university_id, # return ID for program use
+                'degree_id': user.degree_id 
             })
         else:
             print("Login Failed: Password incorrect")
@@ -365,11 +420,11 @@ def profile():
             'last_name': user.last_name,
             'email': user.username if '@' in user.username else '', # Approximate
             'phone_number': user.phone_number,
-            'university': user.university,
-            'university_course': user.university_course,
-            'university': user.university,
-            'university_course': user.university_course,
+            'university': user.university_rel.name if user.university_rel else '',
+            'university_course': user.degree_rel.name if user.degree_rel else '',
             'university_id': user.university_id,
+            'degree_id': user.degree_id,
+            'student_index_number': user.student_index_number,
             'profile_image': user.profile_image
         })
     
@@ -379,10 +434,10 @@ def profile():
         if 'first_name' in data: user.first_name = data['first_name']
         if 'last_name' in data: user.last_name = data['last_name']
         if 'phone_number' in data: user.phone_number = data['phone_number']
-        if 'university' in data: user.university = data['university']
-        if 'university_course' in data: user.university_course = data['university_course']
-
-        if 'university_id' in data: user.university_id = data['university_id']
+        if 'university_id' in data: user.university_id = int(data['university_id'])
+        if 'degree_id' in data: user.degree_id = int(data['degree_id'])
+        if 'student_index_number' in data: user.student_index_number = data['student_index_number']
+        
         if 'profile_image' in data: user.profile_image = data['profile_image']
         
         db.session.commit()
@@ -395,8 +450,25 @@ def profile():
 @jwt_required()
 def get_courses():
     print("Fetching courses...")
-    courses = Course.query.all()
-    print(f"Found {len(courses)} courses")
+    current_user_id = int(get_jwt_identity())
+    current_user = User.query.get(current_user_id)
+    
+    if not current_user:
+        return jsonify({'error': 'User not found', 'message': 'Please login again'}), 401
+    
+    courses = []
+    
+    # Scoped Access: Students (and Admins) see modules for their Degree
+    if current_user.degree_id:
+        courses = Course.query.filter_by(degree_id=current_user.degree_id).all()
+    elif check_role(['management']):
+        # Managers see all courses
+        courses = Course.query.all()
+    else:
+        # Fallback for users without degree (shouldn't happen for valid students)
+        courses = []
+
+    print(f"Found {len(courses)} courses for user {current_user.username} (Degree: {current_user.degree_id})")
     # Sending both new and old keys for frontend compatibility
     return jsonify([{'id': c.id, 'name': c.module_name, 'code': c.module_id, 'module_name': c.module_name, 'module_id': c.module_id} for c in courses])
 
@@ -577,6 +649,14 @@ def recommend():
     # Helper to include transient scoring info
     def res_to_dict_with_scores(r):
         d = r.to_dict()
+        
+        # FIX: Ensure Public Access
+        if d.get('url'):
+            if 'localhost:5000' in d['url']:
+                d['url'] = d['url'].replace('http://localhost:5000', request.host_url.rstrip('/'))
+            elif d['url'].startswith('/uploads/'):
+                d['url'] = request.host_url.rstrip('/') + d['url']
+                
         if hasattr(r, 'score_breakdown'):
             d['score_breakdown'] = r.score_breakdown
             d['final_score'] = r.final_score
@@ -695,11 +775,19 @@ def get_recommendations_api():
     # Helper to include transient scoring info
     def res_to_dict_debug(r):
         d = r.to_dict()
+        
+        # FIX: Ensure Public Access for Uploaded Files
+        if d.get('url'):
+            if 'localhost:5000' in d['url']:
+                d['url'] = d['url'].replace('http://localhost:5000', request.host_url.rstrip('/'))
+            elif d['url'].startswith('/uploads/'):
+                d['url'] = request.host_url.rstrip('/') + d['url']
+
         if hasattr(r, 'score_breakdown'):
             d['score_breakdown'] = r.score_breakdown
             d['final_score'] = r.final_score
         else:
-            print(f"DEBUG: Resource {r.id} MISSING score_breakdown attribute! Injecting MOCK.")
+            # print(f"DEBUG: Resource {r.id} MISSING score_breakdown attribute! Injecting MOCK.")
             d['score_breakdown'] = {'content': 0.1, 'collab': 0.2, 'personal': 0.3, 'source': 0.4}
             d['final_score'] = 99.99
             
@@ -851,7 +939,21 @@ def get_all_users():
     if not check_role(['admin', 'management']):
         return jsonify({'error': 'Unauthorized'}), 403
 
-    users = User.query.all()
+    current_user_id = int(get_jwt_identity())
+    current_user = User.query.get(current_user_id)
+    
+    query = User.query
+    
+    # Scoped Access: Admin only sees students/users in their own University & Degree
+    if current_user.role == 'admin':
+        if current_user.university_id and current_user.degree_id:
+             query = query.filter_by(university_id=current_user.university_id, degree_id=current_user.degree_id)
+        else:
+             # If Admin has no university/degree set, they see nothing or must set it up
+             # For safety, return empty or self
+             query = query.filter(User.id == -1) # Empty
+
+    users = query.all()
     user_list = []
     for u in users:
         user_list.append({
@@ -860,9 +962,9 @@ def get_all_users():
             'role': u.role,
             'first_name': u.first_name,
             'last_name': u.last_name,
-            'university': u.university,
-            'course': u.university_course,
-            'student_id': u.university_id,
+            'university': u.university_rel.name if u.university_rel else '',
+            'course': u.degree_rel.name if u.degree_rel else '',
+            'student_id': u.student_index_number, # Corrected map
             'phone': u.phone_number,
             'nic': u.nic
         })
@@ -924,6 +1026,8 @@ def create_course():
     module_name = data.get('module_name') or data.get('name')
     module_id = data.get('module_id') or data.get('code')
     
+    print(f"DEBUG: Create Course Request: {module_name} ({module_id}) by User {get_jwt_identity()}")
+
     if Course.query.filter_by(module_id=module_id).first():
         return jsonify({'error': 'Module ID exists'}), 400
 
@@ -932,14 +1036,20 @@ def create_course():
     # Ensure Admin has a Degree assigned (Auto-create based on Profile if missing)
     degree = Degree.query.filter_by(admin_id=user_id).first()
     if not degree:
+        print(f"DEBUG: No Degree found for Admin {user_id}. Auto-creating...")
         u = User.query.get(user_id)
-        degree_name = u.university_course if u.university_course else f"Degree of {u.username}"
-        degree = Degree(name=degree_name, university=u.university if u.university else 'N/A', admin_id=user_id)
+        if not u:
+            return jsonify({'error': 'User mismatch. Please logout and login again.'}), 401
+            
+        # Corrected: Access relations safely
+        uni_name = u.university_rel.name if u.university_rel else 'N/A'
+        deg_name = u.degree_rel.name if u.degree_rel else f"Degree of {u.username}"
+        
+        degree = Degree(name=deg_name, university=uni_name, admin_id=user_id)
         db.session.add(degree)
         db.session.commit()
     
     # Create Module linked to Degree
-    # We keep admin_id for safety/migration but primary link is degree_id
     new_course = Course(module_name=module_name, module_id=module_id, degree_id=degree.id)
     db.session.add(new_course)
     db.session.commit()
@@ -947,6 +1057,7 @@ def create_course():
     # Auto-enroll admin (optional, for access check simplicity)
     db.session.add(Enrollment(user_id=user_id, course_id=new_course.id))
     db.session.commit()
+    print(f"DEBUG: Course {new_course.id} created.")
     return jsonify({'message': 'Module created under ' + degree.name})
 
 @app.route('/admin/courses/<int:course_id>/topics', methods=['POST'])
@@ -967,19 +1078,6 @@ def create_topic(course_id):
     db.session.commit()
     return jsonify({'message': 'Topic created'})
 
-@app.route('/admin/topics/<int:topic_id>', methods=['DELETE'])
-@jwt_required()
-def delete_topic(topic_id):
-    if not check_role(['admin', 'management']):
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    topic = Topic.query.get(topic_id)
-    if not topic: return jsonify({'error': 'Topic not found'}), 404
-
-    db.session.delete(topic)
-    db.session.commit()
-    return jsonify({'message': 'Topic deleted'})
-
 @app.route('/admin/courses/<int:course_id>', methods=['PUT'])
 @jwt_required()
 def update_course(course_id):
@@ -996,18 +1094,7 @@ def update_course(course_id):
     db.session.commit()
     return jsonify({'message': 'Module updated'})
 
-@app.route('/admin/courses/<int:course_id>', methods=['DELETE'])
-@jwt_required()
-def delete_course(course_id):
-    if not check_role(['admin', 'management']):
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    course = Course.query.get(course_id)
-    if not course: return jsonify({'error': 'Course not found'}), 404
 
-    db.session.delete(course)
-    db.session.commit()
-    return jsonify({'message': 'Course deleted'})
 
 # Resource Management Endpoints
 @app.route('/admin/resources', methods=['POST'])
@@ -1088,10 +1175,79 @@ def get_topic_resources(topic_id):
         'rating_count': len(r.ratings)
     } for r in resources])
 
+@app.route('/admin/courses/<int:course_id>', methods=['DELETE'])
+@jwt_required()
+def delete_course(course_id):
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    course = Course.query.get(course_id)
+    if not course:
+        return jsonify({'error': 'Course not found'}), 404
+
+    # Cascade Delete
+    try:
+        # Delete related Enrollments
+        Enrollment.query.filter_by(course_id=course.id).delete()
+        
+        # Delete Topics and Resources
+        topics = Topic.query.filter_by(course_id=course.id).all()
+        for t in topics:
+            delete_topic_cascade(t.id) # Use helper
+            
+        db.session.delete(course)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+        
+    return jsonify({'message': 'Module and all contents deleted'})
+
+@app.route('/admin/topics/<int:topic_id>', methods=['DELETE'])
+@jwt_required()
+def delete_topic(topic_id):
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    try:
+        delete_topic_cascade(topic_id)
+        db.session.commit()
+        return jsonify({'message': 'Topic deleted'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+def delete_topic_cascade(topic_id):
+    topic = Topic.query.get(topic_id)
+    if not topic: return
+    
+    # Delete Resources and Files
+    resources = Resource.query.filter_by(topic_id=topic.id).all()
+    for r in resources:
+        delete_resource_helper(r)
+        
+    db.session.delete(topic)
+
+def delete_resource_helper(resource):
+    # Remove physical file if manual upload
+    if resource.source == 'manual' and resource.url.startswith('/uploads/'):
+        try:
+            filename = resource.url.split('/')[-1]
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Error deleting file {resource.url}: {e}")
+            
+    # Delete related ratings/logs
+    Rating.query.filter_by(resource_id=resource.id).delete()
+    InteractionLog.query.filter_by(resource_id=resource.id).delete()
+    
+    db.session.delete(resource)
+
 @app.route('/admin/resources/<int:resource_id>', methods=['DELETE'])
 @jwt_required()
 def delete_resource(resource_id):
-    """Delete a resource"""
     if not check_role(['admin', 'management']):
         return jsonify({'error': 'Unauthorized'}), 403
     
@@ -1099,8 +1255,12 @@ def delete_resource(resource_id):
     if not resource:
         return jsonify({'error': 'Resource not found'}), 404
     
-    db.session.delete(resource)
-    db.session.commit()
+    try:
+        delete_resource_helper(resource)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
     
     return jsonify({'message': 'Resource deleted successfully'})
 
@@ -1354,36 +1514,46 @@ def get_course_structure(course_id):
         })
     return jsonify(result)
 
-@app.route('/admin/resources', methods=['POST'])
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/admin/resources/upload', methods=['POST'])
 @jwt_required()
-def add_admin_resource():
-    if not check_role(['admin', 'management']): return jsonify({'error': 'Unauthorized'}), 403
-    data = request.json
-    topic_id = data.get('topic_id')
-    if not topic_id: return jsonify({'error': 'topic_id required'}), 400
+def upload_file():
+    print("DEBUG: Upload request received") # Debug log
+    print(f"DEBUG: Files: {request.files}") 
     
-    new_res = Resource(
-        title=data.get('title'),
-        url=data.get('url'),
-        format=data.get('format'), # video, article, pdf
-        topic_id=topic_id,
-        source='manual',
-        is_auto_fetched=False
-    )
-    db.session.add(new_res)
-    db.session.commit()
-    return jsonify(new_res.to_dict())
+    if not check_role(['admin', 'management']):
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Append timestamp to avoid collision
+        import time
+        timestamp = int(time.time())
+        filename = f"{timestamp}_{filename}"
+        
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            os.makedirs(app.config['UPLOAD_FOLDER'])
+            
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        
+        # Generate absolute URL (Relative for portability)
+        file_url = url_for('download_file', name=filename, _external=False)
+        return jsonify({'url': file_url, 'message': 'File uploaded successfully'})
+        
+    return jsonify({'error': 'File type not allowed (PDF, TXT, DOCX only)'}), 400
 
-@app.route('/admin/resources/<int:resource_id>', methods=['DELETE'])
-@jwt_required()
-def delete_admin_resource(resource_id):
-    if not check_role(['admin', 'management']): return jsonify({'error': 'Unauthorized'}), 403
-    res = Resource.query.get(resource_id)
-    if not res: return jsonify({'error': 'Resource not found'}), 404
-    db.session.delete(res)
-    db.session.commit()
-    return jsonify({'message': 'Resource deleted'})
-
+@app.route('/uploads/<name>')
+def download_file(name):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], name)
 
 @app.route('/management/analytics', methods=['POST'])
 @jwt_required()
@@ -1404,10 +1574,10 @@ def management_analytics():
         query = User.query.filter_by(role='student')
         
         if uni_filter:
-            query = query.filter(User.university == uni_filter)
+            query = query.join(User.university_rel).filter(University.name == uni_filter)
         
         if degree_filter:
-            query = query.filter(User.university_course == degree_filter)
+            query = query.join(User.degree_rel).filter(Degree.name == degree_filter)
             
         students = query.all()
         
@@ -1426,13 +1596,13 @@ def management_analytics():
                 'id': s.id,
                 'name': f"{s.first_name} {s.last_name}" if s.first_name else s.username,
                 'email': s.username,
-                'university': s.university or 'N/A',
-                'degree': s.university_course or 'N/A',
+                'university': s.university_rel.name if s.university_rel else 'N/A',
+                'degree': s.degree_rel.name if s.degree_rel else 'N/A',
                 'enrolled_courses': enrolled_count,
                 'study_time': time_display,
                 'role': 'student',
-                'student_id': s.student_id,
-                'phone': s.phone,
+                'student_id': s.student_index_number,
+                'phone': s.phone_number,
                 'nic': s.nic
             })
 
@@ -1441,7 +1611,7 @@ def management_analytics():
         query = User.query.filter_by(role='admin')
         
         if uni_filter:
-            query = query.filter(User.university.ilike(f"%{uni_filter}%"))
+            query = query.join(User.university_rel).filter(University.name == uni_filter)
             
         admins = query.all()
         
@@ -1491,7 +1661,7 @@ def management_analytics():
                 'id': admin.id,
                 'name': f"{admin.first_name} {admin.last_name}" if admin.first_name else admin.username,
                 'email': admin.username,
-                'university': admin.university or 'N/A',
+                'university': admin.university_rel.name if admin.university_rel else 'N/A',
                 'degree': degree_name,
                 'courses': course_names,
                 'content_contributions': res_count,
@@ -1503,16 +1673,236 @@ def management_analytics():
     return jsonify(results)
 
 
+@app.route('/api/chat', methods=['POST'])
+@jwt_required()
+def chat_agent():
+    data = request.json
+    message = data.get('message', '')
+    context_str = data.get('context_str', '')
+    course_id = data.get('course_id')
+    topic_id = data.get('topic_id')
+    
+    # 1. Retrieve & Rank Context Resources
+    candidates = []
+    if topic_id:
+        # Get all resources for the topic
+        candidates = Resource.query.filter_by(topic_id=topic_id).all()
+    elif course_id:
+        # Get all resources for the course (via Topics)
+        topics = Topic.query.filter_by(course_id=course_id).all()
+        for t in topics:
+            candidates.extend(Resource.query.filter_by(topic_id=t.id).limit(5).all())
+            
+    # Simple Relevance Ranking (Keyword Match)
+    scored_candidates = []
+    user_keywords = set(message.lower().split())
+    
+    for r in candidates:
+        score = 0
+        title_lower = r.title.lower()
+        # Keyword overlap
+        overlap = sum(1 for w in user_keywords if w in title_lower)
+        score += overlap * 2
+        # Average Rating boost
+        if r.ratings:
+            avg = sum(rt.score for rt in r.ratings) / len(r.ratings)
+            score += avg * 0.5
+        
+        scored_candidates.append((score, r))
+        
+    # Sort and take top 5
+    scored_candidates.sort(key=lambda x: x[0], reverse=True)
+    top_resources = [x[1] for x in scored_candidates[:5]]
+    
+    context_resources = [f"{r.title} ({r.url}) - Format: {r.format}" for r in top_resources]
+    
+    # Robust System Prompt (Shared)
+    system_prompt = f"""
+    You are 'Study Buddy', an intelligent academic assistant.
+    
+    CURRENT CONTEXT:
+    {context_str}
+    
+    RELEVANT RESOURCES (from database):
+    {chr(10).join(['- ' + r for r in context_resources]) if context_resources else "No specific resources found matched to query."}
+    
+    INSTRUCTIONS:
+    1. Answer the student's question clearly and concisely.
+    2. If the Resources listed above are relevant to the question, explicitly recommend them (e.g., "You can check [Title] for more details").
+    3. If the question is outside the scope of provided resources, use your general knowledge.
+    4. Be encouraging and concise.
+    """
+
+    # 2. Generate Answer (OpenAI / Gemini)
+    openai_key = os.getenv('OPENAI_API_KEY')
+    gemini_key = os.getenv('GEMINI_API_KEY')
+    
+    preferred_provider = data.get('provider', 'auto') # 'auto', 'openai', 'gemini'
+    
+    answer = ""
+    success = False
+    
+    # Logic:
+    # If provider is 'openai', try OpenAI only (or first).
+    # If provider is 'gemini', try Gemini only (or first).
+    # If 'auto', try OpenAI then Gemini.
+    
+    use_openai = False
+    use_gemini = False
+    
+    if preferred_provider == 'openai':
+        use_openai = True
+    elif preferred_provider == 'gemini':
+        use_gemini = True
+    else:
+        # Auto: Try OpenAI, fallback to Gemini
+        use_openai = True 
+        # Falls through if fail
+    
+    # --- Try OpenAI ---
+    if use_openai and openai_key and not success:
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=openai_key)
+            
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": message}
+                ],
+                temperature=0.7,
+                max_tokens=300
+            )
+            answer = response.choices[0].message.content
+            success = True
+        except Exception as e:
+            print(f"OpenAI Failed: {e}")
+            if preferred_provider == 'openai':
+                answer = f"OpenAI Error: {str(e)}"
+            # If auto, we will try Gemini next
+            
+    # --- Try Gemini ---
+    # Attempt if:
+    # 1. user asked for gemini
+    # 2. OR user asked for auto (use_openai was set) AND success is False (OpenAI failed)
+    
+    should_try_gemini = (preferred_provider == 'gemini') or (preferred_provider == 'auto' and not success)
+    
+    if should_try_gemini and gemini_key and not success:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=gemini_key)
+            
+            # Dynamic Model Selection
+            model_name = 'gemini-1.5-flash'
+            try:
+                available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                flash_models = [m for m in available_models if 'flash' in m]
+                
+                if 'models/gemini-1.5-flash' in available_models:
+                    model_name = 'gemini-1.5-flash'
+                elif flash_models:
+                    model_name = flash_models[0].replace('models/', '')
+                elif available_models:
+                    model_name = available_models[0].replace('models/', '')
+            except:
+                pass 
+                
+            model = genai.GenerativeModel(model_name)
+            
+            # Construct Prompt
+            full_prompt = f"""
+            {system_prompt}
+            
+            USER QUESTION:
+            {message}
+            """
+            
+            response = model.generate_content(full_prompt)
+            answer = response.text
+            success = True
+        except Exception as e:
+            print(f"Gemini Error: {e}")
+            if not answer:
+                answer = f"Gemini Error: {str(e)}"
+            
+    if not success and not answer:
+        # Fallback
+        answer = f"I couldn't generate an answer using **{preferred_provider.upper()}**.\nPlease check your API keys in `backend/.env`."
+
+    return jsonify({'answer': answer})
+
+
 @app.route('/management/admin-details/<int:admin_id>', methods=['GET'])
 @jwt_required()
 def get_admin_details(admin_id):
     if not check_role(['management', 'admin']):
         return jsonify({'error': 'Unauthorized'}), 403
-        
+
+    admin = User.query.get(admin_id)
+    if not admin:
+        return jsonify({'error': 'Admin not found'}), 404
+
     degree = Degree.query.filter_by(admin_id=admin_id).first()
     courses = []
     if degree:
         courses = Course.query.filter_by(degree_id=degree.id).all()
+    
+    return jsonify({
+        'admin': {
+            'id': admin.id,
+            'name': admin.first_name,
+            'email': admin.username
+        },
+        'degree': {
+            'name': degree.name if degree else "No Degree Assigned",
+            'university': admin.university_rel.name if admin.university_rel else "N/A"
+        },
+        'courses': [{
+            'id': c.id, 
+            'name': c.module_name,
+            'code': c.module_id,
+            'student_count': Enrollment.query.filter_by(course_id=c.id).count()
+        } for c in courses]
+    })
+
+@app.route('/api/history', methods=['GET'])
+@jwt_required()
+def get_user_history():
+    current_user_id = get_jwt_identity()
+    
+    # query recent interactions
+    # We want unique resources, sorted by latest interaction
+    logs = InteractionLog.query.filter_by(user_id=current_user_id)\
+            .order_by(InteractionLog.timestamp.desc()).all()
+    
+    seen_resources = set()
+    history = []
+    
+    for log in logs:
+        if log.resource_id in seen_resources:
+            continue
+            
+        seen_resources.add(log.resource_id)
+        res = Resource.query.get(log.resource_id)
+        
+        if res:
+            # Determine category (Topic/Course name would be better but expensive, simplified for now)
+            category = "General"
+            if res.topic:
+                category = res.topic.name
+                
+            history.append({
+                'id': res.id,
+                'title': res.title,
+                'type': res.format, # video, article, pdf
+                'date': log.timestamp.strftime("%b %d, %Y %I:%M %p"),
+                'category': category,
+                'url': res.url
+            })
+            
+    return jsonify(history)
 
     course_details = []
     

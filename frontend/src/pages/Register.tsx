@@ -4,6 +4,7 @@ import api from '../api';
 import OtpVerification from '../components/OtpVerification';
 
 const UNIVERSITY_COURSES: { [key: string]: string[] } = {
+    "Demo University": ["Computer Science"],
     "University of Colombo": ["Medicine", "Science", "Law", "Arts", "Management & Finance", "Technology", "Nursing", "Computing"],
     "University of Peradeniya": ["Agriculture", "Allied Health Sciences", "Arts", "Dental Sciences", "Engineering", "Management", "Medicine", "Science", "Veterinary Medicine"],
     "University of Sri Jayewardenepura": ["Humanities and Social Sciences", "Applied Sciences", "Management Studies & Commerce", "Medical Sciences", "Technology", "Engineering", "Allied Health Sciences", "Computing"],
@@ -71,6 +72,7 @@ function Register() {
 
     // List of Universities
     const sriLankaUniversities = [
+        "Demo University",
         "University of Colombo", "University of Peradeniya", "University of Sri Jayewardenepura",
         "University of Kelaniya", "University of Moratuwa", "University of Jaffna",
         "University of Ruhuna", "Eastern University, Sri Lanka", "South Eastern University of Sri Lanka",

@@ -7,6 +7,7 @@ interface Resource {
     url: string;
     format: 'video' | 'article' | 'pdf';
     quality_score?: number;
+    source: 'manual' | 'auto'; // Added source field
 }
 
 interface Topic {
@@ -31,6 +32,7 @@ function AdminDashboard() {
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [activeCourse, setActiveCourse] = useState<Course | null>(null);
+    const [viewingTopic, setViewingTopic] = useState<Topic | null>(null); // Track topic for resource modal
 
     // Resource Modal State
     const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
@@ -42,6 +44,9 @@ function AdminDashboard() {
     const [newCourseCode, setNewCourseCode] = useState('');
     const [topicInput, setTopicInput] = useState('');
     const [editCourseName, setEditCourseName] = useState('');
+
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [showAdminUploadsOnly, setShowAdminUploadsOnly] = useState(true); // Default to true as requested
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -122,13 +127,36 @@ function AdminDashboard() {
         } catch (err: any) { alert('Error deleting topic'); }
     };
 
+
+
+    // Resource Actions
     // Resource Actions
     const handleAddResource = async () => {
-        if (!activeTopicId || !resForm.title || !resForm.url) return alert('Fill all fields');
+        if (!activeTopicId || !resForm.title) return alert('Title/Fields required');
+
+        let finalUrl = resForm.url;
+
+        // Handle File Upload
+        if (uploadFile && (resForm.format === 'pdf' || resForm.format === 'article')) {
+            const formData = new FormData();
+            formData.append('file', uploadFile);
+
+            try {
+                // Let Axios handle boundary
+                const uploadRes = await api.post('/admin/resources/upload', formData);
+                finalUrl = uploadRes.data.url;
+            } catch (err: any) {
+                return alert('File upload failed: ' + (err.response?.data?.error || err.message));
+            }
+        } else {
+            if (!resForm.url) return alert('URL required');
+        }
+
         try {
-            await api.post('/admin/resources', { ...resForm, topic_id: activeTopicId });
+            await api.post('/admin/resources', { ...resForm, url: finalUrl, topic_id: activeTopicId });
             setIsResourceModalOpen(false);
             setResForm({ title: '', url: '', format: 'video' });
+            setUploadFile(null); // Reset
             if (activeCourse) fetchTopics(activeCourse.id);
         } catch (err: any) { alert(err.response?.data?.error || 'Error adding resource'); }
     }
@@ -312,53 +340,125 @@ function AdminDashboard() {
                                         <input value={topicInput} onChange={e => setTopicInput(e.target.value)} placeholder="Add topics (comma separated)..." className="input-modern" style={{ flex: 1 }} />
                                         <button onClick={handleAddTopics} className="btn-success">+ Add</button>
                                     </div>
-                                    <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.5rem' }}>Tip: You can add multiple topics at once.</p>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.5rem' }}>Tip: You can add multiple topics at once.</p>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: '#475569' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={showAdminUploadsOnly}
+                                                onChange={e => setShowAdminUploadsOnly(e.target.checked)}
+                                            />
+                                            Show Admin Uploads Only
+                                        </label>
+                                    </div>
                                 </div>
                                 <div className="topics-list">
                                     {topics.length === 0 ? <div className="empty-topics">No topics added yet. Add one above.</div> : (
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                                            {topics.map(t => (
-                                                <div key={t.id} className="topic-card">
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <span style={{ fontWeight: 600, color: '#334155' }}>{t.name}</span>
-                                                        <button onClick={() => handleDeleteTopic(t.id)} className="icon-btn-danger" title="Remove Topic">✕</button>
-                                                    </div>
+                                            {topics.map(t => {
 
-                                                    {/* Resources List */}
-                                                    <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
-                                                        <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Resources</p>
-                                                        {t.resources && t.resources.length > 0 ? (
-                                                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                                {t.resources.map(r => (
-                                                                    <li key={r.id} className="resource-item">
-                                                                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                            <span className={`fmt-badge fmt-${r.format}`}>
-                                                                                {r.format === 'pdf' ? 'PDF' : (r.format === 'article' ? 'LINK' : 'VID')}
-                                                                            </span>
-                                                                            {r.quality_score !== undefined && (
-                                                                                <span style={{ fontSize: '0.65rem', background: '#F1F5F9', color: '#64748B', padding: '2px 4px', borderRadius: '4px', border: '1px solid #E2E8F0', fontWeight: 600 }} title="AI Quality Score">
-                                                                                    QS:{r.quality_score}
-                                                                                </span>
-                                                                            )}
-                                                                            <a href={r.url} target="_blank" rel="noopener noreferrer" className="resource-link" title={r.title}>{r.title}</a>
-                                                                        </div>
-                                                                        <button onClick={() => handleDeleteResource(r.id)} className="icon-btn-danger-sm">×</button>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        ) : <p style={{ fontSize: '0.8rem', color: '#CBD5E1', fontStyle: 'italic', margin: 0 }}>No resources.</p>}
-                                                        <button
-                                                            onClick={() => { setActiveTopicId(t.id); setIsResourceModalOpen(true); }}
-                                                            className="btn-add-res"
-                                                        >
-                                                            + Add Resource
-                                                        </button>
+
+                                                return (
+                                                    <div key={t.id} className="topic-card" onClick={() => setViewingTopic(t)} title="Click to manage resources">
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                <span className="topic-title">{t.name}</span>
+                                                                <span className="topic-badge">
+                                                                    {t.resources.length} RESOURCES
+                                                                </span>
+                                                            </div>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id); }}
+                                                                className="btn-card-action"
+                                                                title="Delete Topic"
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        </div>
+                                                        <div className="topic-footer">
+                                                            <span>Manage Content</span>
+                                                            <span>→</span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                )
+                                            })}
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Topic Resources Modal */}
+            {viewingTopic && (
+                <div className="modal-overlay" onClick={() => setViewingTopic(null)}>
+                    <div className="modal-content animate-scale-in" style={{ width: '500px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>{viewingTopic.name} - Resources</h3>
+                            <button onClick={() => setViewingTopic(null)} className="close-btn">×</button>
+                        </div>
+                        <div style={{ padding: '1.5rem', overflowY: 'auto' }}>
+                            <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <p style={{ fontSize: '0.9rem', color: '#64748B', margin: 0 }}>
+                                    Manage resources for this topic.
+                                </p>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8rem', color: '#475569' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={showAdminUploadsOnly}
+                                        onChange={e => setShowAdminUploadsOnly(e.target.checked)}
+                                    />
+                                    Admin Only
+                                </label>
+                            </div>
+
+                            {/* Resource List in Modal */}
+                            {(() => {
+                                const displayedResources = showAdminUploadsOnly
+                                    ? viewingTopic.resources.filter(r => r.source === 'manual')
+                                    : viewingTopic.resources;
+
+                                return displayedResources.length > 0 ? (
+                                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {displayedResources.map(r => (
+                                            <li key={r.id} className="resource-item" style={{ border: '1px solid #E2E8F0' }}>
+                                                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span className={`fmt-badge fmt-${r.format}`}>
+                                                        {r.format === 'pdf' ? 'PDF' : (r.format === 'article' ? 'LINK' : 'VID')}
+                                                    </span>
+                                                    {r.quality_score !== undefined && (
+                                                        <span style={{ fontSize: '0.65rem', background: '#F1F5F9', color: '#64748B', padding: '2px 4px', borderRadius: '4px', border: '1px solid #E2E8F0', fontWeight: 600 }}>
+                                                            QS:{r.quality_score}
+                                                        </span>
+                                                    )}
+                                                    <a href={r.url} target="_blank" rel="noopener noreferrer" className="resource-link" title={r.title} style={{ maxWidth: '300px' }}>{r.title}</a>
+                                                </div>
+                                                <button onClick={() => handleDeleteResource(r.id)} className="icon-btn-danger-sm" title="Delete Resource" style={{ fontSize: '0.9rem' }}>🗑️</button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : <p style={{ color: '#94A3B8', fontStyle: 'italic', textAlign: 'center' }}>No resources found.</p>;
+                            })()}
+
+                            <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #F1F5F9' }}>
+                                <button
+                                    onClick={() => {
+                                        setActiveTopicId(viewingTopic.id);
+                                        // Close view modal? Or maybe keep it open behind? 
+                                        // For simplicity, let's close view modal or handle stacking.
+                                        // Actually `setIsResourceModalOpen` opens a new modal.
+                                        // Let's close this one temporarily or stack.
+                                        // Current CSS might handle stacking but safer to close "View" and open "Add".
+                                        // But user wants to manage. 
+                                        // Let's open "Add" on top. Ideally Z-index handles it.
+                                        setIsResourceModalOpen(true);
+                                    }}
+                                    className="btn-add-res"
+                                >
+                                    + Add New Resource
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -391,13 +491,29 @@ function AdminDashboard() {
                             style={{ marginBottom: '1rem' }}
                         />
 
-                        <label className="input-label">URL</label>
+                        {resForm.format !== 'video' && (
+                            <div style={{ marginBottom: '1rem', padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                                <label className="input-label" style={{ marginBottom: '5px' }}>Upload File (Optional)</label>
+                                <input
+                                    type="file"
+                                    onChange={e => setUploadFile(e.target.files?.[0] || null)}
+                                    accept={resForm.format === 'pdf' ? ".pdf" : ".pdf,.doc,.docx,.txt"}
+                                    style={{ fontSize: '0.9rem' }}
+                                />
+                                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '4px' }}>
+                                    Uploading will override the URL below.
+                                </p>
+                            </div>
+                        )}
+
+                        <label className="input-label">URL {resForm.format !== 'video' && '(or automatic via upload)'}</label>
                         <input
                             placeholder="https://..."
                             value={resForm.url}
                             onChange={e => setResForm({ ...resForm, url: e.target.value })}
                             className="input-modern"
-                            style={{ marginBottom: '1.5rem' }}
+                            disabled={!!uploadFile}
+                            style={{ marginBottom: '1.5rem', opacity: uploadFile ? 0.6 : 1 }}
                         />
 
                         <div style={{ display: 'flex', gap: '10px' }}>
@@ -493,6 +609,19 @@ function AdminDashboard() {
                     border: 1px solid #CBD5E1; 
                     border-radius: 6px; 
                     cursor: pointer;
+                }
+                .btn-danger-sm {
+                    padding: 4px 8px; 
+                    background: #FEF2F2; 
+                    border: 1px solid #FECACA; 
+                    color: #DC2626; 
+                    border-radius: 6px; 
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                    transition: background 0.2s;
+                }
+                .btn-danger-sm:hover {
+                    background: #FECACA;
                 }
                 .btn-add-res {
                     margin-top: 0.8rem; 
@@ -669,17 +798,89 @@ function AdminDashboard() {
                 }
                 
                 .topic-card {
-                    background: white; border: 1px solid #E2E8F0; padding: 1rem; border-radius: 12px;
-                    display: flex; flexDirection: column; gap: 0.5rem;
-                    box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: box-shadow 0.2s;
+                    background: #ffffff; 
+                    border: 1px solid #e2e8f0; 
+                    border-left: 4px solid #3b82f6; 
+                    padding: 1.5rem; 
+                    border-radius: 16px;
+                    display: flex; 
+                    flex-direction: column; 
+                    gap: 1rem;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
+                    transition: all 0.3s ease;
+                    position: relative;
+                    cursor: pointer;
+                    overflow: hidden;
+                    max-width: 100%;
                 }
-                .topic-card:hover { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+                .topic-card:hover { 
+                    transform: translateY(-4px);
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); 
+                    border-color: #3b82f6;
+                }
+                .topic-badge {
+                    font-size: 0.7rem; 
+                    color: #2563eb; 
+                    background: #eff6ff; 
+                    padding: 4px 10px; 
+                    border-radius: 99px;
+                    width: fit-content;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                    border: 1px solid #dbeafe;
+                    text-transform: uppercase;
+                }
+                .topic-title {
+                    font-weight: 700; font-size: 1.1rem; color: #0f172a; letter-spacing: -0.5px;
+                }
+                body.dark-mode .topic-title { color: #f8fafc; }
+
+                .topic-footer {
+                    margin-top: auto; padding-top: 0.75rem; 
+                    display: flex; align-items: center; gap: 6px; 
+                    font-size: 0.75rem; color: #64748b; font-weight: 500;
+                    border-top: 1px solid #f1f5f9;
+                }
+                .topic-footer:hover { color: #3b82f6; }
+                
+                .btn-card-action {
+                    opacity: 0; transform: translateX(10px);
+                    transition: all 0.2s;
+                    padding: 6px; border-radius: 6px;
+                    border: none; background: #fee2e2; color: #ef4444; 
+                    cursor: pointer;
+                }
+                .topic-card:hover .btn-card-action { opacity: 1; transform: translateX(0); }
+                .btn-card-action:hover { background: #fecaca; }
+                
+                body.dark-mode .topic-footer { border-color: #334155; color: #94a3b8; }
+                body.dark-mode .btn-card-action { background: #450a0a; color: #f87171; }
+                body.dark-mode .btn-card-action:hover { background: #7f1d1d; }
+                
+                body.dark-mode .topic-card {
+                    background: #1e293b;
+                    border-color: #334155;
+                    border-left-color: #60a5fa;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+                }
+                body.dark-mode .topic-card:hover { border-color: #60a5fa; }
+                body.dark-mode .topic-badge {
+                    background: #172554;
+                    color: #93c5fd;
+                    border-color: #1e40af;
+                }
                 
                 .resource-item {
                     display: flex; justify-content: space-between; alignItems: center; fontSize: 0.85rem;
                     background: #F8FAFC; padding: 6px 10px; border-radius: 6px;
+                    max-width: 100%;
+                    overflow: hidden;
                 }
-                .resource-link { color: #334155; text-decoration: none; font-weight: 500; }
+                .resource-link { 
+                    color: #334155; text-decoration: none; font-weight: 500; 
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
+                    max-width: 180px; /* Force truncation */
+                }
                 .resource-link:hover { text-decoration: underline; color: #2563EB; }
                 
                 .fmt-badge { fontSize: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; }

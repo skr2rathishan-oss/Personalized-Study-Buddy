@@ -57,10 +57,16 @@ body.dark-mode {
     background-image: radial-gradient(at 0% 0%, var(--dash-bg-gradient-start) 0px, transparent 50%),
         radial-gradient(at 100% 0%, var(--dash-bg-gradient-end) 0px, transparent 50%);
 
-    min-height: 100vh;
-    padding: 2rem;
-    /* Reduced padding for tidiness */
-    position: relative;
+    /* LOCKED CONTAINER - Fixed positioning, no scrolling */
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(100vh - 70px);
+    overflow: hidden;
+    padding: 5px 2rem 0.1rem 2rem;
+    /* Minimal bottom padding to extend further down */
     transition: grid-template-columns 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -106,13 +112,11 @@ body.dark-mode {
     }
 }
 
-/* Left Panel - Boxed Design */
+/* Left Panel - Boxed Design with Independent Scrolling */
 .filters-panel {
-    position: sticky;
-    top: 80px;
     display: flex;
     flex-direction: column;
-    align-self: start;
+    align-self: stretch;
     z-index: 10;
 
     /* NEW: Card appearance */
@@ -121,6 +125,10 @@ body.dark-mode {
     border-radius: 16px;
     padding: 1.5rem;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+
+    /* INDEPENDENT SCROLLING */
+    overflow-y: hidden;
+    max-height: calc(100vh - 70px);
 }
 
 .filters-header {
@@ -325,13 +333,19 @@ body.dark-mode .glassy-input:focus {
     background: rgba(59, 130, 246, 0.2);
 }
 
-/* Right Panel */
+/* Right Panel with Independent Scrolling */
 .content-panel {
     /* Unbox for grid alignment - Content flows naturally in 2nd column of grid */
     display: flex;
     flex-direction: column;
     min-height: 0;
     /* Fix for flex child scrolling */
+
+    /* INDEPENDENT SCROLLING */
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: calc(100vh - 70px);
+    align-self: stretch;
 }
 
 .welcome-header {
@@ -497,6 +511,68 @@ body.dark-mode .resource-list::-webkit-scrollbar-thumb {
 
 body.dark-mode .resource-list::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
+}
+
+/* Custom Scrollbar for Filter Panel */
+.filters-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filters-panel::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+body.dark-mode .filters-panel::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.filters-panel::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+body.dark-mode .filters-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.filters-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .filters-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Custom Scrollbar for Content Panel */
+.content-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.content-panel::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+body.dark-mode .content-panel::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.content-panel::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.3);
+    border-radius: 4px;
+}
+
+body.dark-mode .content-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.content-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.5);
+}
+
+body.dark-mode .content-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 .resource-item {
@@ -668,7 +744,7 @@ body.dark-mode .dashboard-footer {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     /* Responsive Grid */
-    gap: 1.5rem;
+    gap: 0.5rem;
     padding: 0.5rem;
 
     /* SCROLLABLE CONTAINER CONFIGURATION REMOVED to allow main page scroll */
@@ -808,7 +884,7 @@ body.dark-mode .dashboard-footer {
 .card-footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 1rem;
     margin-top: auto;
     padding-top: 1.5rem;

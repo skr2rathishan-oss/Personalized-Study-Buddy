@@ -64,6 +64,8 @@ function UserManagement() {
         }
     };
 
+    const currentUserRole = localStorage.getItem('role');
+
     if (loading) return <div className="loading-spinner">Loading Users...</div>;
 
     return (
@@ -80,8 +82,8 @@ function UserManagement() {
                             <th>Role</th>
                             <th>Full Name</th>
                             <th>NIC</th>
-                            <th>University</th>
-                            <th>Course</th>
+                            {currentUserRole === 'management' && <th>University</th>}
+                            {currentUserRole === 'management' && <th>Course</th>}
                             <th>Student ID</th>
                             <th>Phone</th>
                             <th>Actions</th>
@@ -99,12 +101,12 @@ function UserManagement() {
                                 </td>
                                 <td>{user.first_name || '-'} {user.last_name || ''}</td>
                                 <td>{user.nic || '-'}</td>
-                                <td>{user.university || '-'}</td>
-                                <td>{user.course || '-'}</td>
+                                {currentUserRole === 'management' && <td>{user.university || '-'}</td>}
+                                {currentUserRole === 'management' && <td>{user.course || '-'}</td>}
                                 <td>{user.student_id || '-'}</td>
                                 <td>{user.phone || '-'}</td>
                                 <td>
-                                    {user.role === 'student' && (
+                                    {currentUserRole === 'management' && user.role === 'student' && (
                                         <button
                                             className="btn-promote"
                                             onClick={() => handlePromote(user.id)}
@@ -113,7 +115,7 @@ function UserManagement() {
                                             {actionLoading === user.id ? 'Promoting...' : 'Promote to Admin'}
                                         </button>
                                     )}
-                                    {user.role === 'admin' && (
+                                    {currentUserRole === 'management' && user.role === 'admin' && (
                                         <button
                                             className="btn-demote"
                                             onClick={() => handleDemote(user.id)}

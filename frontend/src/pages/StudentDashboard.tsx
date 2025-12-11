@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import api from '../api';
 import '../dashboard.css';
 import SearchableSelect from '../components/SearchableSelect';
+import ChatWidget from '../components/Agent/ChatWidget';
 
 interface Course {
     id: number;
@@ -320,6 +321,7 @@ function StudentDashboard() {
 
     const [agentStatus, setAgentStatus] = useState("Idle");
     const [isAgentDetailsExpanded, setIsAgentDetailsExpanded] = useState(false);
+    const [chatOpen, setChatOpen] = useState(false);
 
     const [limit, setLimit] = useState(20);
     const [viewingResource, setViewingResource] = useState<Resource | null>(() => getSession('viewingResource', null));
@@ -534,7 +536,17 @@ function StudentDashboard() {
     };
 
     return (
-        <div className="dashboard-container" style={{ maxWidth: '1400px', padding: '2rem', marginTop: '4rem' }}>
+        <div className="dashboard-container" style={{ maxWidth: '1400px', padding: '2rem', marginTop: '1rem' }}>
+            <ChatWidget
+                isOpen={chatOpen}
+                onClose={() => setChatOpen(false)}
+                context={{
+                    courseId: selectedCourse,
+                    topicId: selectedTopic,
+                    courseName: courses.find(c => c.id === selectedCourse)?.name || '',
+                    topicName: topics.find(t => t.id === selectedTopic)?.name || ''
+                }}
+            />
             <div className={`dashboard-split-layout ${resources.length > 0 ? 'results-active' : ''}`}>
 
                 {/* LEFT PANEL: Filters */}
@@ -549,9 +561,26 @@ function StudentDashboard() {
                     </button>
 
                     <div className={`filters-content-wrapper ${mobileFiltersOpen ? 'open' : ''} desktop-visible`}>
-                        <div className="filters-header">
-                            <span className="lightning-icon">⚡</span>
-                            <h3>Smart Filters</h3>
+                        <div className="filters-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className="lightning-icon">⚡</span>
+                                <h3>Smart Filters</h3>
+                            </div>
+                            <button
+                                onClick={() => setChatOpen(true)}
+                                title="Ask Study Buddy AI"
+                                style={{
+                                    background: 'var(--primary)',
+                                    color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                    boxShadow: '0 4px 10px rgba(0,0,0,0.15)', fontSize: '1.2rem',
+                                    transition: 'transform 0.2s'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                                🤖
+                            </button>
                         </div>
 
                         <div className="filters-body">
