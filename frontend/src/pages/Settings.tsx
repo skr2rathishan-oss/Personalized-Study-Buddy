@@ -104,7 +104,7 @@ function Settings() {
 
                     {showAppInfo && (
                         <div className="animate-fade-in" style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                            <div className="app-info-grid">
                                 {/* Left Side: Project Details */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                     <div>
@@ -193,6 +193,26 @@ function Settings() {
                 }
                 .app-info-trigger:hover {
                     color: var(--primary) !important;
+                }
+
+                .app-info-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 2rem;
+                }
+
+                @media (max-width: 768px) {
+                    .profile-content-card {
+                        padding: 1.5rem;
+                    }
+                    .app-info-grid {
+                        grid-template-columns: 1fr;
+                        gap: 1.5rem;
+                    }
+                    .dashboard-container {
+                        margin-top: 1rem !important; /* Override inline style */
+                        padding: 0 1rem;
+                    }
                 }
             `}</style>
         </div>

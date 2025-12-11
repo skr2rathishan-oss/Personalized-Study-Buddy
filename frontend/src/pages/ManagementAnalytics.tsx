@@ -95,20 +95,9 @@ function ManagementAnalytics() {
     };
 
     return (
-        <div style={{ display: 'flex', minHeight: 'calc(100vh - 64px)', marginTop: '0' }}>
+        <div className="management-layout">
             {/* Sidebar Filter */}
-            <aside className="management-sidebar" style={{
-                width: '280px',
-                borderRight: '1px solid var(--border-light)',
-                padding: '1.5rem',
-                position: 'fixed',
-                top: '64px',
-                bottom: 0,
-                left: 0,
-                overflowY: 'auto',
-                zIndex: 900,
-                background: 'var(--surface-color)'
-            }}>
+            <aside className="management-sidebar">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
                     <span style={{ fontSize: '1.2rem' }}>📊</span>
                     <h3 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--text-main)' }}>Filters</h3>
@@ -196,8 +185,8 @@ function ManagementAnalytics() {
             </aside>
 
             {/* Main Content */}
-            <main style={{ marginLeft: '280px', flex: 1, padding: '2rem', background: 'var(--bg-color)', minHeight: '100vh', boxSizing: 'border-box' }}>
-                <div style={{ marginBottom: '2rem', marginTop: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <main className="management-content">
+                <div style={{ marginBottom: '2rem', marginTop: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>
                         <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
                             {selectedRole === 'admin' ? 'Administrator Overview' : 'Student Registry'}
@@ -218,7 +207,7 @@ function ManagementAnalytics() {
                         {users.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No users found matching current filters.</div>
                         ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+                            <div className="management-grid">
                                 {users.map(user => (
                                     <div
                                         key={user.id}
@@ -230,17 +219,10 @@ function ManagementAnalytics() {
                                             boxShadow: 'var(--shadow-md)',
                                             border: '1px solid var(--border-light)',
                                             cursor: user.role === 'admin' ? 'pointer' : 'default',
-                                            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                                             overflow: 'hidden',
                                             position: 'relative',
                                             display: 'flex',
                                             flexDirection: 'column',
-                                        }}
-                                        onMouseEnter={e => {
-                                            if (user.role === 'admin') e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (user.role === 'admin') e.currentTarget.style.transform = 'translateY(0) scale(1)';
                                         }}
                                     >
                                         {/* ID Card Header Detail */}
@@ -438,12 +420,81 @@ function ManagementAnalytics() {
             )}
 
             <style>{`
+                .management-layout {
+                    display: flex;
+                    min-height: calc(100vh - 64px);
+                    margin-top: 0;
+                }
+
+                .management-sidebar {
+                    width: 280px;
+                    border-right: 1px solid var(--border-light);
+                    padding: 1.5rem;
+                    position: fixed;
+                    top: 64px;
+                    bottom: 0;
+                    left: 0;
+                    overflow-y: auto;
+                    z-index: 900;
+                    background: var(--surface-color);
+                }
+
+                .management-content {
+                    margin-left: 280px;
+                    flex: 1;
+                    padding: 2rem;
+                    background: var(--bg-color);
+                    min-height: 100vh;
+                    box-sizing: border-box;
+                }
+
+                .management-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                    gap: 1.5rem;
+                }
+
+                .management-card {
+                    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                }
+                .management-card:hover {
+                    transform: translateY(-8px) scale(1.02);
+                }
+
                 body.dark-mode .management-sidebar {
                     border-right-color: var(--border-light);
                 }
                 body.dark-mode select option {
                     background: var(--surface-color);
                     color: var(--text-main);
+                }
+
+                /* Mobile Responsiveness */
+                @media (max-width: 900px) {
+                    .management-layout {
+                        flex-direction: column;
+                    }
+
+                    .management-sidebar {
+                        width: 100%;
+                        position: relative;
+                        top: 0;
+                        left: 0;
+                        height: auto;
+                        border-right: none;
+                        border-bottom: 1px solid var(--border-light);
+                        padding: 1rem;
+                    }
+
+                    .management-content {
+                        margin-left: 0;
+                        padding: 1rem;
+                        width: 100%;
+                    }
+                    
+                    .management-grid {
+                         grid-template-columns: 1fr;
+                    }
                 }
             `}</style>
         </div>

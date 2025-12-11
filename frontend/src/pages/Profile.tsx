@@ -248,6 +248,20 @@ function Profile() {
                     color: var(--text-main);
                     font-weight: 600;
                 }
+
+                @media (max-width: 768px) {
+                    .grid-2 {
+                        grid-template-columns: 1fr;
+                        gap: 1rem;
+                    }
+                    .profile-content-card {
+                        padding: 1.5rem;
+                    }
+                    .dashboard-container {
+                        margin-top: 1rem !important; /* Override inline style */
+                        padding: 0 1rem;
+                    }
+                }
             `}</style>
         </div>
     );

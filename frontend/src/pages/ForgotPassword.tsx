@@ -22,7 +22,7 @@ function ForgotPassword() {
         setLoading(true);
         try {
             await api.post('/auth/otp/send', {
-                email: identifier
+                phone_number: identifier
             });
             // Assuming simplified flow where identifier is email. Backend resolves.
             setStep(2);
@@ -224,7 +224,10 @@ function ForgotPassword() {
                     )}
                 </div>
             </div>
-        </div>
+
+
+
+        </div >
     );
 }
 

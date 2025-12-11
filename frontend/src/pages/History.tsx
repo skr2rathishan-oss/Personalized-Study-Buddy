@@ -31,16 +31,9 @@ function History() {
     };
 
     return (
-        <div className="dashboard-container animate-fade-in" style={{ marginTop: '2rem' }}>
+        <div className="dashboard-container animate-fade-in history-container">
             {/* Header */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '2rem',
-                borderBottom: '1px solid var(--border-light)',
-                paddingBottom: '1rem'
-            }}>
+            <div className="history-header">
                 <div>
                     <h1 className="section-title" style={{ marginBottom: '0.2rem' }}>Learning History</h1>
                     <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -76,20 +69,20 @@ function History() {
                 <div className="history-grid">
                     {historyItems.map(item => (
                         <div key={item.id} className="history-card">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div className="card-header-row">
                                 <div className={`card-icon type-${item.type}`}>
                                     {getTypeIcon(item.type)}
                                 </div>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                                    className="btn-delete-card"
+                                    className="btn-delete-card mobile-hidden" /* Hidden here on mobile, moved to end */
                                     title="Remove"
                                 >
                                     ✕
                                 </button>
                             </div>
 
-                            <div style={{ marginTop: '1rem' }}>
+                            <div className="card-content-block">
                                 <span className="card-category">{item.category}</span>
                                 <h3 className="card-title">{item.title}</h3>
                                 <p className="card-date">{item.date}</p>
@@ -98,12 +91,31 @@ function History() {
                             <div className="card-actions">
                                 <button className="btn-view">Resume</button>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            )}
 
-            <style>{`
+                            {/* Mobile Delete Button (positioned via flex) */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                                className="btn-delete-card mobile-only-delete"
+                                title="Remove"
+                                style={{ display: 'none' }} /* Handle via CSS media query if possible or inline style replacement */
+                            >
+                                ✕
+                            </button>
+                            <style>{`
+                /* Global container override */
+                .history-container {
+                    /* Managed by dashboard-page-container */
+                }
+
+                .history-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 2rem;
+                    border-bottom: 1px solid var(--border-light);
+                    padding-bottom: 1rem;
+                }
+
                 .btn-clear {
                     background: transparent;
                     border: 1px solid #ef4444;
@@ -115,9 +127,7 @@ function History() {
                     cursor: pointer;
                     transition: all 0.2s;
                 }
-                .btn-clear:hover {
-                    background: #fee2e2;
-                }
+                .btn-clear:hover { background: #fee2e2; }
 
                 .history-grid {
                     display: grid;
@@ -141,6 +151,13 @@ function History() {
                     transform: translateY(-4px);
                     box-shadow: var(--shadow-md);
                     border-color: var(--primary);
+                }
+
+                .card-header-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    /* width: 100%; Desktop default */
                 }
 
                 .card-icon {
@@ -167,10 +184,10 @@ function History() {
                     transition: all 0.2s;
                     opacity: 0.6;
                 }
-                .btn-delete-card:hover {
-                    background: #fee2e2;
-                    color: #ef4444;
-                    opacity: 1;
+                .btn-delete-card:hover { opacity: 1; background: #fee2e2; color: #ef4444; }
+
+                .card-content-block {
+                    margin-top: 1rem;
                 }
 
                 .card-category {
@@ -189,10 +206,6 @@ function History() {
                     color: var(--text-main);
                     margin: 0 0 0.5rem 0;
                     line-height: 1.4;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
                 }
 
                 .card-date {
@@ -219,12 +232,68 @@ function History() {
                     cursor: pointer;
                     transition: all 0.2s;
                 }
-                .btn-view:hover {
-                    background: var(--primary);
-                    color: white;
-                    border-color: var(--primary);
+                .btn-view:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+                /* Mobile Compact List View */
+                @media (max-width: 768px) {
+                    .history-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 1rem;
+                    }
+                    
+                    .history-grid {
+                        grid-template-columns: 1fr;
+                        gap: 0.75rem; /* Tighter gap */
+                    }
+
+                    .history-card {
+                        flex-direction: row; /* Horizontal layout */
+                        align-items: center;
+                        padding: 1rem;
+                        gap: 1rem;
+                        min-height: auto;
+                    }
+
+                    .card-header-row {
+                        flex: 0 0 auto;
+                        width: auto;
+                    }
+                    
+                    .card-content-block {
+                        margin-top: 0;
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                    }
+
+                    .card-title {
+                        font-size: 1rem;
+                        margin-bottom: 0.2rem;
+                    }
+                    
+                    .card-category { display: none; /* Hide category to save space, or show small */ }
+                    .card-date { font-size: 0.75rem; }
+
+                    .card-actions {
+                        margin-top: 0;
+                        padding-top: 0;
+                        border-top: none;
+                        width: auto;
+                        display: none; /* Hide resume button on mobile list for cleanliness? Or make icon? */
+                    }
+                    
+                    .btn-delete-card {
+                        position: static;
+                        margin-left: auto;
+                    }
                 }
             `}</style>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

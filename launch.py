@@ -221,8 +221,8 @@ def main():
         print(f"\n=======================================================")
         print(f" [SUCCESS] PROJECT LAUNCHED SUCCESSFULLY")
         print(f" -------------------------------------------------------")
-        print(f" 🏠 Main App   : {app_url}  (Register here)")
-        print(f" 📡 Dashboard  : {dashboard_url}  (View Subscriptions)")
+        print(f" > Main App    : {app_url}  (Register here)")
+        print(f" > Dashboard   : {dashboard_url}  (View Subscriptions)")
         print(f"=======================================================\n")
         print("Use Ctrl+C to stop all servers.")
         

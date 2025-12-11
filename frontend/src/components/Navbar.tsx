@@ -322,7 +322,7 @@ function Navbar() {
                 </div>
             </div>
 
-            {/* Mobile Bottom Navigation Bar */}
+            {/* Mobile Bottom Navigation Bar - Enhanced */}
             <div className="mobile-bottom-nav">
                 <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
                     <div className="icon">🏠</div>
@@ -338,9 +338,16 @@ function Navbar() {
                         <span>Track</span>
                     </Link>
                 )}
-                {/* Re-use user profile trigger or simple settings link */}
                 <div className="mobile-nav-item" onClick={() => setShowMenu(!showMenu)}>
-                    <div className="icon">👤</div>
+                    <div className="icon">
+                        <div style={{
+                            width: '24px', height: '24px', borderRadius: '50%',
+                            background: profileImage ? `url(${profileImage}) no-repeat center/cover` : 'linear-gradient(135deg, #6366f1, #ec4899)',
+                            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem'
+                        }}>
+                            {!profileImage && (username ? username[0].toUpperCase() : 'U')}
+                        </div>
+                    </div>
                     <span>Menu</span>
                 </div>
             </div>
@@ -358,13 +365,21 @@ function Navbar() {
                     bottom: 0;
                     left: 0;
                     width: 100%;
-                    background: var(--surface-color);
-                    border-top: 1px solid var(--border-light);
+                    background: rgba(255, 255, 255, 0.9); /* Glassmorphism base */
+                    backdrop-filter: blur(10px);
+                    -webkit-backdrop-filter: blur(10px);
+                    border-top: 1px solid rgba(226, 232, 240, 0.8);
                     padding: 0.5rem 1rem;
+                    padding-bottom: env(safe-area-inset-bottom, 1rem); /* Safe area */
                     justify-content: space-around;
                     align-items: center;
                     z-index: 1000;
-                    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+                    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+                }
+                
+                body.dark-mode .mobile-bottom-nav {
+                    background: rgba(31, 41, 55, 0.9);
+                    border-top: 1px solid rgba(55, 65, 81, 0.8);
                 }
 
                 .mobile-nav-item {
