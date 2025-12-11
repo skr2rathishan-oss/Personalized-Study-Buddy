@@ -159,6 +159,10 @@ function Register() {
                         <div className={`step-dot ${step >= 2 ? 'active' : ''}`} title="Verification"></div>
                     </div>
 
+                    <div className="mobile-brand-header">
+                        <span className="brand-gradient" style={{ fontSize: '2rem', fontWeight: 800 }}>StudyBuddy</span>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Join the Future of Learning</p>
+                    </div>
                     <div className="login-header">
                         <h2>{step === 1 ? 'Create Account' : 'Verify Phone'}</h2>
                         <p>{step === 1 ? 'Please fill in your details below' : `We sent a code to ${phoneNumber}`}</p>

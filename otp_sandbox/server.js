@@ -1,107 +1,50 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const path = require('path');
+// server.js (Notification Listener Mode)
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const path = require("path");
 
 const app = express();
 const PORT = 3000;
 
+// === MIDDLEWARE ===
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(__dirname));
+app.use(express.static(__dirname)); // Serve UI
 
-// Serve the test page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'test.html'));
-});
+// === STORAGE ===
+const notifications = [];
 
-const MSPACE_URL = "https://api.mspace.lk/otp/request";
-const MSPACE_VERIFY_URL = "https://api.mspace.lk/otp/verify";
+// === ROUTES ===
 
-function getHeaders() {
-    return {
-        'Content-Type': 'application/json'
+// 1. Serve Dashboard
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+// 2. Subscription Notification (Webhook from mSpace)
+app.post("/subscription-notification", (req, res) => {
+    console.log(`[${new Date().toISOString()}] Webhook Received`);
+    console.log(JSON.stringify(req.body, null, 2));
+
+    const notif = {
+        ...req.body,
+        receivedAt: new Date().toISOString()
     };
-}
+    notifications.unshift(notif);
 
-/**
- * Endpoint to Send OTP
- * Payload constructed exactly as requested.
- */
-app.post('/api/send-otp', async (req, res) => {
-    try {
-        const { subscriberId } = req.body;
+    if (notifications.length > 50) notifications.pop();
 
-        if (!subscriberId) {
-            return res.status(400).json({ error: "Subscriber ID (phone number) is required" });
-        }
-
-        // 1. Prepare Payload
-        // Using environment variables for credentials as requested
-        const payload = {
-            applicationId: process.env.MSPACE_APP_ID,
-            password: process.env.MSPACE_PASSWORD,
-            subscriberId: subscriberId, // Expected format: "tel:947XXXXXXXX"
-            applicationHash: "abcdefgh", // Optional hash from example
-            applicationMetaData: {
-                client: "MOBILEAPP",
-                device: "Samsung S10",
-                os: "android 8",
-                appCode: "https://play.google.com/store/apps/details?id=lk"
-            }
-        };
-
-        console.log("Sending OTP Request:", JSON.stringify(payload, null, 2));
-
-        // 2. Call mSpace API
-        const response = await axios.post(MSPACE_URL, payload, { headers: getHeaders() });
-
-        console.log("mSpace Response:", response.data);
-        res.json(response.data);
-
-    } catch (error) {
-        console.error("Error sending OTP:", error.response ? error.response.data : error.message);
-        res.status(500).json({
-            error: "Failed to send OTP",
-            details: error.response ? error.response.data : error.message
-        });
-    }
+    res.json({ status: "Received", timestamp: new Date() });
 });
 
-/**
- * Endpoint to Verify OTP
- * Needed to complete the flow
- */
-app.post('/api/verify-otp', async (req, res) => {
-    try {
-        const { referenceNo, otp } = req.body;
-
-        const payload = {
-            applicationId: process.env.MSPACE_APP_ID,
-            password: process.env.MSPACE_PASSWORD,
-            referenceNo: referenceNo,
-            otp: otp
-        };
-
-        console.log("Verifying OTP:", JSON.stringify(payload, null, 2));
-
-        const response = await axios.post(MSPACE_VERIFY_URL, payload, { headers: getHeaders() });
-
-        console.log("Verification Response:", response.data);
-        res.json(response.data);
-
-    } catch (error) {
-        console.error("Error verifying OTP:", error.response ? error.response.data : error.message);
-        res.status(500).json({
-            error: "Failed to verify OTP",
-            details: error.response ? error.response.data : error.message
-        });
-    }
+// 3. Get Notifications API (For Dashboard)
+app.get("/notifications", (req, res) => {
+    res.json(notifications);
 });
 
-app.listen(PORT, () => {
-    console.log(`\n🚀 OTP Proxy Server running on http://localhost:${PORT}`);
-    console.log(`👉 Open http://localhost:${PORT} to test`);
+// === START SERVER ===
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n-----------------------------------------------------------`);
+    console.log(`🚀 Notification Listener running at: http://0.0.0.0:${PORT}`);
+    console.log(`👉 View Dashboard: http://20.244.40.57:${PORT}/`);
+    console.log(`-----------------------------------------------------------\n`);
 });

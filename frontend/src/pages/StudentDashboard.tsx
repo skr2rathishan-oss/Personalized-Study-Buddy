@@ -219,7 +219,9 @@ function StudentDashboard() {
 
     const [limit, setLimit] = useState(20);
     const [viewingResource, setViewingResource] = useState<Resource | null>(() => getSession('viewingResource', null));
+
     const [ratingSuccess, setRatingSuccess] = useState(false);
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false); // Mobile Filter State
 
     // Persist State Effects
     useEffect(() => { sessionStorage.setItem('sd_selectedCourse', JSON.stringify(selectedCourse)); }, [selectedCourse]);
@@ -409,150 +411,161 @@ function StudentDashboard() {
 
                 {/* LEFT PANEL: Filters */}
                 <aside className="filters-panel">
-                    <div className="filters-header">
-                        <span className="lightning-icon">⚡</span>
-                        <h3>Smart Filters</h3>
-                    </div>
+                    {/* Mobile Toggle Button */}
+                    <button
+                        className="mobile-filter-toggle"
+                        onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+                    >
+                        <span>⚡ Filters & Search</span>
+                        <span>{mobileFiltersOpen ? '▲' : '▼'}</span>
+                    </button>
 
-                    <div className="filters-body">
-                        <div className="filter-group">
-                            <label>Module</label>
-                            <SearchableSelect
-                                options={courses.map(c => ({ value: c.id, label: `${c.code} - ${c.name}` }))}
-                                value={selectedCourse}
-                                onChange={(val) => handleCourseChange(Number(val))}
-                                placeholder="Search & Select Module..."
-                                className="form-select-modern"
-                            />
+                    <div className={`filters-content-wrapper ${mobileFiltersOpen ? 'open' : ''} desktop-visible`}>
+                        <div className="filters-header">
+                            <span className="lightning-icon">⚡</span>
+                            <h3>Smart Filters</h3>
                         </div>
 
-                        <div className="filter-group">
-                            <label>Topic</label>
-                            <select
-                                className="form-select-modern glassy-input"
-                                value={selectedTopic || ''}
-                                onChange={handleTopicChange}
-                                disabled={!selectedCourse}
-                            >
-                                <option value="">{selectedCourse ? (topics.length > 0 ? "Select a topic..." : "No topics available") : "Select module first"}</option>
-                                {topics.map(t => (
-                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="filter-row">
+                        <div className="filters-body">
                             <div className="filter-group">
-                                <label>Format</label>
+                                <label>Module</label>
+                                <SearchableSelect
+                                    options={courses.map(c => ({ value: c.id, label: `${c.code} - ${c.name}` }))}
+                                    value={selectedCourse}
+                                    onChange={(val) => handleCourseChange(Number(val))}
+                                    placeholder="Search & Select Module..."
+                                    className="form-select-modern"
+                                />
+                            </div>
+
+                            <div className="filter-group">
+                                <label>Topic</label>
                                 <select
                                     className="form-select-modern glassy-input"
-                                    value={selectedFormat}
-                                    onChange={e => setSelectedFormat(e.target.value)}
+                                    value={selectedTopic || ''}
+                                    onChange={handleTopicChange}
+                                    disabled={!selectedCourse}
                                 >
-                                    <option value="">Any</option>
-                                    <option value="video">Video</option>
-                                    <option value="article">Article</option>
-                                    <option value="pdf">PDF</option>
+                                    <option value="">{selectedCourse ? (topics.length > 0 ? "Select a topic..." : "No topics available") : "Select module first"}</option>
+                                    {topics.map(t => (
+                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
                                 </select>
                             </div>
+
+                            <div className="filter-row">
+                                <div className="filter-group">
+                                    <label>Format</label>
+                                    <select
+                                        className="form-select-modern glassy-input"
+                                        value={selectedFormat}
+                                        onChange={e => setSelectedFormat(e.target.value)}
+                                    >
+                                        <option value="">Any</option>
+                                        <option value="video">Video</option>
+                                        <option value="article">Article</option>
+                                        <option value="pdf">PDF</option>
+                                    </select>
+                                </div>
+                                <div className="filter-group">
+                                    <label>Language</label>
+                                    <select
+                                        className="form-select-modern glassy-input"
+                                        value={selectedLanguage}
+                                        onChange={e => setSelectedLanguage(e.target.value)}
+                                    >
+                                        <option value="English">English</option>
+                                        <option value="Tamil">Tamil</option>
+                                        <option value="Sinhala">Sinhala</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div className="filter-group">
-                                <label>Language</label>
-                                <select
-                                    className="form-select-modern glassy-input"
-                                    value={selectedLanguage}
-                                    onChange={e => setSelectedLanguage(e.target.value)}
-                                >
-                                    <option value="English">English</option>
-                                    <option value="Tamil">Tamil</option>
-                                    <option value="Sinhala">Sinhala</option>
-                                </select>
+                                <label>Smart Search</label>
+                                <textarea
+                                    className="smart-search-input glassy-input"
+                                    placeholder="Ask AI: 'Find best videos for exam revision...'"
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                />
                             </div>
-                        </div>
 
-                        <div className="filter-group">
-                            <label>Smart Search</label>
-                            <textarea
-                                className="smart-search-input glassy-input"
-                                placeholder="Ask AI: 'Find best videos for exam revision...'"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                            />
-                        </div>
-
-                        {/* Agent Process / Context Display */}
-                        {/* Agent Process / Context Display - Collapsible & Fixed */}
-                        {(loading || selectedCourse || agentQuery) && (
-                            <div style={{ marginBottom: '0.25rem', marginTop: '-0.5rem' }}>
-                                <div
-                                    onClick={() => setIsAgentDetailsExpanded(!isAgentDetailsExpanded)}
-                                    style={{
-                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
-                                        marginBottom: '6px'
-                                    }}
-                                >
-                                    <label style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-                                        {loading ? "Agent Process:" : (agentQuery ? "Agent Action:" : "Agent Interpretation:")}
-                                    </label>
-                                    <span style={{ fontSize: '0.7rem', color: '#cbd5e1' }}>{isAgentDetailsExpanded ? '▼' : '▶'}</span>
-                                </div>
-
-                                <div className={`chip ${loading ? 'pulsing' : ''}`} style={{
-                                    fontSize: '0.85rem',
-                                    padding: '12px',
-                                    borderRadius: '8px',
-                                    background: loading ? '#FEF3C7' : (agentQuery ? '#F0F9FF' : '#F8FAFC'),
-                                    color: loading ? '#D97706' : (agentQuery ? '#0369A1' : '#334155'),
-                                    borderColor: loading ? '#FDE68A' : (agentQuery ? '#E0F2FE' : '#E2E8F0'),
-                                    borderWidth: '1px', borderStyle: 'solid',
-                                    display: 'flex', flexDirection: 'column', gap: '4px',
-                                    transition: 'all 0.3s ease',
-                                    overflow: 'hidden',
-                                    maxHeight: isAgentDetailsExpanded ? '200px' : '48px', // Collapsible Logic
-                                    cursor: 'pointer'
-                                }} onClick={() => setIsAgentDetailsExpanded(!isAgentDetailsExpanded)}>
-
-                                    {/* HEADER LINE (Always Visible) */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '24px' }}>
-                                        {loading ? (
-                                            <>
-                                                <span className="spinner-small"></span>
-                                                <span style={{ fontWeight: 600 }}>{agentStatus}</span>
-                                            </>
-                                        ) : (
-                                            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                                                {agentQuery ? "Search Executed ✅" : "Ready to Search ✨"}
-                                            </span>
-                                        )}
+                            {/* Agent Process / Context Display */}
+                            {/* Agent Process / Context Display - Collapsible & Fixed */}
+                            {(loading || selectedCourse || agentQuery) && (
+                                <div style={{ marginBottom: '0.25rem', marginTop: '-0.5rem' }}>
+                                    <div
+                                        onClick={() => setIsAgentDetailsExpanded(!isAgentDetailsExpanded)}
+                                        style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
+                                            marginBottom: '6px'
+                                        }}
+                                    >
+                                        <label style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+                                            {loading ? "Agent Process:" : (agentQuery ? "Agent Action:" : "Agent Interpretation:")}
+                                        </label>
+                                        <span style={{ fontSize: '0.7rem', color: '#cbd5e1' }}>{isAgentDetailsExpanded ? '▼' : '▶'}</span>
                                     </div>
 
-                                    {/* DETAILS (Hidden when collapsed) */}
-                                    <div style={{ opacity: isAgentDetailsExpanded ? 1 : 0, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                        {!loading && agentQuery && (
-                                            <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: 'rgba(255,255,255,0.5)', padding: '4px', borderRadius: '4px', marginTop: '4px' }}>
-                                                "{agentQuery}"
-                                            </div>
-                                        )}
+                                    <div className={`chip ${loading ? 'pulsing' : ''}`} style={{
+                                        fontSize: '0.85rem',
+                                        padding: '12px',
+                                        borderRadius: '8px',
+                                        background: loading ? '#FEF3C7' : (agentQuery ? '#F0F9FF' : '#F8FAFC'),
+                                        color: loading ? '#D97706' : (agentQuery ? '#0369A1' : '#334155'),
+                                        borderColor: loading ? '#FDE68A' : (agentQuery ? '#E0F2FE' : '#E2E8F0'),
+                                        borderWidth: '1px', borderStyle: 'solid',
+                                        display: 'flex', flexDirection: 'column', gap: '4px',
+                                        transition: 'all 0.3s ease',
+                                        overflow: 'hidden',
+                                        maxHeight: isAgentDetailsExpanded ? '200px' : '48px', // Collapsible Logic
+                                        cursor: 'pointer'
+                                    }} onClick={() => setIsAgentDetailsExpanded(!isAgentDetailsExpanded)}>
 
-                                        {!loading && !agentQuery && selectedCourse && (
-                                            <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>
-                                                {(() => {
-                                                    const c = courses.find(c => c.id === selectedCourse);
-                                                    const t = topics.find(t => t.id === selectedTopic);
-                                                    const lang = `in ${selectedLanguage}`;
-                                                    const smart = description ? `+ "${description}"` : '';
-                                                    return `Targeting: 📚 ${c?.code} ${t ? `> ${t.name}` : ''} ${smart} ${lang}`;
-                                                })()}
-                                            </div>
-                                        )}
+                                        {/* HEADER LINE (Always Visible) */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '24px' }}>
+                                            {loading ? (
+                                                <>
+                                                    <span className="spinner-small"></span>
+                                                    <span style={{ fontWeight: 600 }}>{agentStatus}</span>
+                                                </>
+                                            ) : (
+                                                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                                                    {agentQuery ? "Search Executed ✅" : "Ready to Search ✨"}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* DETAILS (Hidden when collapsed) */}
+                                        <div style={{ opacity: isAgentDetailsExpanded ? 1 : 0, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            {!loading && agentQuery && (
+                                                <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: 'rgba(255,255,255,0.5)', padding: '4px', borderRadius: '4px', marginTop: '4px' }}>
+                                                    "{agentQuery}"
+                                                </div>
+                                            )}
+
+                                            {!loading && !agentQuery && selectedCourse && (
+                                                <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>
+                                                    {(() => {
+                                                        const c = courses.find(c => c.id === selectedCourse);
+                                                        const t = topics.find(t => t.id === selectedTopic);
+                                                        const lang = `in ${selectedLanguage}`;
+                                                        const smart = description ? `+ "${description}"` : '';
+                                                        return `Targeting: 📚 ${c?.code} ${t ? `> ${t.name}` : ''} ${smart} ${lang}`;
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        <button className="btn-find-resources" onClick={() => handleFetch(20)}>
-                            {loading ? 'Searching...' : 'Find Resources 🚀'}
-                        </button>
-                    </div>
+                            <button className="btn-find-resources" onClick={() => { handleFetch(20); setMobileFiltersOpen(false); /* Close on search */ }}>
+                                {loading ? 'Searching...' : 'Find Resources 🚀'}
+                            </button>
+                        </div>  {/* End filters-body */}
+                    </div> {/* End filters-content-wrapper */}
                 </aside>
 
                 {/* RIGHT PANEL: Content */}

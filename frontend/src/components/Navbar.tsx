@@ -97,88 +97,40 @@ function Navbar() {
             {/* Right Side Icons & Menu */}
             <div className="navbar-links" style={{ gap: '1.2rem', display: 'flex', alignItems: 'center' }}>
 
-                {/* 1. Home */}
-                <Link to="/" className="nav-icon" title="Home">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                    </svg>
-                </Link>
-
-                {/* 2. Calendar */}
-                <Link to="/calendar" className="nav-icon" title="Calendar">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                        <line x1="16" y1="2" x2="16" y2="6"></line>
-                        <line x1="8" y1="2" x2="8" y2="6"></line>
-                        <line x1="3" y1="10" x2="21" y2="10"></line>
-                    </svg>
-                </Link>
-
-                {/* 3. Personal Tracking (Student Only) */}
-                {role === 'student' && (
-                    <Link to="/tracking" className="nav-icon" title="Personal Tracking">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="18" y1="20" x2="18" y2="10"></line>
-                            <line x1="12" y1="20" x2="12" y2="4"></line>
-                            <line x1="6" y1="20" x2="6" y2="14"></line>
-                        </svg>
+                {/* Desktop Nav Icons Group */}
+                <div className="nav-icons-desktop">
+                    <Link to="/" className="nav-icon" title="Home">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                     </Link>
-                )}
 
-                {/* 3. User Management (Admin Only) */}
-                {(role === 'admin' || role === 'management') && (
-                    <Link to="/users" className="nav-icon" title="User Management">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                        </svg>
+                    <Link to="/calendar" className="nav-icon" title="Calendar">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     </Link>
-                )}
 
-                {/* 4. History */}
-                <Link to="/history" className="nav-icon" title="History">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                </Link>
-
-                {/* Theme Toggle */}
-                <button
-                    onClick={() => setDarkMode(!darkMode)}
-                    className="nav-icon"
-                    title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-                >
-                    {darkMode ? (
-                        // Sun Icon for Dark Mode (to switch to light)
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line>
-                            <line x1="12" y1="21" x2="12" y2="23"></line>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                            <line x1="1" y1="12" x2="3" y2="12"></line>
-                            <line x1="21" y1="12" x2="23" y2="12"></line>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                        </svg>
-                    ) : (
-                        // Moon Icon for Light Mode (to switch to dark)
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                        </svg>
+                    {role === 'student' && (
+                        <Link to="/tracking" className="nav-icon" title="Personal Tracking">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                        </Link>
                     )}
-                </button>
 
+                    {(role === 'admin' || role === 'management') && (
+                        <Link to="/users" className="nav-icon" title="User Management">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        </Link>
+                    )}
 
+                    <Link to="/history" className="nav-icon" title="History">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </Link>
 
+                    {/* Theme Toggle (Desktop) */}
+                    <button onClick={() => setDarkMode(!darkMode)} className="nav-icon" title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                        {darkMode ? <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>}
+                    </button>
 
+                    <div style={{ width: '1px', height: '24px', background: 'var(--border-light)' }}></div>
+                </div>
 
-                <div style={{ width: '1px', height: '24px', background: 'var(--border-light)' }}></div>
 
                 {/* User Profile / Menu Trigger */}
                 <div style={{ position: 'relative' }} ref={menuRef}>
@@ -226,7 +178,17 @@ function Navbar() {
                                 <div style={{ fontSize: '0.8rem', color: '#64748b', textTransform: 'capitalize' }}>{role}</div>
                             </div>
 
-
+                            {/* Mobile Only Menu Items */}
+                            <div className="mobile-only-menu">
+                                <div className="menu-item" onClick={() => navigate('/')}>🏠 Home</div>
+                                <div className="menu-item" onClick={() => navigate('/calendar')}>📅 Calendar</div>
+                                {role === 'student' && <div className="menu-item" onClick={() => navigate('/tracking')}>📈 Progress</div>}
+                                <div className="menu-item" onClick={() => navigate('/history')}>🕒 History</div>
+                                <div className="menu-item" onClick={() => setDarkMode(!darkMode)}>
+                                    {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                                </div>
+                                <div style={{ height: '1px', background: '#f1f5f9', margin: '0.5rem 0' }}></div>
+                            </div>
 
                             <div className="menu-item" onClick={() => navigate('/profile')}>
                                 <span style={{ marginRight: '8px' }}>👤</span> Profile
@@ -269,7 +231,74 @@ function Navbar() {
                     )}
                 </div>
             </div>
+
+            {/* Mobile Bottom Navigation Bar */}
+            <div className="mobile-bottom-nav">
+                <Link to="/" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+                    <div className="icon">🏠</div>
+                    <span>Home</span>
+                </Link>
+                <Link to="/calendar" className={`mobile-nav-item ${location.pathname === '/calendar' ? 'active' : ''}`}>
+                    <div className="icon">📅</div>
+                    <span>Calendar</span>
+                </Link>
+                {role === 'student' && (
+                    <Link to="/tracking" className={`mobile-nav-item ${location.pathname === '/tracking' ? 'active' : ''}`}>
+                        <div className="icon">📈</div>
+                        <span>Track</span>
+                    </Link>
+                )}
+                {/* Re-use user profile trigger or simple settings link */}
+                <div className="mobile-nav-item" onClick={() => setShowMenu(!showMenu)}>
+                    <div className="icon">👤</div>
+                    <span>Menu</span>
+                </div>
+            </div>
+
             <style>{`
+                .nav-icons-desktop {
+                    display: flex;
+                    align-items: center;
+                    gap: 1.2rem;
+                }
+
+                .mobile-bottom-nav {
+                    display: none;
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    background: var(--surface-color);
+                    border-top: 1px solid var(--border-light);
+                    padding: 0.5rem 1rem;
+                    justify-content: space-around;
+                    align-items: center;
+                    z-index: 1000;
+                    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+                }
+
+                .mobile-nav-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-decoration: none;
+                    color: var(--text-secondary);
+                    font-size: 0.7rem;
+                    gap: 4px;
+                    padding: 4px;
+                    border-radius: 8px;
+                    transition: all 0.2s;
+                }
+
+                .mobile-nav-item .icon {
+                    font-size: 1.25rem;
+                }
+
+                .mobile-nav-item.active {
+                    color: var(--primary);
+                    background: rgba(79, 70, 229, 0.05); /* Very subtle tint */
+                }
+
                 .nav-icon {
                     color: var(--text-secondary);
                     transition: all 0.2s;
@@ -298,9 +327,27 @@ function Navbar() {
                     background-color: #f8fafc;
                     color: #6366f1;
                 }
+                
+                .mobile-only-menu {
+                    display: none;
+                }
+
                 @media (max-width: 768px) {
                     .desktop-only {
                         display: none;
+                    }
+                    .nav-icons-desktop {
+                        display: none;
+                    }
+                    .mobile-bottom-nav {
+                        display: flex;
+                    }
+                    /* Ensure main content doesn't get hidden behind bottom nav */
+                    body {
+                        padding-bottom: 70px; 
+                    }
+                    .mobile-only-menu {
+                        display: block;
                     }
                 }
             `}</style>

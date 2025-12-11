@@ -196,9 +196,237 @@ body {
   padding: 2rem;
 }
 
-@media (max-width: 900px) {
-  /* Mobile view: Only form */
+/* Mobile Brand Header (Default hidden) */
+@media (min-width: 901px) {
+  .mobile-brand-header {
+    display: none;
+  }
 }
+
+@media (max-width: 768px) {
+
+  /* Mobile Layout: Card on Split Background */
+  .login-page-wrapper {
+    flex-direction: column;
+    height: 100dvh;
+    /* Dynamic viewport height */
+    width: 100vw;
+    background: #F8FAFC;
+    overflow: hidden;
+    /* STRICTLY NO SCROLLING */
+    position: fixed;
+    /* Force fix to screen */
+    top: 0;
+    left: 0;
+  }
+
+  /* The Big Background Box (Half Page) */
+  .login-page-wrapper::before {
+    content: '';
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 55vh;
+    /* Taller to eliminate gap */
+    background:
+      radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 0% 100%, rgba(255, 255, 255, 0.1) 0%, transparent 40%),
+      linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    border-radius: 30px 30px 0 0;
+    z-index: 1;
+  }
+
+  /* Hide Desktop Elements */
+  .login-hero-section,
+  .mobile-brand-header,
+  .login-header {
+    display: none !important;
+  }
+
+  /* Wrapper for the Card */
+  .login-form-section {
+    width: 100%;
+    height: 100dvh;
+    padding: 1rem;
+    padding-bottom: 0 !important;
+    /* Force touch bottom */
+    background: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    /* Align bottom to connect with background */
+    position: relative;
+    z-index: 2;
+  }
+
+  /* The "One Box" Card */
+  .login-card-clean {
+    background: white;
+    width: 100%;
+    max-width: 360px;
+    border-radius: 20px 20px 0 0;
+    /* Flat bottom for docking */
+    padding: 2.5rem 2rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    /* Remove margins */
+    margin-bottom: 0 !important;
+    /* Dock to very bottom */
+  }
+
+  /* Welcome Header INSIDE the Card */
+  .mobile-welcome-header {
+    display: block;
+    margin-bottom: 2rem;
+    text-align: left;
+  }
+
+  .welcome-sub {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .welcome-main {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1.1;
+    display: block;
+    margin: 0;
+    /* Remove default H1 margin for precise spacing */
+  }
+
+  /* Input Styling */
+  .form-group-clean {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-group-clean label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .form-group-clean input {
+    width: 100%;
+    background: #F1F5F9;
+    border: 1px solid transparent;
+    /* Cleaner look */
+    padding: 1rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    transition: all 0.2s;
+  }
+
+  .form-group-clean input:focus {
+    background: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+  }
+
+  /* Options Row */
+  .form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+  }
+
+  .checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .checkbox-container input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+  }
+
+  .forgot-password {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  /* Buttons */
+  .btn-modern-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    width: 100%;
+    padding: 1rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-top: 0;
+    color: white;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+  }
+
+  /* Ensure tight spacing on mobile form */
+  .login-form-section form {
+    margin-bottom: 0;
+  }
+
+  .register-callout {
+    margin-top: 1rem !important;
+    padding: 0 !important;
+    text-align: center;
+    border: none;
+  }
+
+  .register-callout p {
+    display: inline-block;
+    color: var(--text-secondary);
+    margin: 0 !important;
+    /* Remove paragraph default margin */
+    margin-right: 5px !important;
+    font-size: 0.9rem;
+  }
+
+  .btn-modern-outline {
+    border: none;
+    background: none;
+    color: var(--primary);
+    font-weight: 700;
+    padding: 0;
+    margin: 0;
+    display: inline-block;
+    width: auto;
+    font-size: 0.9rem;
+  }
+
+  .demo-credentials-clean {
+    display: none;
+  }
+}
+
+/* Fix for desktop to ignore mobile elements */
+@media (min-width: 769px) {
+
+  .mobile-welcome-header,
+  .form-options {
+    display: none;
+  }
+}
+
+
 
 
 /* Shared Auth Aliases */
@@ -392,7 +620,20 @@ body {
 }
 
 @media (max-width: 900px) {
+
   /* Mobile view: Only form */
+  .auth-hero-section {
+    display: none;
+  }
+
+  .auth-form-section {
+    padding: 1.5rem;
+  }
+
+  .register-card {
+    box-shadow: none;
+    padding: 1rem;
+  }
 }
 
 
@@ -539,7 +780,8 @@ body {
 .register-callout {
   margin-top: 3rem;
   text-align: center;
-  border-top: 1px solid var(--border-light);
+  border-top: none;
+  /* Removed horizontal line */
   padding-top: 2rem;
 }
 

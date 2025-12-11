@@ -50,24 +50,28 @@ function Login() {
             {/* Right Side: Login Form */}
             <div className="login-form-section">
                 <div className="login-card-clean animate-slide-up">
-                    <div className="login-header">
-                        <h2>Sign In</h2>
-                        <p>Enter your credentials to access your account</p>
+                    <div className="mobile-brand-header">
+                        <span className="brand-gradient" style={{ fontSize: '2rem', fontWeight: 800 }}>StudyBuddy</span>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Your AI Learning Companion</p>
+                    </div>
+                    <div className="mobile-welcome-header">
+
+                        <h1 className="welcome-main">Log In!</h1>
                     </div>
 
                     <form onSubmit={handleLogin}>
                         <div className="form-group-clean">
-                            <label>Email or Username</label>
+                            <label>EMAIL ADDRESS</label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={e => setUsername(e.target.value)}
-                                placeholder="Enter your email or username"
+                                placeholder="example@gmail.com"
                                 required
                             />
                         </div>
                         <div className="form-group-clean">
-                            <label>Password</label>
+                            <label>PASSWORD</label>
                             <input
                                 type="password"
                                 value={password}
@@ -77,7 +81,12 @@ function Login() {
                             />
                         </div>
 
-                        <div className="form-actions">
+                        <div className="form-options">
+                            <label className="checkbox-container">
+                                <input type="checkbox" />
+                                <span className="checkmark"></span>
+                                Remember me
+                            </label>
                             <a href="#" className="forgot-password" onClick={(e) => { e.preventDefault(); navigate('/forgot-password'); }}>Forgot password?</a>
                         </div>
 
@@ -96,17 +105,17 @@ function Login() {
                     <div className="demo-credentials-clean" style={{ marginTop: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                         <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Demo Accounts</p>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '0.75rem' }}>
-                            <div onClick={() => { setUsername('student1'); setPassword('password'); }} style={{ cursor: 'pointer', padding: '4px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }}>
+                            <div onClick={() => { setUsername('student1'); setPassword('password123'); }} style={{ cursor: 'pointer', padding: '4px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }}>
                                 <strong>Student</strong><br /><span style={{ color: '#64748b' }}>student1</span>
                             </div>
-                            <div onClick={() => { setUsername('admin1'); setPassword('password'); }} style={{ cursor: 'pointer', padding: '4px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }}>
+                            <div onClick={() => { setUsername('admin1'); setPassword('password123'); }} style={{ cursor: 'pointer', padding: '4px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }}>
                                 <strong>Admin</strong><br /><span style={{ color: '#64748b' }}>admin1</span>
                             </div>
                             <div onClick={() => { setUsername('manager1'); setPassword('password'); }} style={{ cursor: 'pointer', padding: '4px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }}>
                                 <strong>Mgmt</strong><br /><span style={{ color: '#64748b' }}>manager1</span>
                             </div>
                         </div>
-                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>Password for all: <strong>password</strong></p>
+                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>Click box to auto-fill</p>
                     </div>
                 </div>
             </div>

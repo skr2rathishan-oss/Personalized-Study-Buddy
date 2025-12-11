@@ -72,6 +72,37 @@ body.dark-mode {
 @media (max-width: 1024px) {
     .dashboard-split-layout {
         grid-template-columns: 1fr;
+        padding: 1rem;
+        gap: 1.5rem;
+    }
+
+    .dashboard-split-layout.results-active {
+        grid-template-columns: 1fr;
+    }
+
+    .filters-panel {
+        position: relative;
+        top: 0;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .resource-grid-modern {
+        grid-template-columns: 1fr;
+    }
+
+    .welcome-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .stats-stack {
+        gap: 0.75rem;
+    }
+
+    .stat-card-wide {
+        padding: 0.75rem 1rem;
     }
 }
 
@@ -150,6 +181,65 @@ body.dark-mode {
     height: 6px;
     background: var(--primary);
     border-radius: 50%;
+}
+
+/* Mobile Filter Toggle */
+.mobile-filter-toggle {
+    display: none;
+    /* Hidden on desktop */
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--dash-card-bg);
+    border: 1px solid var(--dash-border);
+    border-radius: 8px;
+    color: var(--dash-text-main);
+    font-weight: 600;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 1024px) {
+    .mobile-filter-toggle {
+        display: flex;
+    }
+
+    .filters-panel {
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+    }
+
+    /* Wrap the actual content of the filter panel */
+    .filters-content-wrapper {
+        background: var(--dash-card-bg);
+        border: 1px solid var(--dash-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+        /* Collapsible logic can be handled by JS state or CSS */
+        display: none;
+    }
+
+    .filters-content-wrapper.open {
+        display: block;
+        animation: slideDown 0.3s ease-out;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .filter-row {
