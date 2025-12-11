@@ -392,7 +392,11 @@ body {
 }
 
 @media (max-width: 900px) {
+
   /* Mobile view: Only form */
+  .desktop-only {
+    display: none !important;
+  }
 }
 
 

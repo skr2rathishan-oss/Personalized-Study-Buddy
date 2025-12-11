@@ -50,7 +50,7 @@ function Login() {
             {/* Right Side: Login Form */}
             <div className="login-form-section">
                 <div className="login-card-clean animate-slide-up">
-                    <div className="login-header">
+                    <div className="login-header desktop-only">
                         <h2>Sign In</h2>
                         <p>Enter your credentials to access your account</p>
                     </div>
