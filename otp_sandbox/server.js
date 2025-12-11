@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
@@ -9,73 +10,98 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-
-// Serve Static Files
 app.use(express.static(__dirname));
 
-// Routes
+// Serve the test page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'test.html'));
 });
 
-app.get('/app', (req, res) => {
-    res.sendFile(path.join(__dirname, 'app.html'));
-});
+const MSPACE_URL = "https://api.mspace.lk/otp/request";
+const MSPACE_VERIFY_URL = "https://api.mspace.lk/otp/verify";
 
-// --- API PROXY ---
-const API_URL_REQUEST = "https://api.mspace.lk/otp/request";
-const API_URL_VERIFY = "https://api.mspace.lk/otp/verify";
-
-app.post('/api/send-otp', async (req, res) => {
-    const { app_id, password, phone } = req.body;
-
-    // Format Phone
-    const subscriberId = phone.startsWith('tel:') ? phone : `tel:${phone}`;
-
-    const payload = {
-        applicationId: app_id,
-        password: password,
-        subscriberId: subscriberId,
-        applicationMetaData: {
-            client: "WEB_TESTER",
-            device: "Browser",
-            os: "Web",
-            appCode: "WEB_TESTER"
-        }
+function getHeaders() {
+    return {
+        'Content-Type': 'application/json'
     };
+}
 
+/**
+ * Endpoint to Send OTP
+ * Payload constructed exactly as requested.
+ */
+app.post('/api/send-otp', async (req, res) => {
     try {
-        console.log(`Sending OTP to ${subscriberId}...`);
-        const response = await axios.post(API_URL_REQUEST, payload);
+        const { subscriberId } = req.body;
+
+        if (!subscriberId) {
+            return res.status(400).json({ error: "Subscriber ID (phone number) is required" });
+        }
+
+        // 1. Prepare Payload
+        // Using environment variables for credentials as requested
+        const payload = {
+            applicationId: process.env.MSPACE_APP_ID,
+            password: process.env.MSPACE_PASSWORD,
+            subscriberId: subscriberId, // Expected format: "tel:947XXXXXXXX"
+            applicationHash: "abcdefgh", // Optional hash from example
+            applicationMetaData: {
+                client: "MOBILEAPP",
+                device: "Samsung S10",
+                os: "android 8",
+                appCode: "https://play.google.com/store/apps/details?id=lk"
+            }
+        };
+
+        console.log("Sending OTP Request:", JSON.stringify(payload, null, 2));
+
+        // 2. Call mSpace API
+        const response = await axios.post(MSPACE_URL, payload, { headers: getHeaders() });
+
+        console.log("mSpace Response:", response.data);
         res.json(response.data);
+
     } catch (error) {
-        console.error("Error from mSpace:", error.response?.data || error.message);
-        res.status(500).json(error.response?.data || { error: error.message });
+        console.error("Error sending OTP:", error.response ? error.response.data : error.message);
+        res.status(500).json({
+            error: "Failed to send OTP",
+            details: error.response ? error.response.data : error.message
+        });
     }
 });
 
+/**
+ * Endpoint to Verify OTP
+ * Needed to complete the flow
+ */
 app.post('/api/verify-otp', async (req, res) => {
-    const { app_id, password, ref_no, otp } = req.body;
-
-    const payload = {
-        applicationId: app_id,
-        password: password,
-        referenceNo: ref_no,
-        otp: otp
-    };
-
     try {
-        console.log(`Verifying OTP Ref: ${ref_no}...`);
-        const response = await axios.post(API_URL_VERIFY, payload);
+        const { referenceNo, otp } = req.body;
+
+        const payload = {
+            applicationId: process.env.MSPACE_APP_ID,
+            password: process.env.MSPACE_PASSWORD,
+            referenceNo: referenceNo,
+            otp: otp
+        };
+
+        console.log("Verifying OTP:", JSON.stringify(payload, null, 2));
+
+        const response = await axios.post(MSPACE_VERIFY_URL, payload, { headers: getHeaders() });
+
+        console.log("Verification Response:", response.data);
         res.json(response.data);
+
     } catch (error) {
-        console.error("Error from mSpace:", error.response?.data || error.message);
-        res.status(500).json(error.response?.data || { error: error.message });
+        console.error("Error verifying OTP:", error.response ? error.response.data : error.message);
+        res.status(500).json({
+            error: "Failed to verify OTP",
+            details: error.response ? error.response.data : error.message
+        });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`\n🚀 OTP Server running at http://localhost:${PORT}`);
-    console.log(`👉 Test Page: http://localhost:${PORT}/test.html`);
-    console.log(`👉 Main App:  http://localhost:${PORT}/app.html\n`);
+    console.log(`\n🚀 OTP Proxy Server running on http://localhost:${PORT}`);
+    console.log(`👉 Open http://localhost:${PORT} to test`);
 });

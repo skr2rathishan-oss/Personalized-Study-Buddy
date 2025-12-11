@@ -7,138 +7,192 @@
     <title>OTP Tester</title>
     <style>
         body {
-            font-family: sans-serif;
-            padding: 2rem;
-            background: #f0f2f5;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
 
-        .card {
+        .container {
             background: white;
-            max-width: 400px;
-            margin: 0 auto;
             padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 0.9rem;
         }
 
         input {
             width: 100%;
             padding: 10px;
-            margin: 8px 0;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 6px;
             box-sizing: border-box;
+            font-size: 1rem;
         }
 
         button {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background: #007bff;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
+            font-size: 1rem;
             cursor: pointer;
-            margin-top: 10px;
+            transition: background 0.2s;
         }
 
         button:hover {
             background: #0056b3;
         }
 
-        .log {
-            margin-top: 1rem;
-            padding: 10px;
-            background: #333;
-            color: lime;
-            font-family: monospace;
-            font-size: 12px;
-            border-radius: 4px;
+        .hidden {
             display: none;
-            white-space: pre-wrap;
         }
 
-        h2 {
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
             text-align: center;
-            color: #333;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="card">
-        <h2>🧪 OTP Tester</h2>
+    <div class="container">
+        <h2>📱 OTP Sandbox</h2>
 
-        <label>Credentials</label>
-        <input type="text" id="app_id" placeholder="App ID" value="app_12345">
-        <input type="password" id="password" placeholder="Password">
-
-        <hr style="border:0; border-top:1px solid #eee; margin: 20px 0;">
-
-        <label>Phone Number</label>
-        <input type="text" id="phone" placeholder="947xxxxxxxx">
-        <button onclick="sendOtp()">Send OTP</button>
-
-        <div id="verifySection"
-            style="margin-top: 20px; display: none; border-top: 1px dashed #ccc; padding-top: 20px;">
-            <label>Enter OTP</label>
-            <input type="text" id="otp" placeholder="123456">
-            <input type="hidden" id="ref_no">
-            <button onclick="verifyOtp()" style="background: #28a745;">Verify</button>
+        <!-- Step 1: Phone Input -->
+        <div id="step1">
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="text" id="phone" placeholder="9471XXXXXXX" value="947">
+            </div>
+            <button onclick="requestOTP()">Send OTP</button>
         </div>
 
-        <div id="log" class="log"></div>
+        <!-- Step 2: OTP Input -->
+        <div id="step2" class="hidden">
+            <div class="form-group">
+                <label for="otp">Enter OTP Code</label>
+                <input type="text" id="otp" placeholder="123456" maxlength="6">
+            </div>
+            <button onclick="verifyOTP()">Verify Code</button>
+            <p style="text-align: center; margin-top: 10px;"><a href="#" onclick="reset()"
+                    style="font-size: 0.8rem; color: #666;">Change Number</a></p>
+        </div>
+
+        <!-- Status Message -->
+        <div id="status"></div>
     </div>
 
     <script>
-        function log(msg, isError = false) {
-            const el = document.getElementById('log');
+        let currentReferenceNo = null;
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status');
+            el.innerHTML = msg;
+            el.className = type;
             el.style.display = 'block';
-            el.innerText = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg;
-            el.style.color = isError ? '#ff6b6b' : 'lime';
         }
 
-        async function sendOtp() {
-            const appId = document.getElementById('app_id').value;
-            const password = document.getElementById('password').value;
-            const phone = document.getElementById('phone').value;
+        async function requestOTP() {
+            const phoneInput = document.getElementById('phone').value.trim();
+            // Ensure format tel:94...
+            let formattedPhone = phoneInput;
+            if (!formattedPhone.startsWith('tel:')) {
+                // Remove existing tel: if typed? No, assume user types number
+                formattedPhone = `tel:${formattedPhone.replace(/^tel:/, '')}`;
+
+            }
+
+            showStatus('Sending OTP...', 'pending');
 
             try {
                 const res = await fetch('/api/send-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ app_id: appId, password: password, phone: phone })
+                    body: JSON.stringify({ subscriberId: formattedPhone })
                 });
                 const data = await res.json();
-                log(data);
 
-                if (data.statusCode === 'S1000') {
-                    document.getElementById('ref_no').value = data.referenceNo;
-                    document.getElementById('verifySection').style.display = 'block';
+                if (data.statusCode === "S1000") {
+                    showStatus('OTP Sent! Check your phone.', 'success');
+                    currentReferenceNo = data.referenceNo;
+                    document.getElementById('step1').classList.add('hidden');
+                    document.getElementById('step2').classList.remove('hidden');
+                } else {
+                    showStatus(`Error: ${data.statusDetail || 'Unknown Error'}`, 'error');
                 }
-            } catch (e) { log(e.message, true); }
+            } catch (err) {
+                showStatus('Network Error', 'error');
+                console.error(err);
+            }
         }
 
-        async function verifyOtp() {
-            const appId = document.getElementById('app_id').value;
-            const password = document.getElementById('password').value;
-            const refNo = document.getElementById('ref_no').value;
-            const otp = document.getElementById('otp').value;
+        async function verifyOTP() {
+            const otpCode = document.getElementById('otp').value.trim();
+            if (!otpCode) return;
+
+            showStatus('Verifying...', 'pending');
 
             try {
                 const res = await fetch('/api/verify-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ app_id: appId, password: password, ref_no: refNo, otp: otp })
+                    body: JSON.stringify({ referenceNo: currentReferenceNo, otp: otpCode })
                 });
                 const data = await res.json();
-                log(data);
 
-                if (data.statusCode === 'S1000' || data.status === 'Success') {
-                    alert("Verified Successfully! Redirecting to App...");
-                    window.location.href = "/app.html";
+                if (data.statusCode === "S1000") {
+                    showStatus('✅ Verified Successfully!', 'success');
+                } else {
+                    showStatus(`Verification Failed: ${data.statusDetail}`, 'error');
                 }
-            } catch (e) { log(e.message, true); }
+            } catch (err) {
+                showStatus('Verification Error', 'error');
+            }
+        }
+
+        function reset() {
+            document.getElementById('step1').classList.remove('hidden');
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('otp').value = '';
         }
     </script>
 
