@@ -1647,3 +1647,23 @@ body.dark-mode .sidebar .search-group label {
     padding: 1.5rem;
   }
 }
+
+/* Restored Login Header Styles */
+.login-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+.login-header p {
+  color: var(--text-secondary);
+  margin-bottom: 2.5rem;
+}
+
+/* Desktop Only Utility */
+@media (max-width: 900px) {
+  .desktop-only {
+    display: none !important;
+  }
+}

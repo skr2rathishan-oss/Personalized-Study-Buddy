@@ -50,6 +50,10 @@ function Login() {
             {/* Right Side: Login Form */}
             <div className="login-form-section">
                 <div className="login-card-clean animate-slide-up">
+                    <div className="login-header desktop-only">
+                        <h2>Sign In</h2>
+                        <p>Enter your credentials to access your account</p>
+                    </div>
                     <div className="mobile-brand-header">
                         <span className="brand-gradient" style={{ fontSize: '2rem', fontWeight: 800 }}>StudyBuddy</span>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Your AI Learning Companion</p>
