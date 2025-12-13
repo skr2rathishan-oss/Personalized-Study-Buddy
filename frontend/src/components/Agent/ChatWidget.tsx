@@ -18,14 +18,15 @@ interface ChatWidgetProps {
         courseName: string;
         topicName: string;
     };
+    mode?: 'popup' | 'page';
 }
 
-const ChatWidget = ({ isOpen, onClose, context }: ChatWidgetProps) => {
+const ChatWidget = ({ isOpen, onClose, context, mode = 'popup' }: ChatWidgetProps) => {
     const [messages, setMessages] = useState<ChatMessage[]>([
         { id: 1, text: "Hi! I'm your Study Buddy AI. Ask me anything about this module!", sender: 'agent', timestamp: new Date() }
     ]);
     const [input, setInput] = useState('');
-    const [provider, setProvider] = useState<string>('auto');
+    const [provider, setProvider] = useState<string>(localStorage.getItem('ai_provider') || 'auto');
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -36,8 +37,7 @@ const ChatWidget = ({ isOpen, onClose, context }: ChatWidgetProps) => {
         }
     }, [messages, isOpen]);
 
-    // Helper to get initials
-    const getInitials = () => 'AI';
+
 
     // Send Message
     const handleSend = async () => {
@@ -88,32 +88,30 @@ const ChatWidget = ({ isOpen, onClose, context }: ChatWidgetProps) => {
     if (!isOpen) return null;
 
     return (
-        <div className="chat-widget-container">
-            <div className="chat-window">
+        <div className={`chat-widget-container ${mode === 'page' ? 'chat-mode-page' : ''}`}>
+            <div className={`chat-window ${mode === 'page' ? 'chat-window-page' : ''}`}>
                 <div className="chat-header">
-                    <div className="chat-title">
-                        <span style={{ fontSize: '1.4rem' }}>🤖</span> Study Buddy AI
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div className="chat-title">
+                            <span style={{ fontSize: '1.4rem' }}>🤖</span> Study Buddy
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500, marginLeft: '4px' }}>
+                            {context.courseName || 'General'} {context.topicName ? `> ${context.topicName}` : ''}
+                        </div>
                     </div>
                     <select
+                        className="provider-select"
                         value={provider}
-                        onChange={e => setProvider(e.target.value)}
-                        style={{
-                            marginLeft: 'auto', marginRight: '10px',
-                            padding: '4px 8px', borderRadius: '12px',
-                            background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)',
-                            fontSize: '0.75rem', cursor: 'pointer', outline: 'none'
+                        onChange={e => {
+                            setProvider(e.target.value);
+                            localStorage.setItem('ai_provider', e.target.value);
                         }}
                     >
-                        <option value="auto" style={{ color: '#333' }}>⚡ Auto</option>
-                        <option value="openai" style={{ color: '#333' }}>🟢 OpenAI</option>
-                        <option value="gemini" style={{ color: '#333' }}>🔵 Gemini</option>
+                        <option value="auto">⚡ Auto</option>
+                        <option value="openai">🟢 OpenAI</option>
+                        <option value="gemini">🔵 Gemini</option>
                     </select>
                     <button className="chat-close" onClick={onClose} title="Close Chat">✕</button>
-                </div>
-
-                {/* Context Bar */}
-                <div style={{ padding: '8px 16px', background: 'var(--surface-color)', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600, borderBottom: '1px solid var(--border-light)' }}>
-                    Context: {context.courseName || 'General'} {context.topicName ? `> ${context.topicName}` : ''}
                 </div>
 
                 <div className="chat-messages">

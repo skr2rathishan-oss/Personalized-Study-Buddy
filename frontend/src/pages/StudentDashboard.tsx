@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import '../dashboard.css';
 import SearchableSelect from '../components/SearchableSelect';
@@ -25,10 +26,9 @@ interface Resource {
     rating_count: number;
     source: string;
     score_breakdown?: {
-        content: number;
-        collab: number;
-        personal: number;
-        source: number;
+        source_trust: number;
+        engagement: number;
+        relevance: number;
     };
     final_score?: number;
     user_has_rated?: boolean;
@@ -152,39 +152,32 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
                                         <div style={{ background: '#F8FAFC', borderRadius: '12px', padding: '16px', marginBottom: '20px', border: '1px solid #F1F5F9' }}>
                                             {/* Breakdown Rows */}
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px' }}>
-                                                {/* Topic Relevance - Tooltip */}
-                                                <div title="Matches course syllabus & keywords" style={{ color: '#64748B', cursor: 'help', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    Topic Relevance <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
+                                                {/* Source Trust (50%) */}
+                                                <div title="Reliability of the resource origin (Admin uploads = 100%)" style={{ color: '#64748B', cursor: 'help', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    source_trust (50%) <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
                                                 </div>
-                                                <div style={{ fontWeight: 600 }}>{r.score_breakdown.content} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>×0.3</span></div>
+                                                <div style={{ fontWeight: 600, color: '#3B82F6' }}>{r.score_breakdown.source_trust} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>/ 50</span></div>
 
-                                                {/* Community Trend - Tooltip */}
-                                                <div title="Popularity & ratings from peers" style={{ color: '#64748B', cursor: 'help', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    Community Trend <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
+                                                {/* Engagement (30%) */}
+                                                <div title="Based on ratings and time spent" style={{ color: '#64748B', cursor: 'help', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    Engagement (30%) <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
                                                 </div>
-                                                <div style={{ fontWeight: 600 }}>{r.score_breakdown.collab} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>×2.0</span></div>
+                                                <div style={{ fontWeight: 600, color: '#8B5CF6' }}>{r.score_breakdown.engagement} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>/ 30</span></div>
 
-                                                {/* Your Impact - Tooltip */}
-                                                <div title="Personalized boost from your history" style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'help' }}>
-                                                    Your Impact <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
-                                                    {r.score_breakdown.personal !== 0 && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: r.score_breakdown.personal > 0 ? '#10B981' : '#EF4444' }}></span>}
+                                                {/* Relevance (20%) */}
+                                                <div title="Topic match and popularity" style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'help' }}>
+                                                    Relevance (20%) <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
                                                 </div>
-                                                <div style={{ fontWeight: 700, color: r.score_breakdown.personal > 0 ? '#059669' : (r.score_breakdown.personal < 0 ? '#DC2626' : '#64748B') }}>
-                                                    {r.score_breakdown.personal > 0 ? '+' : ''}{r.score_breakdown.personal}
+                                                <div style={{ fontWeight: 600, color: '#10B981' }}>
+                                                    {r.score_breakdown.relevance} <span style={{ fontSize: '0.75em', color: '#94A3B8' }}>/ 20</span>
                                                 </div>
-
-                                                {/* Source Quality - Tooltip */}
-                                                <div title="Credibility of the resource origin" style={{ color: '#64748B', cursor: 'help', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    Source Quality <span style={{ fontSize: '0.8em', opacity: 0.6 }}>ⓘ</span>
-                                                </div>
-                                                <div style={{ fontWeight: 600 }}>{r.score_breakdown.source}</div>
                                             </div>
                                         </div>
 
                                         <div style={{ height: '8px', width: '100%', background: '#F1F5F9', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
                                             <div style={{
                                                 height: '100%',
-                                                width: `${Math.min(Math.max((r.final_score / 15) * 100, 5), 100)}%`, // Approx scale visualization
+                                                width: `${Math.min(r.final_score, 100)}%`, // Direct percentage
                                                 background: 'linear-gradient(90deg, #3B82F6, #8B5CF6)',
                                                 borderRadius: '4px',
                                                 transition: 'width 0.5s ease'
@@ -213,28 +206,8 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
                                         <div id={`logic-${r.id}`} style={{ display: 'none', background: '#F0F9FF', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.85rem' }}>
                                             <p style={{ fontWeight: 700, color: '#0369A1', marginBottom: '8px' }}>Scoring Formula:</p>
                                             <code style={{ display: 'block', background: 'rgba(255,255,255,0.5)', padding: '8px', borderRadius: '4px', marginBottom: '12px', color: '#0C4A6E' }}>
-                                                Score = (Topic × 0.3) + (Trend × 2.0) + Impact + Quality
+                                                Score = Source(50%) + Engagement(30%) + Relevance(20%)
                                             </code>
-
-                                            <div style={{ marginTop: '8px' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                    <span>⏱️ Time Spent Impact:</span>
-                                                    <span style={{ fontWeight: 600, color: r.score_breakdown.personal > 1 ? '#10B981' : '#64748B' }}>
-                                                        {r.score_breakdown.personal > 1 ? 'High Engagement' : 'Normal'}
-                                                    </span>
-                                                </div>
-                                                <div style={{ height: '6px', background: '#E2E8F0', borderRadius: '3px', overflow: 'hidden' }}>
-                                                    <div style={{
-                                                        height: '100%',
-                                                        width: `${Math.min((r.score_breakdown.personal / 5) * 100, 100)}%`,
-                                                        background: '#10B981',
-                                                        transition: 'width 0.5s'
-                                                    }}></div>
-                                                </div>
-                                                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '4px' }}>
-                                                    *Longer watch time boosts this score automatically even without a rating.
-                                                </p>
-                                            </div>
                                         </div>
 
                                         <div style={{
@@ -265,7 +238,12 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
                         className="btn-open-resource"
                         onClick={(e) => {
                             e.preventDefault();
-                            setViewingResource(r);
+                            // Open videos in popup, articles and PDFs in new tab
+                            if (r.format === 'video') {
+                                setViewingResource(r);
+                            } else {
+                                window.open(r.url, '_blank', 'noopener,noreferrer');
+                            }
                         }}
                         style={{ textDecoration: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
                     >
@@ -299,6 +277,7 @@ const ResourceCard = ({ r, idx, getThumbnail, handleRate, setViewingResource }: 
 
 function StudentDashboard() {
     // Initialize state from sessionStorage or defaults
+    const navigate = useNavigate();
     const [courses, setCourses] = useState<Course[]>([]);
 
     // Helper to get typed session data
@@ -307,17 +286,17 @@ function StudentDashboard() {
         return stored ? JSON.parse(stored) : def;
     };
 
-    const [selectedCourse, setSelectedCourse] = useState<number | null>(() => getSession('selectedCourse', null));
+    const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
     const [topics, setTopics] = useState<Topic[]>(() => getSession('topics', []));
-    const [selectedTopic, setSelectedTopic] = useState<number | null>(() => getSession('selectedTopic', null));
-    const [resources, setResources] = useState<Resource[]>(() => getSession('resources', []));
+    const [selectedTopic, setSelectedTopic] = useState<number | null>(null);
+    const [resources, setResources] = useState<Resource[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Format Filter Logic
-    const [selectedFormat, setSelectedFormat] = useState<string>(() => getSession('selectedFormat', ''));
-    const [description, setDescription] = useState(() => getSession('description', ''));
-    const [selectedLanguage, setSelectedLanguage] = useState(() => getSession('selectedLanguage', 'English'));
-    const [agentQuery, setAgentQuery] = useState(() => getSession('agentQuery', ""));
+    // Format Filter Logic - Reset on refresh
+    const [selectedFormat, setSelectedFormat] = useState<string>('');
+    const [description, setDescription] = useState('');
+    const [selectedLanguage, setSelectedLanguage] = useState('English');
+    const [agentQuery, setAgentQuery] = useState("");
 
     const [agentStatus, setAgentStatus] = useState("Idle");
     const [isAgentDetailsExpanded, setIsAgentDetailsExpanded] = useState(false);
@@ -353,15 +332,8 @@ function StudentDashboard() {
         setViewingResource(null);
     };
 
-    // Persist State Effects
-    useEffect(() => { sessionStorage.setItem('sd_selectedCourse', JSON.stringify(selectedCourse)); }, [selectedCourse]);
+    // Persist State Effects - Keep only non-filter states
     useEffect(() => { sessionStorage.setItem('sd_topics', JSON.stringify(topics)); }, [topics]);
-    useEffect(() => { sessionStorage.setItem('sd_selectedTopic', JSON.stringify(selectedTopic)); }, [selectedTopic]);
-    useEffect(() => { sessionStorage.setItem('sd_resources', JSON.stringify(resources)); }, [resources]);
-    useEffect(() => { sessionStorage.setItem('sd_selectedFormat', JSON.stringify(selectedFormat)); }, [selectedFormat]);
-    useEffect(() => { sessionStorage.setItem('sd_description', JSON.stringify(description)); }, [description]);
-    useEffect(() => { sessionStorage.setItem('sd_selectedLanguage', JSON.stringify(selectedLanguage)); }, [selectedLanguage]);
-    useEffect(() => { sessionStorage.setItem('sd_agentQuery', JSON.stringify(agentQuery)); }, [agentQuery]);
     useEffect(() => { sessionStorage.setItem('sd_viewingResource', JSON.stringify(viewingResource)); }, [viewingResource]);
 
     const getYouTubeEmbedUrl = (url: string) => {
@@ -393,6 +365,12 @@ function StudentDashboard() {
 
     useEffect(() => {
         fetchCourses();
+
+        // Auto-fetch resources if topic is already selected (from session storage)
+        if (selectedTopic && resources.length === 0) {
+            console.log('Auto-fetching resources for pre-selected topic:', selectedTopic);
+            setTimeout(() => handleFetch(20), 500); // Small delay to ensure courses are loaded
+        }
     }, []);
 
     useEffect(() => {
@@ -435,6 +413,32 @@ function StudentDashboard() {
         }
     }, [limit]);
 
+    // Listen for Mobile Navbar Search Toggle and Click Outside
+    useEffect(() => {
+        const handleToggleFilters = () => setMobileFiltersOpen(prev => !prev);
+
+        const handleClickOutside = (event: MouseEvent) => {
+            const filtersPanel = document.querySelector('.filters-content-wrapper');
+            const searchButton = document.querySelector('.mobile-action-btn');
+
+            if (mobileFiltersOpen &&
+                filtersPanel &&
+                !filtersPanel.contains(event.target as Node) &&
+                searchButton &&
+                !searchButton.contains(event.target as Node)) {
+                setMobileFiltersOpen(false);
+            }
+        };
+
+        window.addEventListener('toggle-filters', handleToggleFilters);
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            window.removeEventListener('toggle-filters', handleToggleFilters);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [mobileFiltersOpen]);
+
     // Re-fetch recommendations when filters change (ONLY if resources are already showing)
     useEffect(() => {
         // Only trigger fetch if we aren't just restoring state
@@ -463,6 +467,7 @@ function StudentDashboard() {
     };
 
     const handleCourseChange = async (courseId: number) => {
+        console.log('Course changed to:', courseId);
         if (!courseId) {
             setSelectedCourse(null);
             setTopics([]);
@@ -475,34 +480,39 @@ function StudentDashboard() {
         setLimit(20);
         try {
             const res = await api.get(`/courses/${courseId}/topics`);
+            console.log('Topics loaded:', res.data);
             setTopics(res.data);
         } catch (err) {
-            console.error(err);
+            console.error('Error loading topics:', err);
         }
     };
 
     const handleTopicChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const topicId = Number(e.target.value);
+        console.log('Topic selected:', topicId, 'Available topics:', topics.map(t => ({ id: t.id, name: t.name })));
         setSelectedTopic(topicId || null);
         setLimit(20);
     };
 
     const handleFetch = async (currentLimit = 20) => {
         if (!selectedCourse) {
-            alert("Please select a course.");
+            console.warn("Please select a course.");
             return;
         }
         // Proceed even if topic is not selected (Course-wide recommendations)
         setLoading(true);
+        const requestData = {
+            course_id: selectedCourse,
+            topic_id: selectedTopic,
+            format: selectedFormat || null,
+            search_query: description,
+            language: selectedLanguage,
+            limit: currentLimit
+        };
+        console.log('Fetching resources with:', requestData);
         try {
-            const res = await api.post('/recommend', {
-                course_id: selectedCourse,
-                topic_id: selectedTopic,
-                format: selectedFormat || null,
-                search_query: description,
-                language: selectedLanguage,
-                limit: currentLimit
-            });
+            const res = await api.post('/recommend', requestData);
+            console.log('API Response:', res.data);
             if (res.data.results) {
                 // New Format
                 setResources(res.data.results);
@@ -512,7 +522,7 @@ function StudentDashboard() {
                 setResources(res.data);
             }
         } catch (err) {
-            console.error(err);
+            console.error('Error fetching resources:', err);
         } finally {
             setLoading(false);
         }
@@ -536,7 +546,7 @@ function StudentDashboard() {
     };
 
     return (
-        <div className="dashboard-container dashboard-page-container">
+        <div className={`dashboard-container dashboard-page-container ${resources.length === 0 ? 'lock-scroll-mobile' : ''}`}>
             <ChatWidget
                 isOpen={chatOpen}
                 onClose={() => setChatOpen(false)}
@@ -552,37 +562,47 @@ function StudentDashboard() {
                 {/* LEFT PANEL: Filters */}
                 <aside className="filters-panel">
                     {/* Mobile Toggle Button */}
-                    <button
-                        className="mobile-filter-toggle"
-                        onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-                    >
-                        <span>⚡ Filters & Search</span>
-                        <span>{mobileFiltersOpen ? '▲' : '▼'}</span>
-                    </button>
+
+
+                    {/* Desktop-only header */}
+                    <div className="filters-header desktop-only-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="lightning-icon">⚡</span>
+                            <h3>Smart Filters</h3>
+                        </div>
+                        <button
+                            onClick={() => {
+                                if (window.innerWidth < 768) {
+                                    navigate('/chat', {
+                                        state: {
+                                            context: {
+                                                courseId: selectedCourse,
+                                                topicId: selectedTopic,
+                                                courseName: courses.find(c => c.id === selectedCourse)?.name || '',
+                                                topicName: topics.find(t => t.id === selectedTopic)?.name || ''
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    setChatOpen(true);
+                                }
+                            }}
+                            title="Ask Study Buddy AI"
+                            style={{
+                                background: 'var(--primary)',
+                                color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                boxShadow: '0 4px 10px rgba(0,0,0,0.15)', fontSize: '1.2rem',
+                                transition: 'transform 0.2s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                            🤖
+                        </button>
+                    </div>
 
                     <div className={`filters-content-wrapper ${mobileFiltersOpen ? 'open' : ''} desktop-visible`}>
-                        <div className="filters-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span className="lightning-icon">⚡</span>
-                                <h3>Smart Filters</h3>
-                            </div>
-                            <button
-                                onClick={() => setChatOpen(true)}
-                                title="Ask Study Buddy AI"
-                                style={{
-                                    background: 'var(--primary)',
-                                    color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                    boxShadow: '0 4px 10px rgba(0,0,0,0.15)', fontSize: '1.2rem',
-                                    transition: 'transform 0.2s'
-                                }}
-                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                            >
-                                🤖
-                            </button>
-                        </div>
-
                         <div className="filters-body">
                             <div className="filter-group">
                                 <label>Module</label>
@@ -651,7 +671,7 @@ function StudentDashboard() {
                             {/* Agent Process / Context Display */}
                             {/* Agent Process / Context Display - Collapsible & Fixed */}
                             {(loading || selectedCourse || agentQuery) && (
-                                <div style={{ marginBottom: '0.25rem', marginTop: '-0.5rem' }}>
+                                <div className="desktop-only-header" style={{ marginBottom: '0.25rem', marginTop: '-0.5rem' }}>
                                     <div
                                         onClick={() => setIsAgentDetailsExpanded(!isAgentDetailsExpanded)}
                                         style={{
@@ -792,28 +812,20 @@ function StudentDashboard() {
                                         onClick={() => {
                                             // 1. Clear Resources
                                             setResources([]);
-                                            sessionStorage.setItem('sd_resources', JSON.stringify([]));
 
                                             // 2. Refresh/Reset Module Details (Smart Filters)
                                             // Reset Module (Course)
                                             setSelectedCourse(null);
-                                            sessionStorage.setItem('sd_selectedCourse', 'null');
 
                                             setTopics([]);
                                             sessionStorage.setItem('sd_topics', JSON.stringify([]));
 
                                             // Reset Filters
                                             setSelectedTopic(null);
-                                            sessionStorage.setItem('sd_selectedTopic', 'null');
 
                                             setSelectedFormat('');
-                                            sessionStorage.setItem('sd_selectedFormat', JSON.stringify(''));
-
                                             setDescription('');
-                                            sessionStorage.setItem('sd_description', JSON.stringify(''));
-
                                             setAgentQuery('');
-                                            sessionStorage.setItem('sd_agentQuery', JSON.stringify(''));
 
                                             // Optional: Reset language? Keeping it might be better, but "refresh" usually implies full reset.
                                             // setSelectedLanguage('English'); 
@@ -880,7 +892,7 @@ function StudentDashboard() {
                                         </h3>
                                         <div style={{ display: 'flex', gap: '10px' }}>
                                             <a href={viewingResource.url} target="_blank" rel="noopener noreferrer" className='btn-secondary'>
-                                                Open in New Tab ↗
+                                                ↗
                                             </a>
                                             <button onClick={handleCloseResource} className="btn-close-modal">
                                                 &times;
@@ -950,6 +962,36 @@ function StudentDashboard() {
                     to { opacity: 1; transform: translate(-50%, 0); }
                 }
             `}</style>
+
+            {/* FAB for Mobile Actions */}
+            <div className="fab-container mobile-only">
+                <style>{`
+                    @media (min-width: 769px) { .mobile-only { display: none !important; } }
+                 `}</style>
+                <button
+                    className="fab-main"
+                    onClick={() => {
+                        if (window.innerWidth < 768) {
+                            navigate('/chat', {
+                                state: {
+                                    context: {
+                                        courseId: selectedCourse,
+                                        topicId: selectedTopic,
+                                        courseName: courses.find(c => c.id === selectedCourse)?.name || '',
+                                        topicName: topics.find(t => t.id === selectedTopic)?.name || ''
+                                    }
+                                }
+                            });
+                        } else {
+                            setChatOpen(true);
+                        }
+                    }}
+                    title="Quick Chat"
+                >
+                    <span style={{ fontSize: '1.5rem', lineHeight: 1, marginTop: '-2px' }}>🤖</span>
+                </button>
+            </div>
+
         </div>
     );
 }

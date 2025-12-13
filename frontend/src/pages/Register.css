@@ -1,0 +1,427 @@
+/* --- Professional Register Page Styles --- */
+
+.modern-register-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: #ffffff;
+    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text-main, #111827);
+}
+
+/* --- Brand Sidebar (Left) --- */
+.register-brand-sidebar {
+    flex: 1;
+    background: linear-gradient(135deg, var(--secondary, #3b82f6) 0%, var(--primary, #4F46E5) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.brand-content {
+    z-index: 2;
+    text-align: center;
+    padding: 2rem;
+    animation: slideInLeft 0.8s ease-out forwards;
+}
+
+.brand-content h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.1;
+}
+
+.brand-content p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* Abstract Shapes */
+.shape-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: float 10s ease-in-out infinite;
+}
+
+.shape-1 {
+    width: 400px;
+    height: 400px;
+    top: -100px;
+    left: -100px;
+}
+
+.shape-2 {
+    width: 300px;
+    height: 300px;
+    bottom: -50px;
+    right: -50px;
+    animation-delay: -5s;
+}
+
+/* --- Form Sidebar (Right) --- */
+.register-form-sidebar {
+    flex: 1.2;
+    /* Slightly wider for form inputs */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    padding: 2rem;
+    overflow-y: auto;
+    /* Allow scrolling if form is tall */
+}
+
+.register-card {
+    width: 100%;
+    max-width: 500px;
+    background: white;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+
+    opacity: 0;
+    animation: slideUpEntrance 0.6s ease-out forwards;
+}
+
+/* Wizard Progress */
+.wizard-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.wizard-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: #94a3b8;
+    position: relative;
+    z-index: 1;
+}
+
+.wizard-step.active {
+    color: var(--primary, #4F46E5);
+    font-weight: 600;
+}
+
+.step-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    transition: all 0.3s;
+}
+
+.wizard-step.active .step-circle {
+    background: var(--primary, #4F46E5);
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+}
+
+.progress-line {
+    height: 3px;
+    width: 80px;
+    background: #e2e8f0;
+    margin: 0 10px;
+    margin-bottom: 24px;
+    /* Align with circles */
+    border-radius: 10px;
+}
+
+.progress-line.filled {
+    background: var(--primary, #4F46E5);
+}
+
+/* Headers */
+.register-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.register-header h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.register-header p {
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+/* Form Groups */
+.form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-group {
+    flex: 1;
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #475569;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.875rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s;
+    background: #fff;
+    color: #1e293b;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: var(--primary, #4F46E5);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Actions */
+.wizard-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.btn-back {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem;
+}
+
+.btn-next,
+.btn-submit {
+    background: var(--primary, #4F46E5);
+    color: white;
+    border: none;
+    padding: 0.875rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.95rem;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+    transition: all 0.2s;
+}
+
+.btn-next:hover,
+.btn-submit:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+}
+
+/* Login Link */
+.login-redirect {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.login-redirect span {
+    color: var(--primary, #4F46E5);
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 0.5rem;
+}
+
+/* Animations */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideUpEntrance {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
+    .modern-register-container {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+
+    .register-brand-sidebar {
+        display: none;
+    }
+
+    .register-form-sidebar {
+        padding: 0;
+        background: white;
+        height: 100vh;
+        display: block;
+        /* Allow block flow for scrolling */
+    }
+
+    .register-card {
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+        border-radius: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Mobile Header */
+    .mobile-header {
+        padding: 2rem 1.5rem 1rem 1.5rem;
+        text-align: center;
+        border-bottom: 1px solid #f1f5f9;
+        margin-bottom: 1rem;
+    }
+
+    .mobile-header h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        background: linear-gradient(to right, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+    }
+
+    /* Scrollable Content Area */
+    .register-content-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem 1.5rem 100px 1.5rem;
+        /* Bottom padding for fixed footer */
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .form-group label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 1rem;
+        border-radius: 12px;
+        background: #f8fafc;
+        border-color: transparent;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        background: white;
+        border-color: var(--primary);
+    }
+
+    /* Fixed Bottom Action Bar */
+    .wizard-actions {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 1rem 1.5rem;
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        border-top: 1px solid #e2e8f0;
+        margin: 0;
+        z-index: 50;
+        box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.03);
+    }
+
+    .btn-next,
+    .btn-submit {
+        width: 100%;
+        border-radius: 50px;
+        padding: 1rem;
+        font-size: 1rem;
+    }
+
+    .btn-back {
+        display: none;
+        /* Hide back button text, maybe use icon in header later if needed */
+    }
+
+    /* Animations for Mobile */
+    @keyframes mobileSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(100px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .register-content-scroll {
+        animation: mobileSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+}

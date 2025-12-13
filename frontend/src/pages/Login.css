@@ -1,0 +1,357 @@
+/* --- Professional Login Animations & Styles (Login.css) --- */
+
+/* Reset for the container */
+.modern-login-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: #ffffff;
+    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text-main, #111827);
+}
+
+/* Keyframes */
+@keyframes fadeInEntrance {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUpEntrance {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes floatShape {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    50% {
+        transform: translate(10px, -15px) rotate(5deg);
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+
+/* Left Brand Sidebar (Desktop) */
+.brand-sidebar {
+    flex: 1;
+    background: linear-gradient(135deg, var(--secondary, #3b82f6) 0%, var(--primary, #4F46E5) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.brand-content {
+    z-index: 2;
+    text-align: center;
+    padding: 2rem;
+    animation: slideInRight 0.8s ease-out forwards;
+}
+
+.brand-content h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+    animation: fadeInEntrance 1.2s ease-out forwards;
+}
+
+.brand-content p {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    font-weight: 300;
+    animation: fadeInEntrance 1.2s ease-out forwards;
+}
+
+/* Abstract Shapes */
+.abstract-shape {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 1;
+}
+
+.abstract-shape.shape-1 {
+    width: 300px;
+    height: 300px;
+    top: -50px;
+    right: -50px;
+    animation: floatShape 8s ease-in-out infinite;
+}
+
+.abstract-shape.shape-2 {
+    width: 500px;
+    height: 500px;
+    bottom: -100px;
+    left: -100px;
+    animation: floatShape 10s ease-in-out infinite reverse;
+}
+
+/* Right Form Sidebar */
+.form-sidebar {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    padding: 2rem;
+}
+
+.form-card {
+    width: 100%;
+    max-width: 420px;
+    background: white;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+    opacity: 0;
+    /* Initial state */
+    animation: slideUpEntrance 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    animation-delay: 0.1s;
+}
+
+.form-header {
+    margin-bottom: 2rem;
+    text-align: left;
+    opacity: 0;
+    animation: slideUpEntrance 0.6s ease-out forwards;
+    animation-delay: 0.2s;
+}
+
+.form-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.form-header p {
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.mobile-brand-header {
+    display: none;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.mobile-brand-header h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    /* Standard property for compatibility */
+    color: transparent;
+    /* Fallback */
+}
+
+/* Inputs */
+.input-group {
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: slideUpEntrance 0.6s ease-out forwards;
+    animation-delay: 0.3s;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #475569;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    color: #1e293b;
+    background: #fff;
+}
+
+.input-group input:focus {
+    border-color: var(--primary, #4F46E5);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.password-field {
+    position: relative;
+    width: 100%;
+}
+
+.password-field input {
+    padding-right: 3rem;
+    /* Space for hide button */
+}
+
+.password-field button {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0;
+}
+
+/* Actions */
+.action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    opacity: 0;
+    animation: slideUpEntrance 0.6s ease-out forwards;
+    animation-delay: 0.4s;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.forgot-link {
+    color: var(--primary, #4F46E5);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.signin-btn {
+    width: 100%;
+    padding: 0.875rem;
+    background: var(--primary, #4F46E5);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+
+    opacity: 0;
+    animation: slideUpEntrance 0.6s ease-out forwards;
+    animation-delay: 0.5s;
+}
+
+.signin-btn:hover {
+    background: #4338ca;
+}
+
+.signin-btn:active {
+    transform: scale(0.98);
+}
+
+.register-row {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.95rem;
+    color: #64748b;
+
+    opacity: 0;
+    animation: slideUpEntrance 0.6s ease-out forwards;
+    animation-delay: 0.6s;
+}
+
+.register-link {
+    color: var(--primary, #4F46E5);
+    font-weight: 600;
+    margin-left: 0.5rem;
+    cursor: pointer;
+}
+
+/* Demo Section */
+
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
+    .modern-login-container {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .brand-sidebar {
+        display: none;
+    }
+
+    .form-sidebar {
+        background: white;
+        padding: 1rem;
+    }
+
+    .form-card {
+        box-shadow: none;
+        padding: 1rem;
+        max-width: 100%;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .mobile-brand-header {
+        display: block;
+    }
+
+    .signin-btn {
+        padding: 1rem;
+        /* Easier to tap */
+        border-radius: 12px;
+    }
+
+    .input-group input {
+        padding: 1rem;
+        /* Easier to tap */
+        border-radius: 12px;
+    }
+}

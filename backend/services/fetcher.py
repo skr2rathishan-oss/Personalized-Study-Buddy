@@ -12,6 +12,51 @@ class ResourceFetcher:
         self.GOOGLE_SEARCH_API_KEY = os.getenv('GOOGLE_SEARCH_API_KEY')
         self.SEARCH_ENGINE_ID = os.getenv('SEARCH_ENGINE_ID')
 
+    def get_fallback_resources(self, topic_name, course_name):
+        """
+        Returns fallback resources when APIs are unavailable.
+        Suggests common learning resources for the topic.
+        """
+        fallback_suggestions = [
+            {
+                'title': f'{topic_name} - Wikipedia Overview',
+                'url': f'https://en.wikipedia.org/wiki/{topic_name.replace(" ", "_")}',
+                'description': f'General information about {topic_name}',
+                'format': 'article',
+                'source': 'fallback_wikipedia',
+            },
+            {
+                'title': f'{topic_name} - Khan Academy',
+                'url': f'https://www.khanacademy.org/search?page_search_query={topic_name.replace(" ", "+")}',
+                'description': f'Educational videos and exercises on {topic_name}',
+                'format': 'video',
+                'source': 'fallback_khan_academy',
+            },
+            {
+                'title': f'{course_name} - {topic_name} Tutorial',
+                'url': f'https://www.udemy.com/courses/search/?q={topic_name.replace(" ", "+")}',
+                'description': f'Online courses covering {topic_name}',
+                'format': 'video',
+                'source': 'fallback_udemy',
+            },
+            {
+                'title': f'{topic_name} - Medium Articles',
+                'url': f'https://medium.com/search?q={topic_name.replace(" ", "+")}',
+                'description': f'Articles and tutorials about {topic_name}',
+                'format': 'article',
+                'source': 'fallback_medium',
+            },
+            {
+                'title': f'{topic_name} - Stack Overflow Q&A',
+                'url': f'https://stackoverflow.com/search?q={topic_name.replace(" ", "+")}',
+                'description': f'Practical questions and answers about {topic_name}',
+                'format': 'article',
+                'source': 'fallback_stackoverflow',
+            }
+        ]
+        self.logger.info(f"Returning {len(fallback_suggestions)} fallback resources for {topic_name}")
+        return fallback_suggestions
+
     def fetch_youtube_videos(self, query, max_results=3, lang_code='en', region_code=None):
         """
         Fetches videos from YouTube Data API v3 based on a query.
@@ -35,6 +80,15 @@ class ResourceFetcher:
         try:
             response = requests.get(search_url, params=params, timeout=5)
             response.raise_for_status()
+            if response.status_code == 400:
+                self.logger.warning(f"YouTube API 400 Error - likely quota exceeded or invalid parameters")
+                return []
+            
+            if response.status_code == 400:
+                self.logger.warning(f"Google Search API 400 Error - check API configuration")
+                self.logger.warning(f"SEARCH_ENGINE_ID={self.SEARCH_ENGINE_ID}")
+                return []
+            
             data = response.json()
             
             videos = []
@@ -199,4 +253,9 @@ class ResourceFetcher:
         
         # If filtering was too aggressive, return original results
         final_results = filtered_results if filtered_results else results
+        # FALLBACK: If no results from APIs, provide suggested resources
+        if not final_results:
+            self.logger.warning(f"No API results for '{final_query}'. Using fallback suggestions.")
+            final_results = self.get_fallback_resources(topic_name, course_name)
+        
         return final_results, final_query

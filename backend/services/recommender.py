@@ -166,99 +166,100 @@ class HybridRecommender:
 
     def recommend(self, user_id, topic_name, resources, top_k=5):
         """
-        Hybrid Recommendation Logic.
+        New Weighted Recommendation Logic (User Request):
+        1. **Admin/Source Trust**: 50%
+        2. **Engagement (Rating + Time)**: 30%
+        3. **Relevance & Popularity**: 20%
         """
         if not resources:
             return []
 
-        # 1. Content-Based Scoring (Semantic Similarity to Topic)
+        # 1. Content-Based Relevance (Semantic Similarity)
+        # We use this as part of the 20% Relevance block
         content_scores = self.get_content_similarity(topic_name, resources)
         
-        # 2. Collaborative/Popularity Scoring
         final_scores = []
         for res in resources:
-            cont_score = content_scores.get(res.id, 0)
-            collab_score = self.get_collaborative_score(user_id, res)
-            
-            # 3. Personalization (Did this user like THIS resource?)
-            user_boost = 0.0
-            
-            # Check specific user rating AND engagement for this resource
-            # We treat time_spent as an implicit rating (ML feature)
-            user_rating_val = 0
-            user_time_spent = 0
-            
-            if res.ratings:
-                for r in res.ratings:
-                    if r.user_id == user_id:
-                        user_rating_val = r.score
-                        user_time_spent = r.time_spent if r.time_spent else 0
-                        break
-            
-            # Explicit Rating Boost
-            if user_rating_val >= 4:
-                user_boost += 5.0
-            elif user_rating_val > 0 and user_rating_val <= 2:
-                user_boost += -1.0
-            
-            # Implicit Engagement Boost (Time Spent)
-            # 1. Start with what we found in ratings
-            # 2. If zero, try querying InteractionLogs for this user & resource
-            if user_time_spent == 0:
-                # Quick check if logs are loaded/available (simple query)
-                log_entry = InteractionLog.query.filter_by(user_id=user_id, resource_id=res.id, interaction_type='view').order_by(InteractionLog.timestamp.desc()).first()
-                if log_entry and log_entry.meta_data:
-                    try:
-                        meta = json.loads(log_entry.meta_data)
-                        user_time_spent = meta.get('duration', 0)
-                    except:
-                        pass
-
-            engagement_boost = 0.0
-            if user_time_spent > 60:
-                # Significant engagement (watched > 1 min)
-                # Boost logic: +1.0 baseline, scaling up to +2.5 for 10 mins
-                engagement_boost = 1.0 + (min(user_time_spent, 600) / 600.0) * 1.5
-            elif user_time_spent > 10:
-                engagement_boost = 0.5 # Small nudge for clicked/briefly viewed
-
-            user_boost += engagement_boost
-
-            # 4. Source Priority & Format Adjustment
-            source_boost = 0.0
+            # --- COMPONENT 1: Source Trust (50%) ---
+            # "Admin upload files give them 50% of score"
             if res.source == 'manual' or not res.is_auto_fetched:
-                source_boost = 0.2 
+                source_score_raw = 100 # Admin/Manual = Perfect Trust
+            else:
+                source_score_raw = 0  # Web/Auto = Zero Trust Score (User Requirement)
+                
+            weighted_source = source_score_raw * 0.50
             
-            # Format Penalty: If it's a PDF and strictly not rated high by user, push it down slightly
-            # to allow videos (often preferred) to surface if scores are close.
-            format_penalty = 0.0
-            if res.format.lower() == 'pdf' and user_rating_val < 3:
-                format_penalty = -0.5
-
-            # Weighted Hybrid Formula
-            # 30% Content + 70% Quality/Rating + User Boost + Source Boost + Format Penalty
-            components = {
-                'content': round(cont_score * 0.3, 2),
-                'collab': round(collab_score * 2.0, 2),
-                'personal': round(user_boost, 2),
-                'source': round(source_boost + format_penalty, 2)
+            # --- COMPONENT 2: Engagement (30%) ---
+            # "Rating with time"
+            
+            # 2a. Average Rating (0-100 scale)
+            avg_rating = 0
+            if res.ratings:
+                avg_rating = (sum(r.score for r in res.ratings) / len(res.ratings)) / 5.0 * 100
+            else:
+                avg_rating = 50 # Neutral start
+            
+            # 2b. Time Factor (Implicit)
+            # Check user's specific time or average time
+            # For general ranking, we use average time of all users
+            avg_time = 0
+            if res.ratings:
+                total_time = sum(r.time_spent for r in res.ratings if r.time_spent)
+                count = len([r for r in res.ratings if r.time_spent])
+                if count > 0:
+                    avg_time = total_time / count
+            
+            # Simple Time Scorer: > 2 mins = 100, > 30s = 70, else 40
+            if avg_time > 120:
+                time_score = 100
+            elif avg_time > 30:
+                time_score = 70
+            else:
+                time_score = 40
+                
+            # Combine Rating (60%) and Time (40%) within the Engagement block
+            engagement_raw = (avg_rating * 0.6) + (time_score * 0.4)
+            weighted_engagement = engagement_raw * 0.30
+            
+            # --- COMPONENT 3: Relevance & Popularity (20%) ---
+            # "Relevance of the topic and the popularity in the environment"
+            
+            # 3a. Relevance (Content Sim)
+            sim_score = content_scores.get(res.id, 0) * 100 # Convert 0-1 to 0-100
+            
+            # 3b. Popularity (Rating Count)
+            # Logarithmic scale for popularity (1 rating -> 20, 10 ratings -> 80, 50+ -> 100)
+            rating_count = len(res.ratings)
+            if rating_count == 0:
+                pop_score = 0
+            else:
+                pop_score = min(100, 20 + (np.log(rating_count) * 25))
+            
+            # Combine Relevance (70%) and Popularity (30%) within the block
+            relevance_raw = (sim_score * 0.7) + (pop_score * 0.3)
+            weighted_relevance = relevance_raw * 0.20
+            
+            # --- TOTAL SCORE ---
+            final_score = weighted_source + weighted_engagement + weighted_relevance
+            
+            # Score Breakdown for UI
+            # We map to keys expected by the frontend (or new keys if we update frontend)
+            # Let's use new descriptive keys and update frontend to match.
+            res.score_breakdown = {
+                'source_trust': round(weighted_source, 1), # Max 50
+                'engagement': round(weighted_engagement, 1), # Max 30
+                'relevance': round(weighted_relevance, 1)    # Max 20
             }
-            final_score = sum(components.values())
-            
-            # Attach debug info to resource instance (transient, not saved to DB)
-            res.score_breakdown = components
-            res.final_score = round(final_score, 2)
-            
-            print(f"DEBUG: Res {res.id} ({res.format}) | RatingVal: {user_rating_val} | Final: {final_score}")
+            res.final_score = round(final_score, 1)
             
             final_scores.append((res, final_score))
         
-        # Sort by final score
+        # Sort
         final_scores.sort(key=lambda x: x[1], reverse=True)
         
-        print("\n--- FINAL RANKING DEBUG ---")
-        for i, (r, s) in enumerate(final_scores[:10]):
-            print(f"Rank {i+1}: [{r.format.upper()}] {r.title} (ID: {r.id}) - Score: {s:.4f}")
-        print("---------------------------\n")
+        print("\n--- UPDATED RANKING 50/30/20 ---")
+        for i, (r, score) in enumerate(final_scores[:5]):
+            print(f"Rank {i+1}: {r.title} | Score: {score} | BD: {r.score_breakdown}")
+        print("--------------------------------\n")
         
         return [item[0] for item in final_scores[:top_k]]

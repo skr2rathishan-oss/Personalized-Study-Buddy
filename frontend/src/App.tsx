@@ -12,6 +12,8 @@ import Calendar from './pages/Calendar';
 import PersonalTracking from './pages/PersonalTracking';
 import History from './pages/History';
 import UserManagement from './pages/UserManagement';
+import ChatPage from './pages/ChatPage';
+import SubscriptionDashboard from './pages/SubscriptionDashboard';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -45,8 +47,8 @@ function AppContent() {
     const location = useLocation();
     // Hide footer on auth pages and main dashboard (as requested)
     const hideFooter = ['/login', '/register', '/forgot-password', '/'].includes(location.pathname);
-    // Hide navbar on auth pages
-    const hideNavbar = ['/login', '/register', '/forgot-password'].includes(location.pathname);
+    // Hide navbar on auth pages and chat page (mobile full screen)
+    const hideNavbar = ['/login', '/register', '/forgot-password', '/chat'].includes(location.pathname);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -100,10 +102,24 @@ function AppContent() {
                         </PrivateRoute>
                     } />
 
+                    {/* Mobile Chat Page */}
+                    <Route path="/chat" element={
+                        <PrivateRoute>
+                            <ChatPage />
+                        </PrivateRoute>
+                    } />
+
                     {/* User Management (Admin) */}
                     <Route path="/users" element={
                         <PrivateRoute allowedRoles={['admin', 'management']}>
                             <UserManagement />
+                        </PrivateRoute>
+                    } />
+
+                    {/* Subscription Management (Manager Only) */}
+                    <Route path="/subscriptions" element={
+                        <PrivateRoute allowedRoles={['management']}>
+                            <SubscriptionDashboard />
                         </PrivateRoute>
                     } />
 

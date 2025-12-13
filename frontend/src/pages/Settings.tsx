@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SubscriptionManager from '../components/SubscriptionManager';
 
 function Settings() {
     const [showPassword, setShowPassword] = useState(false);
@@ -93,6 +94,11 @@ function Settings() {
                             <span className="slider round"></span>
                         </label>
                     </div>
+
+                    <hr className="divider" />
+                    <h3 className="section-subtitle">Subscription Management</h3>
+
+                    <SubscriptionManager />
 
                     <hr className="divider" />
                     <div

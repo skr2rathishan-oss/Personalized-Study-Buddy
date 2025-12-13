@@ -1,271 +1,405 @@
+#!/usr/bin/env python3
+"""
+Personalized Study Buddy - Project Launcher
+Handles environment setup, dependency installation, service startup, and public tunneling.
+"""
+
 import os
 import sys
 import subprocess
 import time
-import webbrowser
+import signal
 import platform
+import threading
 import shutil
+from pathlib import Path
 
-# Configuration
-VENV_DIR = "venv"
-REQUIREMENTS_FILE = os.path.join("backend", "requirements.txt")
-BACKEND_SCRIPT = os.path.join("backend", "app.py")
-INIT_DB_SCRIPT = os.path.join("backend", "init_db.py")
-ML_TRAIN_SCRIPT = os.path.join("ml", "train.py")
-FRONTEND_DIR = "frontend"
-OTP_DIR = "otp_sandbox"
-OTP_SCRIPT = os.path.join(OTP_DIR, "server.js")
+# Color codes for terminal output
+class Colors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
-FRONTEND_PORT = 5173
-BACKEND_PORT = 5000
-OTP_PORT = 3000
-PUBLIC_IP = "192.168.43.26"
+def print_header(text):
+    """Print header with formatting"""
+    print(f"\n{Colors.BOLD}{Colors.HEADER}{'='*60}{Colors.ENDC}")
+    print(f"{Colors.BOLD}{Colors.HEADER}{text.center(60)}{Colors.ENDC}")
+    print(f"{Colors.BOLD}{Colors.HEADER}{'='*60}{Colors.ENDC}\n")
+
+def print_status(text, status="INFO"):
+    """Print status message"""
+    if status == "SUCCESS":
+        print(f"{Colors.OKGREEN}✓ {text}{Colors.ENDC}")
+    elif status == "ERROR":
+        print(f"{Colors.FAIL}✗ {text}{Colors.ENDC}")
+    elif status == "WARNING":
+        print(f"{Colors.WARNING}⚠ {text}{Colors.ENDC}")
+    else:
+        print(f"{Colors.OKCYAN}→ {text}{Colors.ENDC}")
 
 def get_python_executable():
-    """Returns the path to the Python executable in the virtual environment."""
+    """Get the correct Python executable path"""
+    project_root = Path(__file__).parent
+    venv_path = project_root / "venv"
+    
     if platform.system() == "Windows":
-        return os.path.join(VENV_DIR, "Scripts", "python.exe")
+        python_exe = venv_path / "Scripts" / "python.exe"
     else:
-        return os.path.join(VENV_DIR, "bin", "python")
+        python_exe = venv_path / "bin" / "python"
+    
+    if python_exe.exists():
+        return str(python_exe)
+    else:
+        return sys.executable
 
-def is_venv():
-    """Checks if the script is running inside a virtual environment."""
-    return (hasattr(sys, 'real_prefix') or
-            (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix))
+def check_python_version():
+    """Verify Python version is 3.8+"""
+    if sys.version_info < (3, 8):
+        print_status(f"Python 3.8+ required, found {sys.version_info.major}.{sys.version_info.minor}", "ERROR")
+        sys.exit(1)
+    print_status(f"Python {sys.version_info.major}.{sys.version_info.minor} detected", "SUCCESS")
 
 def create_venv():
-    """Creates a virtual environment if it doesn't exist."""
-    if not os.path.exists(VENV_DIR):
-        print(f"Creating virtual environment in '{VENV_DIR}'...")
-        try:
-            subprocess.check_call([sys.executable, "-m", "venv", VENV_DIR])
-            print("Virtual environment created successfully.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error creating virtual environment: {e}")
-            sys.exit(1)
-    else:
-        print(f"Virtual environment '{VENV_DIR}' already exists.")
+    """Create virtual environment if it doesn't exist"""
+    project_root = Path(__file__).parent
+    venv_path = project_root / "venv"
+    
+    if venv_path.exists():
+        print_status("Virtual environment already exists", "SUCCESS")
+        return
+    
+    print_status("Creating virtual environment...")
+    subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
+    print_status("Virtual environment created", "SUCCESS")
 
-def kill_process_on_port(port):
-    """Finds and kills the process listening on the specified port (Windows)."""
-    if platform.system() == "Windows":
-        try:
-            cmd = f'netstat -ano | findstr :{port}'
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, err = p.communicate()
-            output = out.decode()
-            
-            pids = set()
-            for line in output.splitlines():
-                if f":{port}" in line and "LISTENING" in line:
-                    parts = line.strip().split()
-                    pid = parts[-1]
-                    pids.add(pid)
-            
-            for pid in pids:
-                if pid != "0": 
-                    print(f"Cleaning up: Killing old process {pid} on port {port}...")
-                    subprocess.call(f"taskkill /F /PID {pid}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except Exception as e:
-            pass
+def check_npm_installed():
+    """Check if npm is installed and available"""
+    try:
+        result = subprocess.run(
+            ["npm", "--version"],
+            capture_output=True,
+            check=True,
+            timeout=5,
+            shell=True
+        )
+        print_status(f"npm version: {result.stdout.decode().strip()}", "SUCCESS")
+        return True
+    except Exception as e:
+        print_status(f"npm check failed: {e}", "WARNING")
+        return False
 
-def cleanup_old_instances():
-    """Aggressively cleans up old backend, frontend, and OTP listener processes."""
-    print("--- Pipeline Cleanup: Removing old instances ---")
-    kill_process_on_port(BACKEND_PORT)
-    kill_process_on_port(FRONTEND_PORT)
-    kill_process_on_port(5174) # Vite fallback
-    kill_process_on_port(OTP_PORT)
-    print("----------------------------------------------")
-
-def install_dependencies(python_exec):
-    """Installs dependencies from requirements.txt."""
-    if os.path.exists(REQUIREMENTS_FILE):
-        print("Checking Backend dependencies...")
-        try:
-            subprocess.check_call([python_exec, "-m", "pip", "install", "-r", REQUIREMENTS_FILE], stdout=subprocess.DEVNULL)
-            print("Backend dependencies installed.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error installing dependencies: {e}")
-            sys.exit(1)
-    else:
-        print(f"Warning: '{REQUIREMENTS_FILE}' not found. Skipping dependency installation.")
-
-def verify_integrity():
-    """Verifies that all critical files vary exist and are connected."""
-    print("--- Verifying Project Integrity ---")
-    critical_files = [
-        BACKEND_SCRIPT,
-        REQUIREMENTS_FILE,
-        os.path.join(FRONTEND_DIR, "package.json"),
-        os.path.join("backend", "models.py"),
-        os.path.join("backend", "app.py")
+def find_npm_path():
+    """Try to find npm in common locations"""
+    
+    # Try standard PATH first
+    npm_path = shutil.which("npm")
+    if npm_path:
+        return npm_path
+    
+    # Try common installation locations on Windows
+    common_paths = [
+        r"C:\Program Files\nodejs\npm.cmd",
+        r"C:\Program Files (x86)\nodejs\npm.cmd",
+        os.path.expanduser(r"~\AppData\Local\Programs\nodejs\npm.cmd"),
     ]
     
-    missing = [f for f in critical_files if not os.path.exists(f)]
-    if missing:
-        print("CRITICAL ERROR: The following required files are missing:")
-        for f in missing:
-            print(f" - {f}")
-        print("Cannot start application.")
-        sys.exit(1)
+    for path in common_paths:
+        if os.path.exists(path):
+            return path
     
-    # Check Database specifically
-    db_path = os.path.join("backend", "data", "db.sqlite3")
-    if not os.path.exists(db_path):
-        print("\n[WARNING] Database file (db.sqlite3) is NOT found.")
-        print(f"Expected at: {db_path}")
-        print("If this is a fresh install, please ask for setup instructions.")
-    else:
-        print("Database file found.")
-    
-    print("Integrity Check Passed.\n")
+    return None
 
-def install_frontend_dependencies():
-    """Installs frontend dependencies (npm install) if node_modules is missing."""
-    node_modules_path = os.path.join(FRONTEND_DIR, "node_modules")
-    if not os.path.exists(node_modules_path):
-        print("Installing Frontend dependencies (this may take a minute)...")
-        try:
-            subprocess.check_call(["npm", "install"], cwd=FRONTEND_DIR, shell=True)
-            print("Frontend dependencies installed.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error installing frontend dependencies: {e}")
-            print("Please ensure Node.js is installed.")
-    else:
-        print("Frontend dependencies check passed.")
-
-def train_model(python_exec):
-    """Runs the ML training script."""
-    if os.path.exists(ML_TRAIN_SCRIPT):
-        print("Training ML Recommendation Model...")
-        try:
-            subprocess.check_call([python_exec, ML_TRAIN_SCRIPT])
-            print("ML Model updated.")
-        except subprocess.CalledProcessError:
-            print("Warning: ML Training encountered an issue (non-fatal).")
-    else:
-        print(f"Warning: '{ML_TRAIN_SCRIPT}' not found. Skipping ML training.")
-
-def run_backend(python_exec):
-    """Runs the Flask backend."""
-    print(f"Starting Backend on port {BACKEND_PORT}...")
-    return subprocess.Popen([python_exec, BACKEND_SCRIPT], cwd=os.getcwd())
-
-def run_frontend():
-    """Runs the React Frontend."""
-    print(f"Starting React Frontend...")
-    return subprocess.Popen(["npm", "run", "dev"], cwd=FRONTEND_DIR, shell=True)
-
-def run_otp_listener():
-    """Runs the OTP Notification Listener (Node.js)."""
-    if os.path.exists(OTP_SCRIPT):
-        print(f"Starting Notification Dashboard on port {OTP_PORT}...")
-        # Ensure node modules exist for OTP sandbox
-        if not os.path.exists(os.path.join(OTP_DIR, 'node_modules')):
-             print("Installing OTP Sandbox dependencies...")
-             subprocess.call(["npm", "install"], cwd=OTP_DIR, shell=True, stdout=subprocess.DEVNULL)
+def find_npx_path():
+    """Try to find npx"""
+    npx_path = shutil.which("npx")
+    if npx_path:
+        return npx_path
         
-        return subprocess.Popen(["node", "server.js"], cwd=OTP_DIR, shell=True)
-    else:
-         print(f"Warning: {OTP_SCRIPT} not found. Skipping Notification Dashboard.")
-         return None
+    # Infer from npm path
+    npm_path = find_npm_path()
+    if npm_path:
+        # Windows usually has npx.cmd in the same dir
+        npx_candidate = npm_path.replace("npm", "npx")
+        if os.path.exists(npx_candidate):
+            return npx_candidate
+            
+    return "npx" # Fallback
 
-def ensure_node_in_path():
-    """Ensures Node.js is in the PATH for the current process."""
-    if shutil.which("npm") is None:
-        # Fallback: Check common Windows install location
-        node_path = r"C:\Program Files\nodejs"
-        if os.path.exists(node_path):
-            print(f"Adding {node_path} to PATH...")
-            os.environ["PATH"] += os.pathsep + node_path
-            return True
-    return shutil.which("npm") is not None
+def install_dependencies():
+    """Install backend and frontend dependencies"""
+    project_root = Path(__file__).parent
+    python_exe = get_python_executable()
+    
+    # Backend dependencies
+    print_status("Installing backend dependencies...")
+    backend_requirements = project_root / "backend" / "requirements.txt"
+    if backend_requirements.exists():
+        subprocess.run(
+            [python_exe, "-m", "pip", "install", "--upgrade", "pip"],
+            check=False
+        )
+        subprocess.run(
+            [python_exe, "-m", "pip", "install", "-r", str(backend_requirements)],
+            check=True
+        )
+        print_status("Backend dependencies installed", "SUCCESS")
+    else:
+        print_status("Backend requirements.txt not found", "WARNING")
+    
+    # Frontend dependencies
+    print_status("Installing frontend dependencies...")
+    frontend_dir = project_root / "frontend"
+    
+    # Check if npm is installed
+    npm_path = find_npm_path()
+    if not npm_path:
+        print_status("npm is not installed or not in PATH", "ERROR")
+        return
+    
+    if frontend_dir.exists():
+        try:
+            subprocess.run(
+                [npm_path, "install"],
+                cwd=str(frontend_dir),
+                check=True,
+                timeout=300,
+                shell=True
+            )
+            print_status("Frontend dependencies installed", "SUCCESS")
+        except subprocess.TimeoutExpired:
+            print_status("Frontend installation timeout (proceeding)", "WARNING")
+        except Exception as e:
+            print_status(f"Frontend installation error: {e}", "WARNING")
+    else:
+        print_status("Frontend directory not found", "WARNING")
+
+def verify_project_integrity():
+    """Verify essential project files exist"""
+    print_status("Verifying project integrity...")
+    project_root = Path(__file__).parent
+    
+    essential_files = [
+        "backend/app.py",
+        "backend/models.py",
+        "backend/requirements.txt",
+        "frontend/package.json",
+        "frontend/src/main.tsx",
+        ".env"
+    ]
+    
+    missing_files = []
+    for file in essential_files:
+        file_path = project_root / file
+        if not file_path.exists():
+            missing_files.append(file)
+            print_status(f"Missing: {file}", "WARNING")
+        else:
+            print_status(f"Found: {file}", "SUCCESS")
+    
+    if missing_files:
+        print_status(f"Warning: {len(missing_files)} file(s) missing", "WARNING")
+    else:
+        print_status("All essential files present", "SUCCESS")
+
+def check_database():
+    """Check if database exists"""
+    project_root = Path(__file__).parent
+    db_path = project_root / "backend" / "data" / "db.sqlite3"
+    
+    if db_path.exists():
+        print_status("Database file found", "SUCCESS")
+    else:
+        print_status("Database file not found. It will be created on first run.", "WARNING")
+
+def train_ml_models():
+    """Train ML recommendation models"""
+    print_status("Training ML recommendation models...")
+    project_root = Path(__file__).parent
+    python_exe = get_python_executable()
+    ml_script = project_root / "ml" / "train.py"
+    
+    if ml_script.exists():
+        try:
+            subprocess.run(
+                [python_exe, str(ml_script)],
+                cwd=str(project_root),
+                check=True,
+                timeout=300
+            )
+            print_status("ML models trained successfully", "SUCCESS")
+        except Exception as e:
+            print_status(f"ML training warning: {e}", "WARNING")
+    else:
+        print_status("ML training script not found", "WARNING")
+
+def get_backend_port():
+    return os.getenv("FLASK_PORT", "5000")
+
+def get_frontend_port():
+    return os.getenv("VITE_PORT", "5173")
+
+def launch_backend():
+    """Launch Flask backend server with Hot Reload"""
+    print_status("Starting backend server (Dynamic Mode)...")
+    project_root = Path(__file__).parent
+    backend_dir = project_root / "backend"
+    python_exe = get_python_executable()
+    port = get_backend_port()
+    
+    env = os.environ.copy()
+    env["FLASK_APP"] = "app.py"
+    env["FLASK_DEBUG"] = "1"  # Logic for Hot Reload
+    
+    # We remove stdout=subprocess.PIPE to let logs flow to the console
+    backend_process = subprocess.Popen(
+        [python_exe, "-m", "flask", "run", "--host=0.0.0.0", f"--port={port}"],
+        cwd=str(backend_dir),
+        env=env
+        # stdout and stderr inherited by default
+    )
+    
+    print_status(f"Backend LIVE on http://127.0.0.1:{port}", "SUCCESS")
+    return backend_process
+
+def launch_frontend():
+    """Launch Vite frontend development server"""
+    print_status("Starting frontend server (Dynamic Mode)...")
+    project_root = Path(__file__).parent
+    frontend_dir = project_root / "frontend"
+    port = get_frontend_port()
+    
+    npm_path = find_npm_path()
+    if not npm_path:
+        print_status("npm not found - frontend cannot start", "ERROR")
+        return None
+    
+    try:
+        # Inherit stdout so user sees Vite/HMR logs
+        frontend_process = subprocess.Popen(
+            [npm_path, "run", "dev"],
+            cwd=str(frontend_dir),
+            shell=True
+        )
+        print_status(f"Frontend LIVE on http://127.0.0.1:{port}", "SUCCESS")
+        return frontend_process
+    except Exception as e:
+        print_status(f"Failed to start frontend: {e}", "ERROR")
+        return None
+
+def start_public_tunnel():
+    """Start localtunnel to expose the frontend"""
+    print_status("Starting Public Tunnel (Localtunnel)...")
+    port = get_frontend_port()
+    npx_path = find_npx_path()
+    
+    try:
+        # We want to capture the URL from this one
+        tunnel_process = subprocess.Popen(
+            [npx_path, "localtunnel", "--port", port],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True
+        )
+        
+        def monitor_tunnel_output():
+            # Read line by line to find the URL
+            for line in iter(tunnel_process.stdout.readline, b''):
+                decoded_line = line.decode().strip()
+                if "your url is" in decoded_line.lower():
+                     print(f"\n{Colors.BOLD}{Colors.OKGREEN}🌍 PUBLIC ACCESS URL: {decoded_line}{Colors.ENDC}\n")
+                
+                # Also check for Errors
+                if "error" in decoded_line.lower():
+                     print(f"{Colors.FAIL}[Tunnel Error] {decoded_line}{Colors.ENDC}")
+
+        # Start monitoring in background thread
+        t = threading.Thread(target=monitor_tunnel_output, daemon=True)
+        t.start()
+        
+        return tunnel_process
+    except Exception as e:
+        print_status(f"Tunnel failed to start: {e}", "WARNING")
+        return None
+
+def get_network_ip():
+    try:
+        import socket
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
+        return ip
+    except:
+        return "localhost"
 
 def main():
-    # 0. Cleanup first
-    cleanup_old_instances()
-    
-    # Ensure Node is found
-    ensure_node_in_path()
-
-    # 1. Virtual Environment Setup
-    if not is_venv():
-        if not os.path.exists(VENV_DIR):
-            create_venv()
-        
-        venv_python = get_python_executable()
-        if not os.path.exists(venv_python):
-            print(f"Error: Virtual environment python not found at {venv_python}")
-            sys.exit(1)
-
-        print(f"Restarting script inside virtual environment: {venv_python}")
-        try:
-            subprocess.call([venv_python, __file__] + sys.argv[1:])
-        except KeyboardInterrupt:
-            pass
-        return
-
-    python_exec = sys.executable
-
-    # 2. Pipeline Steps
-    verify_integrity()
-    install_dependencies(python_exec)
-    # init_database(python_exec) - Removed
-    install_frontend_dependencies()
-    train_model(python_exec)
-
-    # 3. Launch Services
-    backend_process = None
-    frontend_process = None
-    otp_process = None
-
+    """Main launcher function"""
     try:
-        backend_process = run_backend(python_exec)
-        time.sleep(2) 
+        print_header("Personalized Study Buddy - Dynamic Launcher")
         
-        otp_process = run_otp_listener()
-        time.sleep(1)
-
-        frontend_process = run_frontend()
-        time.sleep(4)
-
-        # 4. Open Browser
-        app_url = f"http://{PUBLIC_IP}:{FRONTEND_PORT}"
-        dashboard_url = f"http://{PUBLIC_IP}:{OTP_PORT}"
+        # Prerequisite Checks
+        check_python_version()
+        create_venv()
+        install_dependencies() # Ensures all libs are ready
+        check_database()
         
-        print(f"\n=======================================================")
-        print(f" [SUCCESS] PROJECT LAUNCHED SUCCESSFULLY")
-        print(f" -------------------------------------------------------")
-        print(f" > Main App    : {app_url}  (Register here)")
-        print(f" > Dashboard   : {dashboard_url}  (View Subscriptions)")
-        print(f"=======================================================\n")
-        print("Use Ctrl+C to stop all servers.")
+        # Optional: Train models (can be slow, but user asked to check everything)
+        # train_ml_models() 
         
+        # Launch Services
+        print_header("Launching Dynamic Services")
+        print_status("Output from services will appear below...", "INFO")
+        
+        backend_process = launch_backend()
+        time.sleep(2)  # Give backend a moment
+        
+        frontend_process = launch_frontend()
+        time.sleep(2)
+        
+        # Tunnel
+        tunnel_process = start_public_tunnel()
+        
+        print_header("System Dash")
+        port = get_frontend_port()
+        ip = get_network_ip()
+        print(f"  🏠 Local Access:   http://localhost:{port}")
+        print(f"  🏢 Network Access: http://{ip}:{port}")
+        print(f"  ⚡ Hot Reloading:  ENABLED (Save files to see changes)")
+        print(f"  🌍 Public Access:  Check for URL above (courtesy of localtunnel)\n")
+        
+        # Keep processes running
         try:
-            webbrowser.open(app_url)
-            webbrowser.open(dashboard_url)
-        except Exception:
-            pass
-        
-        while True:
+            while True:
+                time.sleep(1)
+                # Check for crashes
+                if backend_process and backend_process.poll() is not None:
+                     print_status("Backend CRASHED. Restarting is manual for now.", "ERROR")
+                     break
+                if frontend_process and frontend_process.poll() is not None:
+                     print_status("Frontend CRASHED.", "ERROR")
+                     break
+        except KeyboardInterrupt:
+            print(f"\n{Colors.WARNING}Stopping services...{Colors.ENDC}")
+            if backend_process: backend_process.terminate()
+            if frontend_process: frontend_process.terminate()
+            if tunnel_process: tunnel_process.terminate()
+            
+            # Force kill if needed
             time.sleep(1)
-            if backend_process.poll() is not None:
-                print("Backend process ended.")
-                break
+            if backend_process: backend_process.kill()
+            if frontend_process: frontend_process.kill()
+            if tunnel_process: tunnel_process.kill()
+            
+            print_status("Services Stopped", "SUCCESS")
+            sys.exit(0)
 
-    except KeyboardInterrupt:
-        print("\nStopping services...")
-    finally:
-        if backend_process: backend_process.terminate()
-        if otp_process: 
-             subprocess.call(['taskkill', '/F', '/T', '/PID', str(otp_process.pid)], 
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if frontend_process: 
-            subprocess.call(['taskkill', '/F', '/T', '/PID', str(frontend_process.pid)], 
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        cleanup_old_instances()
-        print("Goodbye!")
+    except Exception as e:
+        print_status(f"Launcher Error: {e}", "ERROR")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

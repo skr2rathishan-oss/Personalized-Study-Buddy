@@ -24,6 +24,11 @@ class User(db.Model):
     phone_number = db.Column(db.String(20), nullable=True)
     profile_image = db.Column(db.Text, nullable=True) # Base64 string
     
+    # Subscription Management (mSpace)
+    subscription_status = db.Column(db.String(20), default='inactive', nullable=False) # active, inactive, pending
+    subscription_date = db.Column(db.DateTime, nullable=True)
+    unsubscription_date = db.Column(db.DateTime, nullable=True)
+    
     enrollments = db.relationship('Enrollment', backref='user', lazy=True)
     
     # Relationships for easy access

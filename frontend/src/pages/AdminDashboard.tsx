@@ -24,9 +24,64 @@ interface Course {
     code?: string;
 }
 
+// Sub-component for Topic Item to handle edit state
+const TopicItem = ({ topic, onDelete, onRename, onView }: { topic: Topic, onDelete: (id: number) => void, onRename: (id: number, name: string) => void, onView: () => void }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState(topic.name);
+
+    const handleSave = () => {
+        onRename(topic.id, editName);
+        setIsEditing(false);
+    };
+
+    return (
+        <div className="topic-card" onClick={onView} title="Click to manage resources">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                    {isEditing ? (
+                        <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '4px' }}>
+                            <input
+                                value={editName}
+                                onChange={e => setEditName(e.target.value)}
+                                className="input-modern-sm"
+                                autoFocus
+                            />
+                            <button onClick={handleSave} className="btn-success" style={{ padding: '4px 8px', fontSize: '0.8rem' }}>✓</button>
+                            <button onClick={() => setIsEditing(false)} className="btn-secondary-sm" style={{ padding: '4px 8px' }}>✕</button>
+                        </div>
+                    ) : (
+                        <>
+                            <span className="topic-title" onDoubleClick={(e) => { e.stopPropagation(); setIsEditing(true); }} title="Double click to rename">
+                                {topic.name} <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>✎</span>
+                            </span>
+                            <span className="topic-badge">
+                                {topic.resources.length} RESOURCES
+                            </span>
+                        </>
+                    )}
+                </div>
+                {!isEditing && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(topic.id); }}
+                        className="btn-card-action"
+                        title="Delete Topic"
+                    >
+                        🗑️
+                    </button>
+                )}
+            </div>
+            <div className="topic-footer">
+                <span>Manage Content</span>
+                <span>→</span>
+            </div>
+        </div>
+    );
+};
+
 function AdminDashboard() {
     const [courses, setCourses] = useState<Course[]>([]);
     const [topics, setTopics] = useState<Topic[]>([]);
+
 
     // UI States
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
@@ -46,7 +101,7 @@ function AdminDashboard() {
     const [editCourseName, setEditCourseName] = useState('');
 
     const [uploadFile, setUploadFile] = useState<File | null>(null);
-    const [showAdminUploadsOnly, setShowAdminUploadsOnly] = useState(true); // Default to true as requested
+    const [showAdminUploadsOnly, setShowAdminUploadsOnly] = useState(false); // Default to false so user sees all resources
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -125,6 +180,14 @@ function AdminDashboard() {
             await api.delete(`/admin/topics/${topicId}`);
             if (activeCourse) fetchTopics(activeCourse.id);
         } catch (err: any) { alert('Error deleting topic'); }
+    };
+
+    const handleRenameTopic = async (topicId: number, newName: string) => {
+        if (!newName.trim()) return;
+        try {
+            await api.put(`/admin/topics/${topicId}`, { name: newName });
+            if (activeCourse) fetchTopics(activeCourse.id);
+        } catch (err: any) { alert('Error renaming topic'); }
     };
 
 
@@ -214,78 +277,56 @@ function AdminDashboard() {
     };
 
     return (
-        <div className="dashboard-container relative" style={{
-            padding: '2rem',
-            maxWidth: '1280px',
-            margin: '4rem auto',
-            paddingBottom: '4rem'
-        }}>
-            {/* Decorative Background Blob */}
-            <div style={{
-                position: 'absolute',
-                top: '-10%',
-                right: '-5%',
-                width: '600px',
-                height: '600px',
-                background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, rgba(99,102,241,0) 70%)',
-                zIndex: -1,
-                pointerEvents: 'none'
-            }} />
-
-            {/* Header */}
+        <div className="dashboard-container dashboard-page-container">
             <div className="dashboard-header-flex">
-                <div>
-                    <h1 style={{
-                        fontSize: '2.5rem',
-                        fontWeight: 800,
-                        background: 'linear-gradient(to right, #2563EB, #7C3AED)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        margin: 0
-                    }}>
-                        {localStorage.getItem('role') === 'management' ? 'Management Dashboard' : 'Admin Console'}
-
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <h1 style={{ marginBottom: 0, fontSize: '2rem', fontWeight: 800, background: 'linear-gradient(135deg, #1E293B 0%, #334155 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        Admin Dashboard
                     </h1>
-                    <div style={{ marginTop: '0.5rem', color: '#64748B', fontWeight: 600, fontSize: '1.1rem' }}>
-                        {[localStorage.getItem('university'), localStorage.getItem('university_course')].filter(Boolean).join(' • ')}
-                    </div>
-                    <p style={{ color: '#94A3B8', marginTop: '0.25rem', fontSize: '1rem' }}>Manage your curriculum and content efficiently.</p>
+                    <p style={{ color: '#64748B', fontWeight: 500 }}>Manage courses, topics, and resources.</p>
                 </div>
                 <div className="header-actions">
-                    <button onClick={handleExport} className="btn-secondary">Export Excel 📥</button>
-                    <button onClick={handleImportClick} className="btn-secondary">Import Sync 📤</button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept=".xlsx" />
-                    <button onClick={() => setIsCreateModalOpen(true)} className="btn-primary-glow">+ Add New Module</button>
+                    <button onClick={() => setIsCreateModalOpen(true)} className="btn-primary-glow">
+                        + New Module
+                    </button>
+                    {courses.length > 0 && (
+                        <button onClick={() => { setActiveCourse(courses[0]); setIsManageModalOpen(true); }} className="btn-manage" style={{ width: 'auto' }}>
+                            Manage Content
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Courses Grid */}
+            {/* Course Grid */}
+            <h3 style={{ fontSize: '1.2rem', color: '#1E293B', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Your Modules <span style={{ fontSize: '0.8rem', background: '#F1F5F9', padding: '2px 8px', borderRadius: '12px', color: '#64748B' }}>{courses.length}</span>
+            </h3>
+
             {courses.length === 0 ? (
-                <div className="empty-state-card" style={{
-                    textAlign: 'center',
-                    padding: '5rem 2rem',
-                    background: 'white',
-                    borderRadius: '24px',
-                    border: '2px dashed #CBD5E1',
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
-                }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }}>📚</div>
-                    <h3 style={{ color: '#1E293B', fontSize: '1.5rem', marginBottom: '0.5rem' }}>No modules found</h3>
-                    <p style={{ color: '#64748B', maxWidth: '400px', margin: '0 auto 2rem' }}>Get started by creating your first course module. You can add resources and topics later.</p>
-                    <button onClick={() => setIsCreateModalOpen(true)} className="btn-primary-glow">Create Module</button>
+                <div style={{ textAlign: 'center', padding: '4rem', background: 'white', borderRadius: '20px', border: '1px dashed #CBD5E1' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</div>
+                    <h3 style={{ color: '#475569' }}>No modules found</h3>
+                    <p style={{ color: '#94A3B8', maxWidth: '400px', margin: '0 auto 1.5rem' }}>Get started by creating your first learning module to organize resources.</p>
+                    <button onClick={() => setIsCreateModalOpen(true)} className="btn-primary">Create Module</button>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
                     {courses.map(course => (
                         <div key={course.id} className="course-card-premium">
                             <div className="card-header-gradient">
-                                <span className="badge-glass">MODULE</span>
-                                <span className="card-id">#{course.module_id || course.code || course.id}</span>
+                                <span className="badge-glass">{course.code || course.module_id || 'No Code'}</span>
+                                <span className="card-id">#{course.id}</span>
                             </div>
-                            <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                <h3 className="course-card-title">{course.name}</h3>
-                                <div style={{ marginTop: '1.5rem' }}>
-                                    <button onClick={() => openManageModal(course)} className="btn-manage">Manage Content ⚙️</button>
+                            <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <h4 className="course-card-title">{course.name}</h4>
+                                <div style={{ marginTop: '1.5rem', display: 'flex', gap: '10px' }}>
+                                    <button
+                                        onClick={() => { setActiveCourse(course); setIsManageModalOpen(true); }}
+                                        className="btn-manage"
+                                        style={{ flex: 1 }}
+                                    >
+                                        Manage Content
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -355,33 +396,15 @@ function AdminDashboard() {
                                 <div className="topics-list">
                                     {topics.length === 0 ? <div className="empty-topics">No topics added yet. Add one above.</div> : (
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                                            {topics.map(t => {
-
-
-                                                return (
-                                                    <div key={t.id} className="topic-card" onClick={() => setViewingTopic(t)} title="Click to manage resources">
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                                <span className="topic-title">{t.name}</span>
-                                                                <span className="topic-badge">
-                                                                    {t.resources.length} RESOURCES
-                                                                </span>
-                                                            </div>
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id); }}
-                                                                className="btn-card-action"
-                                                                title="Delete Topic"
-                                                            >
-                                                                🗑️
-                                                            </button>
-                                                        </div>
-                                                        <div className="topic-footer">
-                                                            <span>Manage Content</span>
-                                                            <span>→</span>
-                                                        </div>
-                                                    </div>
-                                                )
-                                            })}
+                                            {topics.map(t => (
+                                                <TopicItem
+                                                    key={t.id}
+                                                    topic={t}
+                                                    onDelete={handleDeleteTopic}
+                                                    onRename={handleRenameTopic}
+                                                    onView={() => setViewingTopic(t)}
+                                                />
+                                            ))}
                                         </div>
                                     )}
                                 </div>
