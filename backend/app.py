@@ -81,12 +81,12 @@ def check_role(roles):
 # --- OTP Storage (Global) ---
 otp_storage = {}
 
-# mSpace Credentials (Live)
-MSPACE_APP_ID = "APP_009667"
-MSPACE_PASSWORD = "683bfb85322ddf8469dbaa544f82ace7"
-MSPACE_OTP_REQUEST_URL = "https://api.mspace.lk/otp/request"
-MSPACE_OTP_VERIFY_URL = "https://api.mspace.lk/otp/verify"
-MSPACE_SUBSCRIPTION_URL = "https://api.mspace.lk/subscription/send"  # Fixed: was /userSubscription
+# mSpace Credentials (Loaded from .env)
+MSPACE_APP_ID = os.getenv("MSPACE_APP_ID", "APP_009667")
+MSPACE_PASSWORD = os.getenv("MSPACE_PASSWORD")
+MSPACE_OTP_REQUEST_URL = os.getenv("MSPACE_OTP_REQUEST_URL", "https://api.mspace.lk/otp/request")
+MSPACE_OTP_VERIFY_URL = os.getenv("MSPACE_OTP_VERIFY_URL", "https://api.mspace.lk/otp/verify")
+MSPACE_SUBSCRIPTION_URL = "https://api.mspace.lk/subscription/send"
 
 @app.route('/auth/otp/send', methods=['POST'])
 def send_otp():
@@ -827,9 +827,15 @@ def register():
         subscription_date=subscription_date
     )
     
-    db.session.add(new_user)
-    db.session.commit()
-    del otp_storage[phone_number]
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        # Cleanup OTP only after successful commit
+        if phone_number in otp_storage:
+            del otp_storage[phone_number]
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Database error during registration: {str(e)}'}), 500
 
     return jsonify({'message': 'Registration successful! Please login.'}), 201
 

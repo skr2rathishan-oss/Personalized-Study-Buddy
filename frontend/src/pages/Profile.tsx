@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
+import './Profile.css';
 
 function Profile() {
     const navigate = useNavigate();
@@ -288,14 +289,6 @@ function Profile() {
                 ) : (
                     /* --- Edit Profile View --- */
                     <div className="animate-fade-in">
-                        <button onClick={() => setView('menu')} className="btn-back" style={{
-                            background: 'none', border: 'none', color: 'var(--primary)',
-                            display: 'flex', alignItems: 'center', gap: '0.5rem',
-                            marginBottom: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600
-                        }}>
-                            ← Back to Settings
-                        </button>
-
                         <div className="profile-content-card" style={{ marginBottom: '2rem', textAlign: 'center' }}>
                             <h3 className="section-subtitle" style={{ marginBottom: '1rem', textAlign: 'center' }}>Profile Photo</h3>
                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
@@ -415,7 +408,7 @@ function Profile() {
                                     </div>
                                 </div>
 
-                                <button type="submit" className="btn-modern-primary" disabled={saving} style={{ marginTop: '1.5rem' }}>
+                                <button type="submit" className="btn-modern-primary" disabled={saving}>
                                     {saving ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </form>
@@ -456,253 +449,6 @@ function Profile() {
                 )}
 
 
-                <style>{`
-                    .profile-content-card {
-                        background: var(--surface-color);
-                        padding: 2rem;
-                        border-radius: 12px;
-                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    }
-                    .grid-2 {
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 1.5rem;
-                    }
-                    .disabled-input {
-                        background-color: var(--bg-color);
-                        color: var(--text-secondary);
-                        cursor: not-allowed;
-                    }
-                    .divider {
-                        border: 0;
-                        border-top: 1px solid #e5e7eb;
-                        margin: 2rem 0;
-                    }
-                    .section-subtitle {
-                        font-size: 1.1rem;
-                        margin-bottom: 1.5rem;
-                        color: var(--text-main);
-                        font-weight: 600;
-                    }
-
-                    /* Toggle Switch Styles */
-                    .toggle-switch {
-                        width: 44px;
-                        height: 24px;
-                        background-color: #e5e7eb;
-                        border-radius: 12px;
-                        position: relative;
-                        transition: background-color 0.2s;
-                    }
-                    .toggle-switch.active {
-                        background-color: var(--primary);
-                    }
-                    .toggle-thumb {
-                        width: 20px;
-                        height: 20px;
-                        background-color: white;
-                        border-radius: 50%;
-                        position: absolute;
-                        top: 2px;
-                        left: 2px;
-                        transition: transform 0.2s;
-                        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-                    }
-                    .toggle-switch.active .toggle-thumb {
-                        transform: translateX(20px);
-                    }
-
-                    /* Modal Styles */
-                    .modal-overlay {
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        background: rgba(0,0,0,0.5);
-                        z-index: 2000;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        padding: 1rem;
-                        backdrop-filter: blur(4px);
-                    }
-                    .modal-content {
-                        background: var(--surface-color);
-                        width: 100%;
-                        max-width: 320px;
-                        border-radius: 16px;
-                        padding: 1.5rem;
-                        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-                        text-align: center;
-                    }
-                    .modal-header {
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        margin-bottom: 1rem;
-                    }
-                    .modal-header h3 {
-                        margin: 0;
-                        font-size: 1.25rem;
-                        color: var(--text-main);
-                    }
-                    .close-btn {
-                        background: none;
-                        border: none;
-                        font-size: 1.5rem;
-                        color: var(--text-secondary);
-                        cursor: pointer;
-                    }
-                    .modal-desc {
-                        color: var(--text-secondary);
-                        margin-bottom: 2rem;
-                        font-size: 0.95rem;
-                    }
-                    .modal-actions {
-                        display: flex;
-                        flex-direction: column;
-                        gap: 0.8rem;
-                        margin-bottom: 1rem;
-                    }
-                    .btn-logout-primary {
-                        background: var(--primary);
-                        color: white;
-                        padding: 0.8rem;
-                        border-radius: 8px;
-                        border: none;
-                        font-weight: 600;
-                        font-size: 1rem;
-                        cursor: pointer;
-                        transition: opacity 0.2s;
-                    }
-                    .btn-logout-primary:hover {
-                         opacity: 0.9;
-                    }
-                    .btn-unsubscribe {
-                        background: #fee2e2;
-                        color: #ef4444;
-                        padding: 0.8rem;
-                        border-radius: 8px;
-                        border: 1px solid #fecaca;
-                        font-weight: 600;
-                        font-size: 1rem;
-                        cursor: pointer;
-                        transition: background 0.2s;
-                    }
-                    .btn-unsubscribe:hover {
-                        background: #fecaca;
-                    }
-                    .btn-cancel-wide {
-                         background: transparent;
-                         color: var(--text-secondary);
-                         padding: 0.5rem;
-                         border: none;
-                         cursor: pointer;
-                         font-size: 0.9rem;
-                         text-decoration: underline;
-                    }
-
-                    /* Custom Header Styles */
-                    .profile-mobile-header {
-                        display: none;
-                    }
-
-                    @media (max-width: 768px) {
-                        .profile-mobile-header {
-                            display: flex;
-                            position: fixed;
-                            top: 0;
-                            left: 0;
-                            right: 0;
-                            height: 50px;
-                            background: var(--surface-color);
-                            border-bottom: 1px solid var(--border-light);
-                            z-index: 1000;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 1.1rem;
-                            font-weight: 700;
-                            color: var(--text-main);
-                            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-                        }
-                        
-                        .desktop-only-title {
-                            display: none;
-                        }
-
-                        .grid-2 {
-                            grid-template-columns: 1fr;
-                            gap: 1rem;
-                        }
-                        .profile-content-card {
-                            padding: 1.5rem;
-                        }
-                        /* Adjusted padding for fixed header */
-                        .dashboard-page-container {
-                            padding-top: 60px !important; 
-                        }
-                        
-                         /* Center Modal in mobile viewport correctly */
-                         .modal-overlay {
-                            align-items: flex-end; /* Bottom sheet feeling on mobile if desired, but user said popup. Centered is fine too */
-                            align-items: center;
-                         }
-                    }
-
-                    /* Menu Grid Styles */
-                    .profile-menu-grid {
-                        display: grid;
-                        gap: 1rem;
-                    }
-                    .menu-item-card {
-                        display: flex;
-                        align-items: center;
-                        gap: 1rem;
-                        padding: 1rem;
-                        border: 1px solid var(--border-light);
-                        border-radius: 12px;
-                        transition: all 0.2s;
-                        cursor: pointer;
-                        color: var(--text-main);
-                    }
-                    .menu-item-card:hover {
-                        background: var(--bg-color);
-                        border-color: var(--primary);
-                        transform: translateY(-2px);
-                    }
-                    .menu-item-card .icon {
-                        font-size: 1.5rem;
-                        width: 40px;
-                        height: 40px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        background: var(--bg-color);
-                        border-radius: 50%;
-                    }
-                    .menu-item-card .info h4 {
-                        margin: 0;
-                        font-size: 1rem;
-                        font-weight: 600;
-                    }
-                    .menu-item-card .info p {
-                        margin: 2px 0 0 0;
-                        font-size: 0.8rem;
-                        color: var(--text-secondary);
-                    }
-                    .menu-item-card.danger {
-                        border-color: #fecaca;
-                        background: #fef2f2;
-                    }
-                    .menu-item-card.danger:hover {
-                        background: #fee2e2;
-                        border-color: #ef4444;
-                    }
-                    .menu-item-card.danger .info h4 {
-                        color: #ef4444;
-                    }
-                `}</style>
             </div >
         </>
     );

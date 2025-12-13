@@ -1,26 +1,67 @@
-# Personalized Study Buddy Recommender (PSBR)
+# 🎓 Personalized Study Buddy Recommender (PSBR)
 
-A multi-role platform for personalized learning resource recommendations using AI.
+> **Unlock your potential with AI-driven learning paths.**
 
-## 🚀 How to Run (One-Click Setup)
+![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)
+![License](https://img.shields.io/badge/License-MIT-orange?style=flat-square)
 
-We have included an automated script to handle installation and setup.
+---
+
+## 📖 About The Project
+
+The **Personalized Study Buddy** is a next-generation educational platform designed to adapt to every student's unique learning style. By leveraging **Hybrid AI (SVD + Content-Based Filtering)**, the system analyzes student interactions, ratings, and academic goals to curate a bespoke feed of educational resources (videos, articles, and quizzes).
+
+Whether you are a university student aiming for a First Class or a lifelong learner mastering a new skill, PSBR guides you through the noise of the internet to the content that matters most to *you*.
+
+### 🌟 Key Features
+
+*   **🤖 AI-Powered Recommendation Engine**: Utilizes Singular Value Decomposition (SVD) and cosine similarity to predict and suggest resources you'll love.
+*   **🔒 Secure & Easy Auth**: One-time-password (OTP) login via **mSpace**, ensuring secure and password-less access.
+*   **👥 Role-Based Ecosystem**:
+    *   **Student Dashboard**: View recommendations, track progress, and rate content.
+    *   **Admin Dashboard**: Manage users, upload resources, and oversee system health.
+    *   **Management Portal**: High-level analytics and subscription oversight.
+*   **📱 Mobile-First Design**: Fully responsive interface optimized for learning on the go.
+*   **💳 Integrated Subscription**: Seamless premium access management via mSpace's charging API.
+
+---
+
+## 🛠️ Tech Stack
+
+This project is built using a robust, modern stack ensuring performance and scalability.
+
+| Component | Technologies |
+| :--- | :--- |
+| **Frontend** | ![React](https://img.shields.io/badge/-React-black?logo=react) ![Vite](https://img.shields.io/badge/-Vite-646CFF?logo=vite) ![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?logo=typescript) ![CSS3](https://img.shields.io/badge/-CSS3-1572B6?logo=css3) |
+| **Backend** | ![Flask](https://img.shields.io/badge/-Flask-000000?logo=flask) ![SQLAlchemy](https://img.shields.io/badge/-SQLAlchemy-D71324?logo=sqlalchemy) ![JWT](https://img.shields.io/badge/-JWT-000000?logo=jsonwebtokens) |
+| **Data & ML** | ![Pandas](https://img.shields.io/badge/-Pandas-150458?logo=pandas) ![Scikit-Learn](https://img.shields.io/badge/-Scikit_Learn-F7931E?logo=scikit-learn) ![SQLite](https://img.shields.io/badge/-SQLite-003B57?logo=sqlite) |
+| **Services** | ![mSpace](https://img.shields.io/badge/-mSpace_API-E10098) (SMS, OTP, Charging) |
+
+---
+
+## 🚀 Getting Started
+
+We have streamlined the setup process into a single script for your convenience.
 
 ### Prerequisites
-Before running, ensure your friend has installed:
-1.  **Python 3.10+** (Make sure to check "Add Python to PATH" during installation).
-2.  **Node.js (LTS Version)** (Required for the frontend).
-3.  **Git** (To clone the repository).
 
-### Steps
-1.  **Clone the Repository**:
+*   **Python 3.10+** (Ensure "Add to PATH" is checked during installation)
+*   **Node.js (LTS)** (Required for the frontend)
+*   **Git**
+
+### One-Click Installation (Recommended)
+
+1.  **Clone the repository**:
     ```bash
-    git clone <your-repo-url>
+    git clone https://github.com/skr2rathishan-oss/Personalized-Study-Buddy-Proposal.git
     cd Personalized-Study-Buddy-Proposal
     ```
 
 2.  **Run the Launch Script**:
-    *   **Windows**: Open Command Prompt/PowerShell and run:
+
+    *   **Windows**:
         ```bash
         python launch.py
         ```
@@ -29,39 +70,67 @@ Before running, ensure your friend has installed:
         python3 launch.py
         ```
 
-### What the script does:
-*   ✓ Creates a Python virtual environment.
-*   ✓ Installs backend dependencies (Flask, etc.).
-*   ✓ Installs frontend dependencies (React/Vite).
-*   ✓ Initializes the local database (`db.sqlite3`).
-*   ✓ Starts both Backend and Frontend servers automatically.
+    > **What `launch.py` offers:**
+    > *   ✅ Creates a Python virtual environment (`venv`).
+    > *   ✅ Installs all Backend & Frontend dependencies.
+    > *   ✅ Initializes the Database (`db.sqlite3`).
+    > *   ✅ Launches both servers in a single terminal.
 
 ---
 
-## Manual Setup (If Script Fails)
+## 🔧 Manual Setup
 
-If `launch.py` doesn't work, try these manual steps:
+If you prefer full control or if the script encounters issues, follow these steps:
 
-**1. Backend Setup**
+### 1. Backend Setup
 ```bash
-# Windows
+# Navigate to project root
 python -m venv venv
+
+# Activate Virtual Environment
+# Windows:
 .\venv\Scripts\activate
+# Mac/Linux:
+source venv/bin/activate
+
+# Install Dependencies
 pip install -r backend/requirements.txt
+
+# Initialize Database
 python backend/init_db.py
+
+# Run Server
 python backend/app.py
 ```
 
-**2. Frontend Setup (New Terminal)**
+### 2. Frontend Setup
+Open a new terminal window:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-## Features
-- **Roles**: Student, Admin, Management.
-- **Recommendations**: SVD-based Machine Learning model.
-- **Architecture**: Flask Backend + React (Vite) Frontend + SQLite.
+---
 
-See [GUIDE.md](GUIDE.md) for detailed credentials and walkthrough.
+## 📸 Screenshots
+
+*(Add your application screenshots here)*
+
+| User Dashboard | Recommendation Feed |
+| :---: | :---: |
+| ![Dashboard Placeholder](https://via.placeholder.com/400x200?text=User+Dashboard) | ![Feed Placeholder](https://via.placeholder.com/400x200?text=Recommendation+Feed) |
+
+---
+
+## 📜 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## 📞 Contact
+
+**Project Team** - [Your Team Name/Email]
+
+Project Link: [https://github.com/skr2rathishan-oss/Personalized-Study-Buddy-Proposal](https://github.com/skr2rathishan-oss/Personalized-Study-Buddy-Proposal)
