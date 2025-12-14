@@ -5,7 +5,7 @@ import './Profile.css';
 
 function Profile() {
     const navigate = useNavigate();
-    const role = localStorage.getItem('role');
+    const role = sessionStorage.getItem('role');
     const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
 
     const toggleTheme = () => {
@@ -22,7 +22,7 @@ function Profile() {
     };
 
     const confirmLogout = () => {
-        localStorage.clear();
+        sessionStorage.clear();
         navigate('/login');
     };
     const [loading, setLoading] = useState(true);
@@ -95,7 +95,7 @@ function Profile() {
                     // For now, we just update the full profile with the new image immediately.
                     await api.put('/auth/profile', { ...formData, profile_image: base64String });
 
-                    localStorage.setItem('profile_image', base64String);
+                    sessionStorage.setItem('profile_image', base64String);
                     window.dispatchEvent(new Event('storage'));
                     alert('Profile photo updated!');
                 } catch (err) {
@@ -113,7 +113,7 @@ function Profile() {
         try {
             await api.put('/auth/profile', formData);
             if (formData.profile_image) {
-                localStorage.setItem('profile_image', formData.profile_image);
+                sessionStorage.setItem('profile_image', formData.profile_image);
             }
             alert('Profile updated successfully!');
             // Trigger storage event for Navbar update (optional, or just reload)
@@ -142,7 +142,7 @@ function Profile() {
 
                 if (res.data.subscription_status === 'deleted') {
                     alert("Successfully unsubscribed. Your account and data have been deleted.");
-                    localStorage.clear();
+                    sessionStorage.clear();
                     window.location.href = '/login';
                 } else {
                     alert("Successfully unsubscribed.");

@@ -5,12 +5,12 @@ import api from '../api';
 function Navbar() {
     const navigate = useNavigate();
     const location = useLocation();
-    const token = localStorage.getItem('token');
-    const username = localStorage.getItem('username');
-    const role = localStorage.getItem('role');
+    const token = sessionStorage.getItem('token');
+    const username = sessionStorage.getItem('username');
+    const role = sessionStorage.getItem('role');
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    const [profileImage, setProfileImage] = useState(localStorage.getItem('profile_image'));
+    const [profileImage, setProfileImage] = useState(sessionStorage.getItem('profile_image'));
 
     const handleMobileSearch = () => {
         // Dispatch event for Dashboard to listen to
@@ -21,12 +21,12 @@ function Navbar() {
 
     useEffect(() => {
         const handleStorageChange = () => {
-            setProfileImage(localStorage.getItem('profile_image'));
+            setProfileImage(sessionStorage.getItem('profile_image'));
         };
         window.addEventListener('storage', handleStorageChange);
 
         const handleThemeChange = () => {
-            setDarkMode(localStorage.getItem('theme') === 'dark');
+            setDarkMode(localStorage.getItem('theme') === 'dark'); // KEEP THEME IN LOCALSTORAGE (Global preference)
         };
         window.addEventListener('theme-change', handleThemeChange);
 
@@ -66,7 +66,7 @@ function Navbar() {
                 .then(res => {
                     if (res.data.profile_image) {
                         setProfileImage(res.data.profile_image);
-                        localStorage.setItem('profile_image', res.data.profile_image);
+                        sessionStorage.setItem('profile_image', res.data.profile_image);
                     }
                 })
                 .catch(err => console.error("Background profile sync failed", err));
@@ -80,7 +80,7 @@ function Navbar() {
             e.stopPropagation();
         }
         setShowMenu(false); // Ensure menu closes
-        localStorage.clear();
+        sessionStorage.clear();
         navigate('/login');
     };
 

@@ -24,8 +24,8 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute = ({ children, allowedRoles }: PrivateRouteProps) => {
-    const token = localStorage.getItem('token');
-    const userRole = localStorage.getItem('role');
+    const token = sessionStorage.getItem('token');
+    const userRole = sessionStorage.getItem('role');
 
     if (!token) return <Navigate to="/login" />;
 
@@ -39,7 +39,7 @@ const PrivateRoute = ({ children, allowedRoles }: PrivateRouteProps) => {
 
 // Intelligently route based on role for /admin path
 const AdminRoute = () => {
-    const role = localStorage.getItem('role');
+    const role = sessionStorage.getItem('role');
     return role === 'management' ? <ManagementAnalytics /> : <AdminDashboard />;
 };
 

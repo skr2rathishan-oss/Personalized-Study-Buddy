@@ -26,7 +26,7 @@ const ChatWidget = ({ isOpen, onClose, context, mode = 'popup' }: ChatWidgetProp
         { id: 1, text: "Hi! I'm your Study Buddy AI. Ask me anything about this module!", sender: 'agent', timestamp: new Date() }
     ]);
     const [input, setInput] = useState('');
-    const [provider, setProvider] = useState<string>(localStorage.getItem('ai_provider') || 'auto');
+    const [provider, setProvider] = useState<string>(sessionStorage.getItem('ai_provider') || 'auto');
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -104,7 +104,7 @@ const ChatWidget = ({ isOpen, onClose, context, mode = 'popup' }: ChatWidgetProp
                         value={provider}
                         onChange={e => {
                             setProvider(e.target.value);
-                            localStorage.setItem('ai_provider', e.target.value);
+                            sessionStorage.setItem('ai_provider', e.target.value);
                         }}
                     >
                         <option value="auto">⚡ Auto</option>

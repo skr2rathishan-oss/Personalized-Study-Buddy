@@ -12,16 +12,16 @@ function Login() {
     const performLogin = async (u: string, p: string) => {
         try {
             const res = await api.post('/auth/login', { username: u, password: p });
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('role', res.data.role);
-            localStorage.setItem('username', res.data.username);
+            sessionStorage.setItem('token', res.data.token);
+            sessionStorage.setItem('role', res.data.role);
+            sessionStorage.setItem('username', res.data.username);
             if (res.data.profile_image) {
-                localStorage.setItem('profile_image', res.data.profile_image);
+                sessionStorage.setItem('profile_image', res.data.profile_image);
             } else {
-                localStorage.removeItem('profile_image');
+                sessionStorage.removeItem('profile_image');
             }
-            if (res.data.university) localStorage.setItem('university', res.data.university);
-            if (res.data.university_course) localStorage.setItem('university_course', res.data.university_course);
+            if (res.data.university) sessionStorage.setItem('university', res.data.university);
+            if (res.data.university_course) sessionStorage.setItem('university_course', res.data.university_course);
 
             navigate('/', { replace: true });
         } catch (err: any) {
