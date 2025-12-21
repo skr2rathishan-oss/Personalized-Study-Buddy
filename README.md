@@ -272,22 +272,6 @@ npm run dev
 
 ---
 
-## 📸 Screenshots
-
-<<<<<<< HEAD
-*(Add your application screenshots here)*
-
-| User Dashboard | Recommendation Feed |
-| :---: | :---: |
-| ![Dashboard Placeholder](https://via.placeholder.com/400x200?text=User+Dashboard) | ![Feed Placeholder](https://via.placeholder.com/400x200?text=Recommendation+Feed) |
-=======
-> *(Replace placeholders with real screenshots)*
-
-| Student Dashboard                        | Recommendation Feed                      |
-| ---------------------------------------- | ---------------------------------------- |
-| ![](https://via.placeholder.com/400x200) | ![](https://via.placeholder.com/400x200) |
-
----
 
 ## 🔮 Future Enhancements
 
@@ -321,7 +305,7 @@ This project is licensed under the **MIT License**.
 ## 📞 Contact
 
 <<<<<<< HEAD
-**Project Team** - [Your Team Name/Email]
+**Project Team** - [CodeMakers/Vvivushan@gmail.com]
 
 Project Link: [https://github.com/skr2rathishan-oss/Personalized-Study-Buddy-Proposal](https://github.com/skr2rathishan-oss/Personalized-Study-Buddy-Proposal)
 =======
